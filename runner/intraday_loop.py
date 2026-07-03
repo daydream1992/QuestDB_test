@@ -261,8 +261,17 @@ def _process_decisions(con, decisions, risk, ctx=None):
             reason = '{} [评分{:.0f}]'.format(reason, d.score)
         rows.append((now, d.code, d.strategy, d.action,
                      d.position_pct, d.price, reason))
-        # 飞书推送 buy/sell 决策
-        if d.action in ('buy', 'sell'):
+        # 飞书推送:
+        # - buy/sell: 关键决策, 必推 (不频控, 每条都到)
+        # - watch/warn: 高频噪声, 接 Deduper 180s 频控 (避免 60s 一轮刷屏)
+        # H3 修复 (ARCHITECTURE_REVIEW): 之前 watch/warn 只入库不推, 看不到 p17/p18 提示
+        if d.action in ('buy', 'sell', 'watch', 'warn'):
+            from lib.notify_dedup import allow_push
+            if d.action in ('watch', 'warn'):
+                # 高频动作走 Deduper, critical=False (频控生效)
+                if not allow_push(d.code, d.action):
+                    logger.debug('飞书频控拦截 {} {} (180s TTL 内已推过)', d.code, d.action)
+                    continue
             try:
                 lark.push_decision({
                     'decision_time': now,
