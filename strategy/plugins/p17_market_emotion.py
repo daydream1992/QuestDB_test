@@ -1,13 +1,14 @@
 """p17: 大盘情绪
 
 脚本路径: K:\QuestDB_test\\strategy\\plugins\\p17_market_emotion.py
-用途: 消费 ctx.sentiment (k3_sentiment 产出), 情绪极端时提示; buy 拦截由 _process_decisions 门控
+用途: 消费 ctx.sentiment (k3_sentiment 产出), 情绪极端时呈现市场级提示
 依赖: ctx.emotion_rating (0-4) + ctx.sentiment (dict)
 入库: qd_decisions (watch/warn 市场级提示, code=上证指数占位)
 说明:
+  - 系统定位是"呈现事实"非自动交易: 情绪只作建议呈现, 不拦截策略 buy
+    (策略 buy 照常入库推送, 由用户综合判断后自行决策)
   - 不依赖 ctx 各 df 列, required_fields 返回 [] (H1 护栏按 df 列校验, 本插件用 ctx 属性)
-  - 真正的 buy 拦截在 _process_decisions 的 emotion 门控 (emotion_order<=1 冰点/低迷)
-  - 本插件产出市场级提示决策 (飞书推送由 k3 变盘事件直接 push_text, 此处仅入库记录)
+  - 低迷/冰点 → 建议空仓观望; 过热 → 高位风险提示
 """
 
 from typing import List
@@ -32,18 +33,18 @@ class MarketEmotionStrategy(StrategyBase):
         emo = ctx.sentiment.get('emotion', '')
         order = ctx.emotion_rating
         if order <= 1:
-            # 冰点/低迷: 建议观望 (buy 已被 _process_decisions 门控拦截)
+            # 冰点/低迷: 呈现事实 + 建议空仓 (不拦截 buy, 由用户自行决策)
             return [Decision(
                 action='watch', code=_MARKET_CODE, strategy=self.name,
                 reason=f'大盘情绪{emo}(冰点/低迷) 涨停{ctx.sentiment.get("zt_cnt", 0)} '
-                       f'涨跌比{ctx.sentiment.get("udr", 0):.2f} buy已门控, 建议观望',
+                       f'涨跌比{ctx.sentiment.get("udr", 0):.2f} 建议空仓观望',
                 score=float(order),
             )]
         if order >= 4:
-            # 过热: 高位风险提示
+            # 过热: 高位风险提示 (高潮兑现风险, 警惕接盘)
             return [Decision(
                 action='warn', code=_MARKET_CODE, strategy=self.name,
-                reason=f'大盘情绪{emo}(过热) 高位风险 注意减仓',
+                reason=f'大盘情绪{emo}(过热) 高潮兑现风险 注意减仓警惕接盘',
                 score=float(order),
             )]
         return []

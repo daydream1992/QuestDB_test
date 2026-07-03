@@ -89,9 +89,6 @@ _MONEY_FLOW_COLS = ['code', 'flow_time', 'main_net', 'big_order_diff',
 _BIG_ORDER_COLS = ['code', 'order_time', 'order_type', 'price', 'volume',
                    'amount', 'order_level', 'broker']
 
-# 情绪门控: emotion_order <= 此值时拦截 buy (0冰点/1低迷)
-EMOTION_BLOCK_BUY_ORDER = 1
-
 # 板块资金流历史 (per block_code 保留最近 _SECTOR_FLOW_HISTORY_LEN 期, 供 _run_rotation detect 用)
 _SECTOR_FLOW_HISTORY: dict = {}  # block_code → list[{block_code, net_flow, flow_strength, avg_change, flow_time}]
 _SECTOR_FLOW_HISTORY_LEN = 5
@@ -243,15 +240,11 @@ def _process_decisions(con, decisions, risk, ctx=None):
     if not decisions:
         return
     now = datetime.now()
-    emotion = getattr(ctx, 'emotion_rating', None) if ctx else None
     rows = []
     for d in decisions:
-        # buy: 情绪门控 (大盘冰点/低迷) + 仓位风控
+        # buy: 仓位风控 (情绪不再拦截 — 系统定位是"呈现事实", 不是替用户决策;
+        #   情绪作为 p17 的建议呈现, 不阻断策略。see SESSION_HANDOVER 定位修正)
         if d.action == 'buy':
-            if emotion is not None and emotion <= EMOTION_BLOCK_BUY_ORDER:
-                logger.info('情绪门控拦截 buy {} {} (大盘冰点/低迷 order={})',
-                            d.code, d.strategy, emotion)
-                continue
             if not risk.can_open(d.position_pct):
                 logger.info('风控拦截 buy {} {} (仓位 {}%)',
                             d.code, d.strategy, d.position_pct)
@@ -519,13 +512,17 @@ def _run_money_flow(con, ctx):
         logger.warning('个股资金流失败: {}', e)
 
 
-def run(con=None):
+def run(con=None, max_rounds=None, force=False):
     """盘中主循环
 
     Args:
         con: psycopg2 连接, None 则自建
+        max_rounds: 跑完 N 轮后退出 (None=无限, 盘中正常用); 盘后验证给 1
+        force: True 时跳过 is_trading_day/is_trading_time/15:00 时间门控
+               (盘后端到端验证用; 生产调度不要开)
     """
-    logger.info('===== intraday_loop 启动 {} =====', datetime.now())
+    logger.info('===== intraday_loop 启动 {} max_rounds={} force={} =====',
+                datetime.now(), max_rounds, force)
     own_con = con is None
     if own_con:
         con = connect()
@@ -565,17 +562,18 @@ def run(con=None):
     try:
         while True:
             now = datetime.now()
-            # 退出条件: 非交易日 或 15:00 后
-            if not is_trading_day(now):
-                logger.info('非交易日, 退出主循环')
-                break
-            if now.time() >= dtime(15, 0):
-                logger.info('15:00 后, 退出主循环')
-                break
-            # 非交易时段 (午间休市等), 短暂等待
-            if not is_trading_time(now):
-                time.sleep(interval)
-                continue
+            if not force:
+                # 退出条件: 非交易日 或 15:00 后
+                if not is_trading_day(now):
+                    logger.info('非交易日, 退出主循环')
+                    break
+                if now.time() >= dtime(15, 0):
+                    logger.info('15:00 后, 退出主循环')
+                    break
+                # 非交易时段 (午间休市等), 短暂等待
+                if not is_trading_time(now):
+                    time.sleep(interval)
+                    continue
 
             t0 = time.time()
             logger.info('--- 第 {} 轮 {} ---',
@@ -683,6 +681,11 @@ def run(con=None):
             # 轮次计数放在最后 (确保 k4%6 在本轮开始时正确判定)
             round_idx += 1
 
+            # 盘后验证: 跑完 max_rounds 轮退出
+            if max_rounds is not None and round_idx >= max_rounds:
+                logger.info('EOD 验证: 跑完 {} 轮, 退出', max_rounds)
+                break
+
             # === 控频 ===
             elapsed = time.time() - t0
             sleep_s = max(0.5, interval - elapsed)
@@ -698,7 +701,10 @@ def run(con=None):
 def main():
     init()
     try:
-        run()
+        # 盘后端到端验证: EOD_FORCE=1 EOD_MAX_ROUNDS=1 python runner/intraday_loop.py
+        max_rounds = int(os.environ.get('EOD_MAX_ROUNDS', '0')) or None
+        force = bool(os.environ.get('EOD_FORCE'))
+        run(max_rounds=max_rounds, force=force)
     finally:
         close()
 
