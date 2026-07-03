@@ -28,6 +28,9 @@
 | `cadb7ff` | feat(批3): 实盘订阅模块（intraday_engine + watchlist + Deduper + limit_rule）|
 | `f5a5806` | wip(批4): 竞价规则树引擎 + pianpao 表骨架（**搁置未接入**）|
 | `4c88d58` | fix(k3): _safe_float 过滤 NaN |
+| `81b08cf` | feat: **k5 当天 K 线本地合成**（tqcenter `get_market_data` 只给历史昨天，今天 K 拉不到 → 用 `qd_stock_snapshot` 高频按分钟桶聚合）|
+| `06fedcb` | fix(k5): cutoff 改用 Python 本地 now（修 QuestDB `now()` UTC 时区错位 8h）|
+| `0c06eb1` | **fix(tz): 全局时区修复**（18 处 `dateadd(..., now())` → Python 本地 `cutoff()` 工具；_build_context/k1/k2/intraday_engine 等全部）|
 
 ---
 
@@ -75,6 +78,8 @@
 - **H3** [intraday_loop.py](runner/intraday_loop.py) `_process_decisions`：扩展 watch 推送（让 p17/p18 提示触达飞书，配 [notify_dedup.py](lib/notify_dedup.py) 频控）
 - **H5** [qdb.py](lib/qdb.py) `connect`：加 keepalive + OperationalError 重连（断连不空转）
 - **H6** [market_clock.py](lib/market_clock.py)：加 HOLIDAYS set + FORCE_TRADE_DAY 开关（假日数据接 akshare `tool_trade_date_hist_sina`）
+- ~~**全局时区**（之前发现的时区错位 bug）~~ ✅ **已修**（commit `0c06eb1`），见顶部"已修复陷阱"
+- ✅ **H8 缺 pyyaml** 已加（requirements）
 - **H7** [scheduler.py](runner/scheduler.py)：finally 加 tq close + 子进程 Job Object（COM 不泄漏）
 
 ### 优化项（可选）
@@ -97,4 +102,4 @@
 
 ## 7. 新会话启动指令（复制给新 Claude）
 
-> 读 `SESSION_HANDOVER.md` + `ARCHITECTURE_REVIEW.md`。上一会话完成了批0-3 + 采集层验证 + 监测 + k3 修（6 commit）。现在从"第 5 节下一步清单"继续，先做**策略层 C3 第 1 步（dark_money 接通 qd_money_flow + p08 字段对齐）**。Q 自包含、嵌入主循环、不要读 DB数据库_v2。改动前先 `git log --oneline -8` 看历史，每步 py_compile + commit。
+> 读 `SESSION_HANDOVER.md` + `ARCHITECTURE_REVIEW.md`。上一会话完成了批0-3 + 采集层验证 + 监测 + k3 修 + **k5 当天 K 线合成** + **全局时区修复**（9 commit）。**时区已统一用 `lib.qdb.cutoff()` 本地 now**，**不要再写 `dateadd(..., now())`**。现在从"第 5 节下一步清单"继续，先做**策略层 C3 第 1 步（dark_money 接通 qd_money_flow + p08 字段对齐）**。Q 自包含、嵌入主循环、不要读 DB数据库_v2。改动前先 `git log --oneline -12` 看历史，每步 py_compile + commit。
