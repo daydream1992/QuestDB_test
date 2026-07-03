@@ -44,6 +44,7 @@ import collect.c4_kline as c4  # noqa: E402
 import compute.k1_indicators as k1  # noqa: E402
 import compute.k2_signals as k2  # noqa: E402
 import compute.k3_sentiment as k3  # noqa: E402
+import compute.k5_kline_synth as k5  # noqa: E402
 import strategy.intraday_engine as intraday_engine  # noqa: E402
 from strategy import dark_money  # noqa: E402
 
@@ -485,6 +486,12 @@ def run(con=None):
                     c4.run(all_stocks, period='5m', count=1, con=con)
                 except Exception as e:
                     logger.error('c4 5m 失败: {}', e)
+                # k5 合成当天 K (get_market_data 只给历史, 当天 K 必须本地合成;
+                # 在 k1 之前, 让 k1 读到今天的 5m K)
+                try:
+                    k5.run(con=con)
+                except Exception as e:
+                    logger.error('k5 合成失败: {}', e)
                 try:
                     k1.run(con=con)
                 except Exception as e:
