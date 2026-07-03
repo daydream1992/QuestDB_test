@@ -82,9 +82,13 @@ MA5_N, MA10_N, MA20_N = 5, 10, 20
 # 每个 code 取最近多少根 K 线 (>= max(rolling20, ewm26)=26, 留余量取 30)
 KLINE_ROWS_PER_CODE = 30
 
+# k1 增量 watermark: 模块级, 上次 run() 处理过的最大 kline_time (Python datetime)
+# 进程重启后为 None → run() 走全量路径 (since_ts=None), 无副作用
+_LAST_KLINE_TS = None
 
-def fetch_kline(con, rows_per_code=KLINE_ROWS_PER_CODE) -> pd.DataFrame:
-    """读每个 code 最近 rows_per_code 根 5m K 线
+
+def fetch_kline(con, rows_per_code=KLINE_ROWS_PER_CODE, since_ts=None) -> pd.DataFrame:
+    """读每个 code 最近 rows_per_code 根 5m K 线 (k1 增量: 可选 since_ts 过滤)
 
     用 ROW_NUMBER() OVER (PARTITION BY code ORDER BY kline_time DESC) 取每 code
     最近 N 根 (而非时间窗口), 确保 rolling(20)/ewm(26) 有足够样本; 盘初也能读到
@@ -93,7 +97,35 @@ def fetch_kline(con, rows_per_code=KLINE_ROWS_PER_CODE) -> pd.DataFrame:
     Args:
         con: psycopg2 连接
         rows_per_code: 每个 code 取最近多少根 (默认 30)
+        since_ts: k1 增量优化, 给定时只返回至少有一根 kline_time > since_ts 的 code
+                  的最近 rows_per_code 根 (其余 code 跳过, 节省 90%+ 计算量)。
+                  None 时返回所有 code。
+                  QuestDB 9.4.3 不支持 WHERE IN (SELECT ...) 子查询, 故先拉本轮
+                  更新 code 列表, Python 端 .isin() 过滤 outer (比纯 SQL 增量
+                  略慢但稳定)。
     """
+    if since_ts is not None:
+        if isinstance(since_ts, pd.Timestamp):
+            since_ts = since_ts.to_pydatetime()
+        since_lit = since_ts.strftime('%Y-%m-%dT%H:%M:%S')
+        # 先查本轮有 K 线更新的 code 列表
+        updated_codes_df = query_df(
+            con,
+            f"SELECT DISTINCT code FROM {SRC_KLINE} WHERE kline_time > '{since_lit}'"
+        )
+        if updated_codes_df.empty:
+            return updated_codes_df  # 空 DataFrame
+        updated_codes = updated_codes_df['code'].tolist()
+        # 再对这些 code 拉最近 rows_per_code 根
+        codes_lit = "','".join(updated_codes)
+        sql = (
+            f"SELECT code, kline_time, open, high, low, close FROM ("
+            f"  SELECT code, kline_time, open, high, low, close, "
+            f"         row_number() OVER (PARTITION BY code ORDER BY kline_time DESC) AS rn "
+            f"  FROM {SRC_KLINE} WHERE code IN ('{codes_lit}')"
+            f") WHERE rn <= {rows_per_code} ORDER BY code, kline_time"
+        )
+        return query_df(con, sql)
     sql = (
         f"SELECT code, kline_time, open, high, low, close FROM ("
         f"  SELECT code, kline_time, open, high, low, close, "
@@ -169,18 +201,23 @@ def calc_one_code(g: pd.DataFrame) -> list:
     )]
 
 
-def run(con=None):
-    """指标计算主流程
+def run(con=None, since_ts=None):
+    """指标计算主流程 (k1 增量: since_ts 透传到 fetch_kline)
 
     Args:
         con: psycopg2 连接, None 则自建 (用完关闭)
+        since_ts: 增量 watermark, 给定时只算有 K 线更新的 code;
+                  None 时用模块级 _LAST_KLINE_TS (首次调用或进程重启后为 None → 全量)
     """
-    logger.info('▶ k1 指标计算开始')
+    global _LAST_KLINE_TS
+    if since_ts is None:
+        since_ts = _LAST_KLINE_TS  # None → 全量
+    logger.info('▶ k1 指标计算开始 since_ts={}', since_ts)
     own = con is None
     if own:
         con = connect()
     try:
-        df = fetch_kline(con)
+        df = fetch_kline(con, since_ts=since_ts)
         if df.empty:
             logger.warning('qd_kline_5m 无数据, 跳过')
             return
@@ -192,8 +229,16 @@ def run(con=None):
             if rs:
                 all_rows.extend(rs)
 
-        n = executemany_batch(con, DST, INSERT_COLUMNS, all_rows)
-        logger.info('✓ k1 入库 {} 条指标 ({} 个 code)', n, len(all_rows))
+        if all_rows:
+            n = executemany_batch(con, DST, INSERT_COLUMNS, all_rows)
+            logger.info('✓ k1 入库 {} 条指标 ({} 个 code)', n, len(all_rows))
+            # watermark 推进: 本轮 df 最大 kline_time (原始 df 包括可能跳过 calc 的 code)
+            max_ts = df['kline_time'].max()
+            if hasattr(max_ts, 'to_pydatetime'):
+                max_ts = max_ts.to_pydatetime()
+            _LAST_KLINE_TS = max_ts
+        else:
+            logger.info('k1 本轮无新增指标 (可能 watermark 内所有 K 线窗口不足)')
     finally:
         if own:
             con.close()
