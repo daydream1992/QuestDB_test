@@ -31,8 +31,13 @@
   - 用 lib.qdb 的 connect / query_df / executemany_batch
   - QuestDB PG 协议占位符用 %s, autocommit=True
   - 按 code 分组, pandas 计算
-  - 只入库核心指标都有值的行 (NaN 跳过)
+  - 只入库最新一根 K 线的指标 (增量; 历史已在前序轮次入库, DEDUP 幂等)
   - DEDUP UPSERT KEYS(calc_time, code) 自动去重, 幂等
+
+C2 修复: fetch_kline 改用 ROW_NUMBER() OVER 取每个 code 最近 30 根
+  (而非旧版 since_minutes=10 时间窗只读 2 根), 保证 rolling(20)/ewm(26)
+  有足够样本, 盘初也能读到 daily_init 补的历史 K 线。calc_one_code 只输出
+  最新一根 (保留增量意图, 不全量重算历史)。
 """
 
 import os
@@ -74,23 +79,27 @@ BOLL_N, BOLL_K = 20, 2.0
 PRESS_N = 20
 MA5_N, MA10_N, MA20_N = 5, 10, 20
 
+# 每个 code 取最近多少根 K 线 (>= max(rolling20, ewm26)=26, 留余量取 30)
+KLINE_ROWS_PER_CODE = 30
 
-# 最近一次入库 calc_time (供 run_incremental 使用)
-_last_time = None
 
+def fetch_kline(con, rows_per_code=KLINE_ROWS_PER_CODE) -> pd.DataFrame:
+    """读每个 code 最近 rows_per_code 根 5m K 线
 
-def fetch_kline(con, since_minutes=10) -> pd.DataFrame:
-    """读 5m K 线 (只读最近 since_minutes 分钟, 避免全表扫描)
+    用 ROW_NUMBER() OVER (PARTITION BY code ORDER BY kline_time DESC) 取每 code
+    最近 N 根 (而非时间窗口), 确保 rolling(20)/ewm(26) 有足够样本; 盘初也能读到
+    daily_init 补的历史 K 线 (旧版 since_minutes=10 只读 2 根导致指标永远算不出)。
 
     Args:
         con: psycopg2 连接
-        since_minutes: 只取最近多少分钟内的 K 线 (默认 10 分钟, 覆盖 1 个 5m 周期)
+        rows_per_code: 每个 code 取最近多少根 (默认 30)
     """
     sql = (
-        f"SELECT code, kline_time, open, high, low, close "
-        f"FROM {SRC_KLINE} "
-        f"WHERE kline_time > dateadd('m', -{since_minutes}, now()) "
-        f"ORDER BY code, kline_time"
+        f"SELECT code, kline_time, open, high, low, close FROM ("
+        f"  SELECT code, kline_time, open, high, low, close, "
+        f"         row_number() OVER (PARTITION BY code ORDER BY kline_time DESC) AS rn "
+        f"  FROM {SRC_KLINE} WHERE kline_time > dateadd('d', -2, now())"
+        f") WHERE rn <= {rows_per_code} ORDER BY code, kline_time"
     )
     return query_df(con, sql)
 
@@ -103,12 +112,14 @@ def _to_dt(v):
 
 
 def calc_one_code(g: pd.DataFrame) -> list:
-    """对单个 code 的 K 线序列计算指标, 返回待入库行列表
+    """对单个 code 的 K 线序列计算指标, 返回待入库行列表 (只含最新一根)
 
     Returns:
-        list[tuple]: 每行顺序与 INSERT_COLUMNS 一致
+        list[tuple]: 每行顺序与 INSERT_COLUMNS 一致; 仅最新一根 (指标就绪时)
     """
     g = g.sort_values('kline_time').reset_index(drop=True)
+    if g.empty:
+        return []
     close = g['close'].astype(float)
     high = g['high'].astype(float)
     low = g['low'].astype(float)
@@ -135,29 +146,27 @@ def calc_one_code(g: pd.DataFrame) -> list:
     ma10 = close.rolling(MA10_N).mean()
     ma20 = close.rolling(MA20_N).mean()
 
-    rows = []
-    for i in range(len(g)):
-        # 核心指标都有值才入库 (rolling 20 门槛 + macd)
-        if (pd.isna(hist.iloc[i]) or pd.isna(boll_mid.iloc[i])
-                or pd.isna(pressure_high.iloc[i]) or pd.isna(ma20.iloc[i])):
-            continue
-        rows.append((
-            g['code'].iloc[i],
-            _to_dt(g['kline_time'].iloc[i]),
-            float(close.iloc[i]),
-            float(dif.iloc[i]),
-            float(dea.iloc[i]),
-            float(hist.iloc[i]),
-            float(pressure_high.iloc[i]),
-            float(support_low.iloc[i]),
-            float(boll_upper.iloc[i]),
-            float(boll_mid.iloc[i]),
-            float(boll_lower.iloc[i]),
-            float(ma5.iloc[i]),
-            float(ma10.iloc[i]),
-            float(ma20.iloc[i]),
-        ))
-    return rows
+    # 只输出最新一根 (增量入库; 历史已在前序轮次写入, DEDUP 幂等)
+    i = len(g) - 1
+    if (pd.isna(hist.iloc[i]) or pd.isna(boll_mid.iloc[i])
+            or pd.isna(pressure_high.iloc[i]) or pd.isna(ma20.iloc[i])):
+        return []  # 最新一根指标未就绪 (样本不足), 本轮跳过
+    return [(
+        g['code'].iloc[i],
+        _to_dt(g['kline_time'].iloc[i]),
+        float(close.iloc[i]),
+        float(dif.iloc[i]),
+        float(dea.iloc[i]),
+        float(hist.iloc[i]),
+        float(pressure_high.iloc[i]),
+        float(support_low.iloc[i]),
+        float(boll_upper.iloc[i]),
+        float(boll_mid.iloc[i]),
+        float(boll_lower.iloc[i]),
+        float(ma5.iloc[i]),
+        float(ma10.iloc[i]),
+        float(ma20.iloc[i]),
+    )]
 
 
 def run(con=None):
@@ -180,11 +189,11 @@ def run(con=None):
         all_rows = []
         for code, g in df.groupby('code'):
             rs = calc_one_code(g)
-            logger.info('  {}: {} 条指标', code, len(rs))
-            all_rows.extend(rs)
+            if rs:
+                all_rows.extend(rs)
 
         n = executemany_batch(con, DST, INSERT_COLUMNS, all_rows)
-        logger.info('✓ k1 入库 {} 条指标', n)
+        logger.info('✓ k1 入库 {} 条指标 ({} 个 code)', n, len(all_rows))
     finally:
         if own:
             con.close()

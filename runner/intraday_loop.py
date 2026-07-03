@@ -280,14 +280,18 @@ def _run_resonance(con, ctx):
 def _run_sector_flow(con, ctx):
     """板块资金流 → qd_sector_flow (60s/轮)
 
-    按 more_info.Zjl 聚合每板块主力净流入, 写 qd_sector_flow。
+    按 snapshot_focus_df.Zjl 聚合每板块主力净流入, 写 qd_sector_flow。
+    (C5 修复: Zjl 在 qd_stock_snapshot intraday 字段, 不在 qd_stock_daily;
+     旧版读 more_info_df(qd_stock_daily) 永远取不到 Zjl → sector_flow 永不写。
+     改读 snapshot_focus_df。注: snapshot 双形态行问题见 ARCHITECTURE_REVIEW C8)
     """
-    if ctx.graph is None or ctx.more_info_df is None or ctx.more_info_df.empty:
+    sf_src = ctx.snapshot_focus_df
+    if ctx.graph is None or sf_src is None or sf_src.empty:
         return
-    if 'Zjl' not in ctx.more_info_df.columns:
+    if 'Zjl' not in sf_src.columns:
         return
     try:
-        mi = ctx.more_info_df
+        mi = sf_src
         sector_agg = {}  # block_code → {main_net, total_flow, count}
         for _, r in mi.iterrows():
             code = r.get('code')
@@ -359,6 +363,7 @@ def run(con=None):
         logger.warning('关系图谱加载失败, 板块资金流/共振将降级: {}', e)
 
     round_idx = 0
+    fields_checked = False  # H1 护栏: required_fields 仅首轮校验一次
     try:
         while True:
             now = datetime.now()
@@ -421,6 +426,13 @@ def run(con=None):
                     logger.error('k2 失败: {}', e)
                 # 构建 ctx (依赖 qd_signals 已有数据)
                 ctx = _build_context(con, graph)
+                # H1 护栏: 首轮校验策略 required_fields 是否在 ctx 列中 (一次性, 暴露字段错配)
+                if not fields_checked:
+                    missing = StrategyRegistry.validate_required_fields(ctx)
+                    if missing:
+                        logger.warning('字段护栏: {} 处 required_fields 缺失 (见上文 error 日志)',
+                                       len(missing))
+                    fields_checked = True
                 # 遍历策略
                 decisions = []
                 for name, cls in StrategyRegistry.get_all().items():

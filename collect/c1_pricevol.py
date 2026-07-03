@@ -5,12 +5,12 @@
 数据源: tqcenter get_pricevol(stock_list)
 入库表: qd_pricevol (3 数据列)
 频率: 10 秒/轮
-字段映射:
+字段映射 (PascalCase, 引用 config/fields.py PRICEVOL_FIELDS):
   code          ← 标的代码 (标准格式 '000001.SZ', 与 qd_code_registry 一致)
   snapshot_time ← datetime.now()
-  last_close    ← LastClose (前收盘价)
-  now           ← Now (现价)
-  volume        ← Volume (累计成交量)
+  LastClose     ← LastClose (前收盘价)
+  Now           ← Now (现价)
+  Volume        ← Volume (累计成交量)
 
 说明:
   - get_pricevol 传入标准代码 stock_list, 返回 dict{标准code: {LastClose,Now,Volume}}
@@ -18,6 +18,7 @@
   - 入库 code 用标准代码 ('000001.SZ'), 与 qd_code_registry / route_type / relation_graph 一致
   - 仅采集股票 + 指数 (有 tdx_code 的标的); 板块价量意义不大且无 tdx_code, 跳过
   - tqcenter COM 单进程串行, 用 lib.tq_client.safe_call 包装
+  - 列名 PascalCase 与全项目一致 (C1 修复: 旧版 snake_case 已废弃)
 """
 
 import os
@@ -34,6 +35,7 @@ from loguru import logger  # noqa: E402
 from lib.tq_client import safe_call, init, close  # noqa: E402
 from lib.tq_utils import fetch_all_codes, to_tdx  # noqa: E402
 from lib.qdb import connect, executemany_batch  # noqa: E402
+from config.fields import PRICEVOL_FIELDS  # noqa: E402
 
 from tqcenter import tq  # noqa: E402
 
@@ -42,6 +44,9 @@ _LOG_DIR = os.path.join(_PROJ_ROOT, 'logs')
 os.makedirs(_LOG_DIR, exist_ok=True)
 logger.add(os.path.join(_LOG_DIR, 'c1_pricevol_{time:YYYYMMDD}.log'),
            rotation='1 day', retention='30 days', encoding='utf-8')
+
+# 入库列: code + snapshot_time + 价量字段 (顺序与 rows tuple 一致, 与 DDL 03 一致)
+_PRICEVOL_COLS = ['code', 'snapshot_time'] + PRICEVOL_FIELDS
 
 
 def _to_float(v):
@@ -73,7 +78,7 @@ def parse_pricevol(data, snapshot_time):
         snapshot_time: 采集时刻 datetime
 
     Returns:
-        list[tuple]: (code, snapshot_time, last_close, now, volume)
+        list[tuple]: (code, snapshot_time, LastClose, Now, Volume) 顺序与 _PRICEVOL_COLS 一致
     """
     rows = []
     skipped = 0
@@ -136,11 +141,8 @@ def run(con=None, limit=None):
         rows = parse_pricevol(data, snapshot_time)
         logger.info('解析得到 {} 行价量数据', len(rows))
 
-        # 4. 批量写入 qd_pricevol
-        n = executemany_batch(
-            con, 'qd_pricevol',
-            ['code', 'snapshot_time', 'last_close', 'now', 'volume'],
-            rows)
+        # 4. 批量写入 qd_pricevol (列名 PascalCase)
+        n = executemany_batch(con, 'qd_pricevol', _PRICEVOL_COLS, rows)
         logger.info('写入 qd_pricevol: {} 行 (snapshot_time={})', n, snapshot_time)
         return n
     finally:

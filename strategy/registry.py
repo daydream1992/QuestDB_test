@@ -78,3 +78,40 @@ class StrategyRegistry:
                 logger.debug('加载插件: {}', mod_name)
             except Exception as e:
                 logger.error('加载插件失败 {}: {}', mod_name, e)
+
+    @classmethod
+    def validate_required_fields(cls, ctx):
+        """H1 护栏: 校验已启用策略的 required_fields 是否在 ctx 任意非空 df 列中
+
+        缺失则 logger.error (字段名错配/大小写错/DDL 缺列), 不强制 disable
+        (避免当轮某 df 为空时误杀; 缺字段策略本就会因取不到列而空返)。
+        返回缺失列表 [(strategy_name, field), ...]。
+
+        约定: required_fields 声明的是 ctx 各 DataFrame 的列名 (跨 df 大杂烩),
+        只要出现在任意一个非空 df 的 columns 中即视为存在。
+        """
+        all_cols = set()
+        for attr in ('pricevol_df', 'snapshot_focus_df', 'more_info_df',
+                     'indicators_df', 'signals_df', 'sector_flow_df',
+                     'resonance_df', 'money_flow_df', 'big_order_df',
+                     'auction_df'):
+            df = getattr(ctx, attr, None)
+            if df is not None and not df.empty:
+                try:
+                    all_cols.update(df.columns)
+                except Exception:
+                    pass
+        missing = []
+        for name, strat_cls in cls._strategies.items():
+            if not strat_cls.enabled:
+                continue
+            try:
+                need = strat_cls().required_fields() or []
+            except Exception:
+                need = []
+            for f in need:
+                if f not in all_cols:
+                    missing.append((name, f))
+                    logger.error('字段护栏: 策略 "{}" required_fields 含 "{}" '
+                                 '但 ctx 无此列 (检查 DDL/字段名/大小写)', name, f)
+        return missing

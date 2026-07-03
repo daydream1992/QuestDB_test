@@ -1,13 +1,16 @@
 """p06: 多层共振
 
 脚本路径: K:\QuestDB_test\\strategy\\plugins\\p06_resonance.py
-用途: 大盘 + 行业 + 个股三层同向涨且共振分数高的买点
-依赖: 策略上下文 ctx (resonance_df)
+用途: 共振总分高 + 个股涨幅强的买点
+依赖: 策略上下文 ctx (resonance_df + pricevol_df)
 入库: qd_decisions (由 runner 写入)
 条件:
-  - 大盘 + 行业 + 个股同向涨 (market_change>0, sector_change>0, stock_change>0)
-  - resonance_score >= 80
-  - 个股涨幅 > 3%
+  - resonance_df.total_score >= 80 (共振总分, 由 _run_resonance 落库 qd_resonance)
+  - 个股涨幅 (pricevol Now/LastClose) > 3%
+说明:
+  - qd_resonance 表存 total_score/signal_type (见 ddl/09_resonance.sql),
+    scan_market 内存产出的 market_change/sector_change/stock_change 落库时已丢弃;
+    故本插件用 total_score + pricevol 涨幅组合判断 (C7 修复: 旧版读已丢弃列导致永远空返)。
 """
 
 from typing import List
@@ -26,39 +29,52 @@ def _safe_float(v, default=0.0) -> float:
         return default
 
 
+def _change_pct(now, lastclose) -> float:
+    now = _safe_float(now)
+    lastclose = _safe_float(lastclose)
+    if lastclose <= 0:
+        return 0.0
+    return (now - lastclose) / lastclose * 100
+
+
 @StrategyRegistry.register
 class ResonanceTripleStrategy(StrategyBase):
     name = 'resonance_triple'
     version = '1.0'
 
     def required_fields(self):
-        return ['resonance_score', 'market_change', 'sector_change', 'stock_change']
+        return ['total_score']
 
     def evaluate(self, ctx) -> List[Decision]:
         decisions: List[Decision] = []
         df = ctx.resonance_df
         if df is None or df.empty:
             return []
-        need = ['code', 'resonance_score', 'market_change',
-                'sector_change', 'stock_change']
-        if not all(c in df.columns for c in need):
+        if not all(c in df.columns for c in ['code', 'total_score']):
             return []
 
+        # 个股涨幅从 pricevol (qd_resonance 不存个股涨跌幅)
+        chg_map = {}
+        pv = ctx.pricevol_df
+        if pv is not None and not pv.empty:
+            if 'snapshot_time' in pv.columns:
+                pv_l = pv.sort_values('snapshot_time').groupby('code', as_index=False).last()
+            else:
+                pv_l = pv.groupby('code', as_index=False).last()
+            for _, r in pv_l.iterrows():
+                chg_map[r['code']] = _change_pct(r.get('Now'), r.get('LastClose'))
+
         for _, r in df.iterrows():
-            score = _safe_float(r.get('resonance_score'))
-            mkt = _safe_float(r.get('market_change'))
-            sec = _safe_float(r.get('sector_change'))
-            stk = _safe_float(r.get('stock_change'))
+            score = _safe_float(r.get('total_score'))
             if score < _SCORE_MIN:
                 continue
-            if not (mkt > 0 and sec > 0 and stk > 0):   # 三层同向涨
-                continue
-            if stk <= _STOCK_CHANGE_MIN:
+            code = r['code']
+            chg = chg_map.get(code, 0.0)
+            if chg <= _STOCK_CHANGE_MIN:
                 continue
             decisions.append(Decision(
-                action='buy', code=r['code'], strategy=self.name,
-                reason=f'三层共振: 大盘{mkt:.2f}% 板块{sec:.2f}% '
-                       f'个股{stk:.2f}% 分数{score:.0f}',
+                action='buy', code=code, strategy=self.name,
+                reason=f'共振总分{score:.0f} 个股涨{chg:.2f}%',
                 position_pct=10, stop_loss=5, stop_profit=10,
                 price=0, score=score,
             ))
