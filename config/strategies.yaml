@@ -87,3 +87,9 @@ schedule:
   strategy_interval: 10       # 策略评估 (秒)
   sector_flow_interval: 60    # 板块资金流 (秒)
   resonance_interval: 60      # 共振分析 (秒)
+
+# === 订阅池 (实盘异动监控 intraday_engine; 留空则仅监控 selector 重点池) ===
+watchlist: []
+# watchlist 示例 (标准代码):
+#   - '000001.SZ'
+#   - '600519.SH'

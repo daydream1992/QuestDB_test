@@ -5,17 +5,17 @@
 执行时间: 09:30-11:30 / 13:00-15:00
 频率: 10 秒/轮 (可从 strategies.yaml 读取)
 流程 (每轮):
-  1. c1_pricevol: 全场价量 (10s)
-  2. c2_snapshot: 重点 500 只快照 (10s)
-  3. c3_more_info: 重点 500 只 88 字段 (10s, mode='intraday')
-  4. c4_kline: 1m K 线 (60s/轮, 每 6 轮跑 1 次)
-  5. k1_indicators: 算指标 (10s)
-  6. k2_signals: 原子信号 (10s)
-  7. 构建 StrategyContext + k3_sentiment 大盘情绪
-  8. 遍历 StrategyRegistry.get_all() → evaluate(ctx) → decisions
-  9. 风控过滤 (risk.can_open) + 情绪门控 (大盘冰点/低迷拦截 buy)
-  10. 写 qd_decisions + 飞书推送
-  11. 60s/轮: 板块资金流 + 共振分析
+  10s 块:
+    1. c1_pricevol: 全场价量
+    2. c2_snapshot: 重点 500 只快照
+    3. c3_more_info: 重点 500 只 88 字段 (mode='intraday')
+    4. intraday_engine: 实盘异动检测 (surge/封板/炸板/主力流) + critical 即时飞书
+  60s 块 (round_idx % 6 == 0):
+    5. c4_kline → k1_indicators → k2_signals
+    6. 构建 ctx + k3_sentiment 大盘情绪
+    7. 遍历策略 → decisions
+    8. 风控 + 情绪门控 + 飞书推送
+    9. 板块资金流 + 共振分析
 """
 
 import os
@@ -44,6 +44,7 @@ import collect.c4_kline as c4  # noqa: E402
 import compute.k1_indicators as k1  # noqa: E402
 import compute.k2_signals as k2  # noqa: E402
 import compute.k3_sentiment as k3  # noqa: E402
+import strategy.intraday_engine as intraday_engine  # noqa: E402
 
 from strategy.registry import StrategyRegistry  # noqa: E402
 from strategy.context import StrategyContext  # noqa: E402
@@ -346,12 +347,13 @@ def run(con=None):
     if own_con:
         con = connect()
 
-    # 加载调度频率 + 风控配置
+    # 加载调度频率 + 风控配置 + 订阅池
     cfg = _load_yaml()
     sched = cfg.get('schedule', {})
     interval = int(sched.get('pricevol_interval', 10))
     kline_interval = int(sched.get('kline_interval', 60))
     kline_every = max(1, kline_interval // interval)
+    watchlist = cfg.get('watchlist', []) or []
 
     risk_cfg = cfg.get('risk', {})
     risk = RiskManager(
@@ -362,7 +364,8 @@ def run(con=None):
     # 加载策略插件 + 配置
     StrategyRegistry.load_plugins(_PLUGINS_DIR)
     StrategyRegistry.load_config(_YAML_PATH)
-    logger.info('策略加载完成: 启用 {} 个', len(StrategyRegistry.get_all()))
+    logger.info('策略加载完成: 启用 {} 个; watchlist {} 只',
+                len(StrategyRegistry.get_all()), len(watchlist))
 
     # 加载关系图谱 (盘中复用内存映射, 加载失败降级)
     graph = None
@@ -397,7 +400,7 @@ def run(con=None):
             # 每轮从数据库重新读取全场代码 (避免内存缓存过期)
             all_stocks = _get_all_stock_codes(con)
 
-            # === 10s 采集 ===
+            # === 10s 采集 + 实盘异动 ===
             try:
                 c1.run(con=con)
             except Exception as e:
@@ -414,6 +417,15 @@ def run(con=None):
                 c3.run(focus, mode='intraday', con=con)
             except Exception as e:
                 logger.error('c3 失败: {}', e)
+
+            # 实盘异动检测 (10s, c2+c3 后; MonitorState 跨轮, critical 即时飞书)
+            try:
+                snap = query_df(con, "SELECT * FROM qd_stock_snapshot "
+                                    "WHERE snapshot_time > dateadd('s', -30, now())")
+                if snap is not None and not snap.empty:
+                    intraday_engine.run(con, snap, watchlist)
+            except Exception as e:
+                logger.error('intraday_engine 失败: {}', e)
 
             # === 60s 任务: K 线 → 指标 → 信号 → 情绪 → 策略 ===
             # k4→k1→k2 必须按顺序执行, 因为 k2 依赖 k1 产出 qd_signals
