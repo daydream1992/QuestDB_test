@@ -88,7 +88,14 @@
   - libpq keepalives_idle=30/interval=10/count=3 + SQL 层 `_ensure_alive` ping 兜底
   - `_exec_with_reconnect` 包 query_df/executemany_batch/query_one，OperationalError 自动重试 1 次（DEDUP UPSERT 幂等，SELECT 重读新数据 → 安全）
   - **Windows caveat**：当前 psycopg2 驱动不暴露 keepalive 参数给 Python 层（需 PG 客户端 ≥16）；靠 SQL ping 兜底才是核心防线
-- **H6** [market_clock.py](lib/market_clock.py)：加 HOLIDAYS set + FORCE_TRADE_DAY 开关（假日数据接 akshare `tool_trade_date_hist_sina`）
+- **H6** [market_clock.py](lib/market_clock.py)：加 HOLIDAYS set + FORCE_TRADE_DAY 开关（假日数据接 akshare `tool_trade_date_hist_sina`） ✅ **已修**（commit `5eff353`）
+  - 用 tqcenter `get_trading_dates('SH', ...)` 替代 akshare（你给的本地方案，离线可用）
+  - 按年缓存到 `%LOCALAPPDATA%/tqcenter/trading_dates/{YYYY}.json`，整年只调一次
+  - `FORCE_TRADE_DAY` 开关（env 或 .env，True 时强制 True，节假日测试用）
+  - **已知 caveat**：tqcenter 不可用时降级 weekday，国庆/春节等纯节假日会被误判（降级是降级，不是错误，运维知道即可）
+- **附带交付**：scripts/verify_tables.py — DDL vs QuestDB 实际列结构校验，scheduler 每日 16:00 调用
+  - 立即发现 qd_pianpao_daily 搁置问题（DDL 写了但 DB 无表，符合"骗炮搁置"现状）
+  - CI/scheduler 用：非零退出码 = 有 ❌（缺列/缺表）
 - ~~**全局时区**（之前发现的时区错位 bug）~~ ✅ **已修**（commit `0c06eb1`），见顶部"已修复陷阱"
 - ✅ **H8 缺 pyyaml** 已加（requirements）
 - **H7** [scheduler.py](runner/scheduler.py)：finally 加 tq close + 子进程 Job Object（COM 不泄漏）
