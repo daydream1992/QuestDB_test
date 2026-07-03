@@ -48,6 +48,7 @@ import compute.k5_kline_synth as k5  # noqa: E402
 import strategy.intraday_engine as intraday_engine  # noqa: E402
 from strategy import dark_money  # noqa: E402
 from strategy import big_order  # noqa: E402
+from strategy import sector_flow as sector_flow_mod  # noqa: E402
 
 from strategy.registry import StrategyRegistry  # noqa: E402
 from strategy.context import StrategyContext  # noqa: E402
@@ -90,6 +91,10 @@ _BIG_ORDER_COLS = ['code', 'order_time', 'order_type', 'price', 'volume',
 
 # 情绪门控: emotion_order <= 此值时拦截 buy (0冰点/1低迷)
 EMOTION_BLOCK_BUY_ORDER = 1
+
+# 板块资金流历史 (per block_code 保留最近 _SECTOR_FLOW_HISTORY_LEN 期, 供 _run_rotation detect 用)
+_SECTOR_FLOW_HISTORY: dict = {}  # block_code → list[{block_code, net_flow, flow_strength, avg_change, flow_time}]
+_SECTOR_FLOW_HISTORY_LEN = 5
 
 
 def _safe_float(v, default=0.0):
@@ -302,18 +307,22 @@ def _run_resonance(con, ctx):
 
 
 def _run_sector_flow(con, ctx):
-    """板块资金流 → qd_sector_flow (60s/轮)
+    """板块资金流 → qd_sector_flow (60s/轮), 并返回 per-block agg 给 _run_rotation 用
 
     按 snapshot_focus_df.Zjl 聚合每板块主力净流入, 写 qd_sector_flow。
     (C5 修复: Zjl 在 qd_stock_snapshot intraday 字段, 不在 qd_stock_daily;
      旧版读 more_info_df(qd_stock_daily) 永远取不到 Zjl → sector_flow 永不写。
      改读 snapshot_focus_df。注: snapshot 双形态行问题见 ARCHITECTURE_REVIEW C8)
+
+    Returns:
+        dict[block_code, dict]: 本轮每板块聚合 {main_net, total_flow, count},
+            供 _run_rotation 接 history 用。无数据返回 {}。
     """
     sf_src = ctx.snapshot_focus_df
     if ctx.graph is None or sf_src is None or sf_src.empty:
-        return
+        return {}
     if 'Zjl' not in sf_src.columns:
-        return
+        return {}
     try:
         mi = sf_src
         sector_agg = {}  # block_code → {main_net, total_flow, count}
@@ -334,7 +343,7 @@ def _run_sector_flow(con, ctx):
                 agg['total_flow'] += amt
                 agg['count'] += 1
         if not sector_agg:
-            return
+            return {}
         now = datetime.now()
         rows = []
         for bc, agg in sector_agg.items():
@@ -344,8 +353,62 @@ def _run_sector_flow(con, ctx):
                          None, None, agg['total_flow'], net_pct))
         executemany_batch(con, 'qd_sector_flow', _SECTOR_FLOW_COLS, rows)
         logger.info('写入 qd_sector_flow: {} 行', len(rows))
+        return sector_agg
     except Exception as e:
         logger.warning('板块资金流失败: {}', e)
+        return {}
+
+
+def _run_rotation(sector_agg_now):
+    """板块轮动检测 → ctx.rotation_signal (60s/轮)
+
+    维护模块级 _SECTOR_FLOW_HISTORY 累积每板块最近 N 期;
+    每期对每板块调 sector_flow.detect_rotation (需 ≥2 期), 取 |delta| 最大的轮动信号。
+    数据不足返回 None (不影响其他策略, p05 自带 insufficient 兜底)。
+
+    Args:
+        sector_agg_now: dict[block_code, {main_net, total_flow, count}] — _run_sector_flow 返回值
+
+    Returns:
+        dict|None: 选中的最强轮动信号, 含 block_code/type/prev_flow/curr_flow/delta/reason。
+                    数据不足返回 None, 不动 ctx.rotation_signal (由调用方决定)。
+    """
+    if not sector_agg_now:
+        return None
+    try:
+        from datetime import datetime as _dt
+        now_ts = _dt.now()
+        best = None  # (|delta|, signal_dict)
+        for bc, agg in sector_agg_now.items():
+            net_flow = _safe_float(agg.get('main_net'))
+            total_flow = _safe_float(agg.get('total_flow'))
+            flow_strength = net_flow / total_flow if total_flow > 0 else 0.0
+            entry = {
+                'block_code': bc,
+                'net_flow': net_flow,
+                'flow_strength': round(flow_strength, 4),
+                'avg_change': 0.0,  # _run_sector_flow 当前不聚合 avg_change, detect_rotation 不强需
+                'flow_time': now_ts,
+            }
+            hist = _SECTOR_FLOW_HISTORY.setdefault(bc, [])
+            hist.append(entry)
+            if len(hist) > _SECTOR_FLOW_HISTORY_LEN:
+                hist.pop(0)  # 截断, 防内存膨胀
+            if len(hist) < 2:
+                continue
+            sig = sector_flow_mod.detect_rotation(hist)
+            if not sig or sig.get('type') == 'insufficient':
+                continue
+            delta = abs(_safe_float(sig.get('delta')))
+            # 优先选 |delta| 最大 (含正负方向)
+            if best is None or delta > best[0]:
+                best = (delta, sig)
+        if best is None:
+            return None
+        return best[1]
+    except Exception as e:
+        logger.warning('板块轮动检测失败: {}', e)
+        return None
 
 
 def _run_big_order(con, ctx):
@@ -489,6 +552,7 @@ def run(con=None):
 
     round_idx = 0
     fields_checked = False  # H1 护栏: required_fields 仅首轮校验一次
+    _SECTOR_FLOW_HISTORY.clear()  # 重启清空板块资金流历史 (跨进程累积从本轮开始)
     try:
         while True:
             now = datetime.now()
@@ -570,6 +634,12 @@ def run(con=None):
                 _run_big_order(con, ctx)
                 # 个股明暗资金 → qd_money_flow + 刷新 ctx.money_flow_df (须在策略遍历前, 供 p08/p12)
                 _run_money_flow(con, ctx)
+                # 板块资金流 (前移到策略遍历前; 供 _run_rotation → ctx.rotation_signal 给 p05)
+                sector_agg_now = _run_sector_flow(con, ctx)
+                # 板块轮动检测 → ctx.rotation_signal (依赖 ≥2 期历史)
+                rot_sig = _run_rotation(sector_agg_now)
+                if rot_sig is not None:
+                    ctx.rotation_signal = rot_sig
                 # H1 护栏: 首轮校验策略 required_fields 是否在 ctx 列中 (一次性, 暴露字段错配)
                 if not fields_checked:
                     missing = StrategyRegistry.validate_required_fields(ctx)
@@ -598,8 +668,7 @@ def run(con=None):
                     logger.info('策略产出 {} 条决策', len(decisions))
                 # 风控 + 情绪门控 + 飞书推送
                 _process_decisions(con, decisions, risk, ctx)
-                # 板块资金流 → 共振（共振依赖 sector_flow_df，必须先写流再读流）
-                _run_sector_flow(con, ctx)
+                # 共振分析（不依赖 p05；写 qd_resonance 即可，顺序无要求）
                 _run_resonance(con, ctx)
 
             # 轮次计数放在最后 (确保 k4%6 在本轮开始时正确判定)
