@@ -26,7 +26,7 @@ if _PROJ_ROOT not in sys.path:
 
 from loguru import logger  # noqa: E402
 
-from lib.qdb import connect, query_df, executemany_batch  # noqa: E402
+from lib.qdb import connect, query_df, executemany_batch, cutoff  # noqa: E402
 from lib.tq_client import safe_call, init, close  # noqa: E402
 from lib import lark  # noqa: E402
 from lib.market_clock import is_auction_time, is_trading_day, get_auction_phase  # noqa: E402
@@ -213,7 +213,7 @@ def run(con=None):
             try:
                 ctx.more_info_df = query_df(
                     con, "SELECT * FROM qd_stock_daily "
-                         "WHERE date > dateadd('d', -2, now())")
+                         f"WHERE date > '{cutoff(days=2)}'")
             except Exception:
                 pass
 

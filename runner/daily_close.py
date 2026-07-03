@@ -21,7 +21,7 @@ if _PROJ_ROOT not in sys.path:
 
 from loguru import logger  # noqa: E402
 
-from lib.qdb import connect, query_df, executemany_batch  # noqa: E402
+from lib.qdb import connect, query_df, executemany_batch, cutoff  # noqa: E402
 from lib.tq_client import init, close  # noqa: E402
 from lib.tq_utils import fetch_all_codes  # noqa: E402
 from lib import lark  # noqa: E402
@@ -51,7 +51,7 @@ def _eval_strategies(con):
             con,
             "SELECT strategy_name, COUNT(*) as cnt "
             "FROM qd_decisions "
-            "WHERE decision_time > dateadd('d', -1, now()) "
+            f"WHERE decision_time > '{cutoff(days=1)}' "
             "GROUP BY strategy_name")
         if df.empty:
             logger.info('当日无决策数据')

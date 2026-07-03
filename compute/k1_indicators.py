@@ -52,7 +52,7 @@ if _PROJ_ROOT not in sys.path:
 
 from loguru import logger  # noqa: E402
 
-from lib.qdb import connect, query_df, executemany_batch  # noqa: E402
+from lib.qdb import connect, query_df, executemany_batch, cutoff  # noqa: E402
 
 # 日志配置
 _LOG_DIR = os.path.join(_PROJ_ROOT, 'logs')
@@ -98,7 +98,7 @@ def fetch_kline(con, rows_per_code=KLINE_ROWS_PER_CODE) -> pd.DataFrame:
         f"SELECT code, kline_time, open, high, low, close FROM ("
         f"  SELECT code, kline_time, open, high, low, close, "
         f"         row_number() OVER (PARTITION BY code ORDER BY kline_time DESC) AS rn "
-        f"  FROM {SRC_KLINE} WHERE kline_time > dateadd('d', -2, now())"
+        f"  FROM {SRC_KLINE} WHERE kline_time > '{cutoff(days=2)}'"
         f") WHERE rn <= {rows_per_code} ORDER BY code, kline_time"
     )
     return query_df(con, sql)

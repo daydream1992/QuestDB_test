@@ -12,10 +12,22 @@
 """
 
 import os
+from datetime import datetime, timedelta
 
 import psycopg2
 import pandas as pd
 from dotenv import load_dotenv
+
+
+def cutoff(seconds=0, minutes=0, hours=0, days=0):
+    """本地 now 倒推的 ISO 时间字符串 (供 SQL WHERE timestamp > '...' 用)
+
+    QuestDB now() 返回 UTC, 与 Python 本地 (北京) 写入的 TIMESTAMP 字面值差 8h,
+    用 SQL now()/dateadd(..., now()) 会错位 8h 导致 WHERE 命中数据范围与预期不符
+    (偏多, 读到全部当天而非近 N 分钟)。统一用本函数替代。
+    """
+    delta = timedelta(seconds=seconds, minutes=minutes, hours=hours, days=days)
+    return (datetime.now() - delta).strftime('%Y-%m-%dT%H:%M:%S')
 
 # 加载 config/.env
 _ENV_PATH = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),

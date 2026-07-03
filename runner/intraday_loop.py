@@ -32,7 +32,7 @@ if _PROJ_ROOT not in sys.path:
 
 from loguru import logger  # noqa: E402
 
-from lib.qdb import connect, query_df, executemany_batch  # noqa: E402
+from lib.qdb import connect, query_df, executemany_batch, cutoff  # noqa: E402
 from lib.tq_client import init, close  # noqa: E402
 from lib import lark  # noqa: E402
 from lib.market_clock import is_trading_time, is_trading_day  # noqa: E402
@@ -122,11 +122,11 @@ def _get_focus_codes(con, all_stocks):
         return []
     try:
         pv = query_df(con,
-                      "SELECT * FROM qd_pricevol "
-                      "WHERE snapshot_time > dateadd('m', -5, now())")
+                      f"SELECT * FROM qd_pricevol "
+                      f"WHERE snapshot_time > '{cutoff(minutes=5)}'")
         mi = query_df(con,
-                      "SELECT * FROM qd_stock_daily "
-                      "WHERE date > dateadd('d', -2, now())")
+                      f"SELECT * FROM qd_stock_daily "
+                      f"WHERE date > '{cutoff(days=2)}'")
         focus = select_focus_pool(pv, mi)
         return focus if focus else all_stocks
     except Exception as e:
@@ -140,41 +140,41 @@ def _build_context(con, graph):
     ctx.graph = graph
     try:
         ctx.pricevol_df = query_df(
-            con, "SELECT * FROM qd_pricevol "
-                 "WHERE snapshot_time > dateadd('m', -5, now())")
+            con, f"SELECT * FROM qd_pricevol "
+                 f"WHERE snapshot_time > '{cutoff(minutes=5)}'")
     except Exception:
         pass
     try:
         ctx.snapshot_focus_df = query_df(
-            con, "SELECT * FROM qd_stock_snapshot "
-                 "WHERE snapshot_time > dateadd('m', -5, now())")
+            con, f"SELECT * FROM qd_stock_snapshot "
+                 f"WHERE snapshot_time > '{cutoff(minutes=5)}'")
     except Exception:
         pass
     try:
         # c3 daily 写 qd_stock_daily (含 ZTPrice/fLianB/CJJEPre1 等日级字段)
         # c3 intraday 写 qd_stock_snapshot (含 ZAF/fHSL/Zjl 等实时字段, 由 snapshot_focus_df 承载)
         ctx.more_info_df = query_df(
-            con, "SELECT * FROM qd_stock_daily "
-                 "WHERE date > dateadd('d', -2, now())")
+            con, f"SELECT * FROM qd_stock_daily "
+                 f"WHERE date > '{cutoff(days=2)}'")
     except Exception:
         pass
     try:
         ctx.indicators_df = query_df(
-            con, "SELECT * FROM qd_indicators "
-                 "WHERE calc_time > dateadd('m', -30, now())")
+            con, f"SELECT * FROM qd_indicators "
+                 f"WHERE calc_time > '{cutoff(minutes=30)}'")
     except Exception:
         pass
     try:
         ctx.signals_df = query_df(
-            con, "SELECT * FROM qd_signals "
-                 "WHERE signal_time > dateadd('m', -10, now())")
+            con, f"SELECT * FROM qd_signals "
+                 f"WHERE signal_time > '{cutoff(minutes=10)}'")
     except Exception:
         pass
     # 大盘指数快照
     try:
         idx_df = query_df(
-            con, "SELECT * FROM qd_index_snapshot "
-                 "WHERE snapshot_time > dateadd('m', -2, now())")
+            con, f"SELECT * FROM qd_index_snapshot "
+                 f"WHERE snapshot_time > '{cutoff(minutes=2)}'")
         if not idx_df.empty:
             idx_df = idx_df.sort_values('snapshot_time') \
                 .groupby('code', as_index=False).last()
@@ -186,36 +186,36 @@ def _build_context(con, graph):
     # 竞价数据 (p09/p10/p11)
     try:
         ctx.auction_df = query_df(
-            con, "SELECT * FROM qd_auction_snapshot "
-                 "WHERE auction_time > dateadd('m', -30, now())")
+            con, f"SELECT * FROM qd_auction_snapshot "
+                 f"WHERE auction_time > '{cutoff(minutes=30)}'")
     except Exception:
         pass
     # 大单事件 (p12)
     try:
         ctx.big_order_df = query_df(
-            con, "SELECT * FROM qd_big_order "
-                 "WHERE order_time > dateadd('m', -30, now())")
+            con, f"SELECT * FROM qd_big_order "
+                 f"WHERE order_time > '{cutoff(minutes=30)}'")
     except Exception:
         pass
     # 个股资金流 (p08/p12)
     try:
         ctx.money_flow_df = query_df(
-            con, "SELECT * FROM qd_money_flow "
-                 "WHERE flow_time > dateadd('m', -10, now())")
+            con, f"SELECT * FROM qd_money_flow "
+                 f"WHERE flow_time > '{cutoff(minutes=10)}'")
     except Exception:
         pass
     # 板块资金流 (p07)
     try:
         ctx.sector_flow_df = query_df(
-            con, "SELECT * FROM qd_sector_flow "
-                 "WHERE flow_time > dateadd('m', -10, now())")
+            con, f"SELECT * FROM qd_sector_flow "
+                 f"WHERE flow_time > '{cutoff(minutes=10)}'")
     except Exception:
         pass
     # 共振分析 (p06)
     try:
         ctx.resonance_df = query_df(
-            con, "SELECT * FROM qd_resonance "
-                 "WHERE resonance_time > dateadd('m', -30, now())")
+            con, f"SELECT * FROM qd_resonance "
+                 f"WHERE resonance_time > '{cutoff(minutes=30)}'")
     except Exception:
         pass
     return ctx
@@ -467,8 +467,8 @@ def run(con=None):
 
             # 实盘异动检测 (10s, c2+c3 后; MonitorState 跨轮, critical 即时飞书)
             try:
-                snap = query_df(con, "SELECT * FROM qd_stock_snapshot "
-                                    "WHERE snapshot_time > dateadd('s', -30, now())")
+                snap = query_df(con, f"SELECT * FROM qd_stock_snapshot "
+                                    f"WHERE snapshot_time > '{cutoff(seconds=30)}'")
                 if snap is not None and not snap.empty:
                     intraday_engine.run(con, snap, watchlist)
             except Exception as e:

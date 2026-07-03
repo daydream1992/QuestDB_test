@@ -27,7 +27,7 @@ if _PROJ_ROOT not in sys.path:
 
 from loguru import logger  # noqa: E402
 
-from lib.qdb import executemany_batch  # noqa: E402
+from lib.qdb import executemany_batch, cutoff  # noqa: E402
 from lib import lark  # noqa: E402
 from lib.limit_rule import is_at_limit_up  # noqa: E402
 from lib.notify_dedup import allow_push  # noqa: E402
@@ -183,7 +183,7 @@ if __name__ == '__main__':
     con = connect()
     try:
         df = query_df(con, "SELECT * FROM qd_stock_snapshot "
-                           "WHERE snapshot_time > dateadd('m', -5, now())")
+                           f"WHERE snapshot_time > '{cutoff(minutes=5)}'")
         n = run(con, df)
         print(f'检测到 {n} 个事件')
     finally:
