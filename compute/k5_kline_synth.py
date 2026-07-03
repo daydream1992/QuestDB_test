@@ -109,10 +109,14 @@ def run(con=None):
     if own:
         con = connect()
     try:
+        # 用 Python 本地 now 算 cutoff (QuestDB now() 是 UTC, 与 snapshot_time 本地写入错位,
+        # 用 SQL now() 会命中全部今天数据导致 lookback 失效 + 合成慢)
+        from datetime import datetime as _dt, timedelta
+        cutoff = _dt.now() - timedelta(minutes=_LOOKBACK_MIN)
         df = query_df(
             con, "SELECT code, snapshot_time, Now, Volume, Amount "
                  "FROM qd_stock_snapshot "
-                 "WHERE snapshot_time > dateadd('m', -{}, now())".format(_LOOKBACK_MIN))
+                 "WHERE snapshot_time > '" + cutoff.strftime('%Y-%m-%dT%H:%M:%S') + "'")
         if df is None or df.empty:
             logger.warning('qd_stock_snapshot 近 {} 分钟无数据, 跳过合成', _LOOKBACK_MIN)
             return
