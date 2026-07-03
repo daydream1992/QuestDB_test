@@ -97,7 +97,7 @@
   - `FORCE_TRADE_DAY` 开关（env 或 .env，True 时强制 True，节假日测试用）
   - **已知 caveat**：tqcenter 不可用时降级 weekday，国庆/春节等纯节假日会被误判（降级是降级，不是错误，运维知道即可）
 - **附带交付**：scripts/verify_tables.py — DDL vs QuestDB 实际列结构校验，scheduler 每日 16:00 调用
-  - 立即发现 qd_pianpao_daily 搁置问题（DDL 写了但 DB 无表，符合"骗炮搁置"现状）
+  - 立即发现 qd_pianpao_daily 搁置问题（DDL 写了但 DB 无表）→ **已删 DDL**（commit 本批），pianpao 改由 DB数据库_v2 产出，Q 不重复算
   - CI/scheduler 用：非零退出码 = 有 ❌（缺列/缺表）
 - ~~**全局时区**（之前发现的时区错位 bug）~~ ✅ **已修**（commit `0c06eb1`），见顶部"已修复陷阱"
 - ✅ **H8 缺 pyyaml** 已加（requirements）
@@ -119,7 +119,7 @@
 - **tqcenter 偶返 NaN**：所有 `_safe_float` 要过滤 `r != r`（k3 已修，其他模块的 _safe_float 建议同步加）。
 - **snapshot 双形态行（C8 未修）**：c2@T 写快照列、c3@T+1s 写 intraday 列，同 code 同秒两行。k3/intraday_engine 用 `_merge_dual_rows`（groupby code 取每列非空）合并。彻底修需 c3 去 +1s 或拆表。
 - **k1 窗口（C2 已修）**：fetch_kline 用 ROW_NUMBER 取每 code 最近 30 根（QuestDB 支持 window function，已 WebSearch 确认）。
-- **骗炮搁置**：auction_engine.py（规则树）+ ddl/15_pianpao.sql 已写但**未接入** auction_monitor；用户说不纠结骗炮。
+- **骗炮已弃**：auction_engine.py（规则树）是死代码（无调用方），ddl/15_pianpao.sql 已删（commit 本批）。用户定调：pianpao 由 DB数据库_v2 每天产出，Q 不重复算；如未来 Q 要消费，走 ETL（DB→Q 写表）而非 Q 自算。
 - **pricevol 列名（C1 已修）**：PascalCase（Now/LastClose/Volume），全项目统一。表已重建。
 - **H1 护栏**：在 intraday_loop 首轮 60s 块 build ctx 后调 `StrategyRegistry.validate_required_fields(ctx)`，仅首轮一次。
 
