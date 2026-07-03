@@ -1,26 +1,123 @@
 """交易时钟
 
-脚本路径: K:\QuestDB_test\\lib\\market_clock.py
+脚本路径: K:\QuestDB_test\\lib\market_clock.py
 用途: 判断交易日 / 盘中 / 竞价时段, 返回当前交易阶段
-依赖: 无 (仅标准库 datetime)
-数据源: 系统本地时间 (Asia/Shanghai)
+依赖: 系统本地时间 + tqcenter (H6, 交易日历) + .env FORCE_TRADE_DAY
+数据源: 系统本地时间 (Asia/Shanghai); 交易日历来自 tqcenter.get_trading_dates
 入库表: 无
 说明:
-  - is_trading_day 简单按周一~周五判断, 不查假日历
+  - H6: is_trading_day 优先查交易日历缓存, 缺失/失败回退 weekday, 不阻断 loop
+  - 交易日历按年缓存到 %LOCALAPPDATA%\\tqcenter\\trading_dates\\{YYYY}.json
+  - FORCE_TRADE_DAY=True (.env 或环境变量) 强制返回 True (节假日测试用)
   - 阶段划分遵循 A 股常规交易时段
 """
 
+import os
+import json
 from datetime import datetime, time
+
+from loguru import logger
+
+
+# === H6 交易日历缓存 ===
+
+def _cache_dir():
+    """缓存目录: %LOCALAPPDATA%\\tqcenter\\trading_dates\\ (无则建)"""
+    base = os.environ.get('LOCALAPPDATA') or os.path.expanduser('~')
+    d = os.path.join(base, 'tqcenter', 'trading_dates')
+    os.makedirs(d, exist_ok=True)
+    return d
+
+
+def _cache_path(year: int) -> str:
+    return os.path.join(_cache_dir(), f'{year}.json')
+
+
+def _force_trade_day() -> bool:
+    """H6: FORCE_TRADE_DAY 开关 (.env 或环境变量, 默认 False)
+
+    True 时强制 is_trading_day 返回 True (节假日跑回归/手动复盘用)
+    """
+    return os.environ.get('FORCE_TRADE_DAY', '').lower() in ('1', 'true', 'yes')
+
+
+def get_trading_dates(year: int, count: int = -1, start: str = '', end: str = '') -> list:
+    """H6: 拉某年的交易日列表 (按年缓存)
+
+    优先读 %LOCALAPPDATA%\\tqcenter\\trading_dates\\{year}.json;
+    缓存缺失/失败时实时调 tqcenter.get_trading_dates, 成功后写缓存。
+
+    Args:
+        year: 4 位年份 (如 2026)
+        count: 返回最近的 count 个交易日 (-1 表示全部), 默认 -1
+        start: 起始日期 YYYYMMDD, 默认 '' (整年)
+        end: 结束日期 YYYYMMDD, 默认 '' (整年)
+
+    Returns:
+        list[str]: 交易日列表, YYYYMMDD 格式; 失败返回 []
+    """
+    cache_file = _cache_path(year)
+    # 缓存命中
+    if os.path.exists(cache_file):
+        try:
+            with open(cache_file, 'r', encoding='utf-8') as f:
+                return json.load(f)
+        except Exception as e:
+            logger.warning('交易日历缓存读取失败 {}: {}', cache_file, e)
+
+    # 实时调 tqcenter
+    try:
+        from lib.tq_client import safe_call
+        from tqcenter import tq
+        if not start:
+            start = f'{year}0101'
+        if not end:
+            end = f'{year}1231'
+        dates = safe_call(tq.get_trading_dates, market='SH',
+                          start_time=start, end_time=end, count=count)
+        # dates 可能是 list[str] (YYYYMMDD) 或其他; 统一转 str
+        if dates is None:
+            dates = []
+        dates = [str(d) for d in dates]
+        # 写缓存
+        try:
+            with open(cache_file, 'w', encoding='utf-8') as f:
+                json.dump(dates, f, ensure_ascii=False, indent=2)
+            logger.info('交易日历缓存已写入 {} ({} 个交易日)', cache_file, len(dates))
+        except Exception as e:
+            logger.warning('交易日历缓存写入失败 {}: {}', cache_file, e)
+        return dates
+    except Exception as e:
+        logger.error('get_trading_dates 失败 (tqcenter 未初始化/999999 未下载?): {}', e)
+        return []
+
+
+def _date_yyyymmdd(dt: datetime) -> str:
+    return dt.strftime('%Y%m%d')
 
 
 def is_trading_day(now=None):
-    """判断今天是否交易日 (周一~周五, 不查假日历)
+    """判断今天是否交易日 (H6: 优先查交易日历, 失败回退 weekday)
 
     Args:
         now: datetime, 默认 datetime.now()
+
+    Returns:
+        bool:
+          - FORCE_TRADE_DAY=True → True
+          - 本地日期在交易日历缓存里 → True
+          - 缓存为空/调用失败 → weekday < 5 (兜底)
+          - 缓存中存在但本地不在 → False (例如春节)
     """
+    if _force_trade_day():
+        return True
     now = now or datetime.now()
-    return now.weekday() < 5  # 0=周一 ... 4=周五
+    ymd = _date_yyyymmdd(now)
+    dates = get_trading_dates(now.year)
+    if not dates:
+        # 兜底: weekday 判
+        return now.weekday() < 5
+    return ymd in dates
 
 
 def is_trading_time(now=None):

@@ -7,6 +7,7 @@
   09:25        daily_init (盘前初始化, 与竞价并行)
   09:30-15:00  intraday_loop (盘中主循环)
   15:05        daily_close (盘后更新)
+  16:00        verify_tables (DDL 表结构校验, 防列名漂移)
 执行: python runner/scheduler.py
 
 说明:
@@ -26,7 +27,7 @@ import sys
 import time
 import subprocess
 import psutil
-from datetime import datetime
+from datetime import datetime, time as dtime
 
 # 确保项目根在 sys.path
 _PROJ_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -149,7 +150,7 @@ def run():
     import runner.daily_close as daily_close
 
     # 阶段完成标记 (避免重复执行)
-    flags = {'daily_init': False, 'daily_close': False}
+    flags = {'daily_init': False, 'daily_close': False, 'verify_tables': False}
     # 阻塞型子进程句柄
     auction_proc = None
     intraday_proc = None
@@ -218,6 +219,25 @@ def run():
                     except Exception as e:
                         logger.error('daily_close 失败: {}', e)
                     flags['daily_close'] = True
+                # 16:00 后跑 DDL 表结构校验 (一次性, 防列名漂移; 不通过仅日志告警不阻断)
+                if now.time() >= dtime(16, 0) and not flags['verify_tables']:
+                    try:
+                        import subprocess
+                        script = os.path.join(_PROJ_ROOT, 'scripts', 'verify_tables.py')
+                        r = subprocess.run([_PY, script], cwd=_PROJ_ROOT,
+                                           capture_output=True, text=True,
+                                           encoding='utf-8', timeout=60)
+                        # 把 verify_tables 输出原样打到 scheduler 日志
+                        if r.stdout:
+                            for line in r.stdout.strip().splitlines():
+                                logger.info('verify_tables | {}', line)
+                        if r.returncode != 0:
+                            logger.warning('verify_tables 退出码 {} (有 ❌ 或异常)', r.returncode)
+                        else:
+                            logger.info('verify_tables: 全部对齐 ✅')
+                    except Exception as e:
+                        logger.warning('verify_tables 调用失败: {}', e)
+                    flags['verify_tables'] = True
                 # 当日全流程完成, 等待次日
                 logger.info('当日调度完成, 等待次日...')
                 time.sleep(_IDLE_INTERVAL)
