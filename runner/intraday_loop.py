@@ -45,6 +45,7 @@ import compute.k1_indicators as k1  # noqa: E402
 import compute.k2_signals as k2  # noqa: E402
 import compute.k3_sentiment as k3  # noqa: E402
 import strategy.intraday_engine as intraday_engine  # noqa: E402
+from strategy import dark_money  # noqa: E402
 
 from strategy.registry import StrategyRegistry  # noqa: E402
 from strategy.context import StrategyContext  # noqa: E402
@@ -75,6 +76,11 @@ _RESONANCE_COLS = ['code', 'resonance_time', 'sector_resonance', 'index_resonanc
 # qd_sector_flow 列顺序 (与 DDL 08_flow.sql 一致)
 _SECTOR_FLOW_COLS = ['code', 'flow_time', 'main_net', 'big_net', 'mid_net',
                      'small_net', 'dark_money', 'light_money', 'total_flow', 'net_pct']
+
+# qd_money_flow 列顺序 (与 DDL 08_flow.sql 一致)
+_MONEY_FLOW_COLS = ['code', 'flow_time', 'main_net', 'big_order_diff',
+                    'dark_money', 'light_money', 'pressure_diff_5level',
+                    'buy_pressure', 'sell_pressure', 'net_flow']
 
 # 情绪门控: emotion_order <= 此值时拦截 buy (0冰点/1低迷)
 EMOTION_BLOCK_BUY_ORDER = 1
@@ -336,6 +342,46 @@ def _run_sector_flow(con, ctx):
         logger.warning('板块资金流失败: {}', e)
 
 
+def _run_money_flow(con, ctx):
+    """个股明暗资金 → qd_money_flow (60s/轮), 并刷新 ctx.money_flow_df 供 p08/p12 当轮读取
+
+    读 ctx.snapshot_focus_df (qd_stock_snapshot: c2 5档+NowVol / c3 intraday Zjl 等)。
+    C8 应对: intraday 字段 (c3@T+1s) 按 code 回填到同轮 c2 行 (bfill 取同轮 c3, ffill 兜底),
+    再只留 c2 行 (NowVol 非空) —— 既保留多轮时间序列 (cancel_diff 可差分), 又让每 c2 行带最新 Zjl。
+    重赋 ctx.money_flow_df 避免 H4 滞后一轮 + QuestDB 写读延迟。
+    """
+    snap = ctx.snapshot_focus_df
+    if snap is None or snap.empty:
+        return
+    try:
+        df = snap.copy()
+        df = df.sort_values(['code', 'snapshot_time'])
+        # C8: c2@T 与同轮 c3@T+1s 配对 → 用 bfill 把同轮 c3 的 intraday 字段回填到 c2 行
+        # (ffill 取上一轮会陈旧, 且窗口滑动时边界行 main_net 退化为 0; bfill 同轮最新)
+        for c in ('Zjl', 'Zjl_HB', 'FCAmo', 'FCb', 'Wtb'):
+            if c in df.columns:
+                df[c] = df.groupby('code')[c].bfill().ffill()
+        # 只留 c2 行 (有 NowVol), 保证 cancel_diff 差分连续、不被 c3 None 行污染
+        if 'NowVol' in df.columns:
+            df = df[df['NowVol'].notna()]
+        if df.empty:
+            return
+        mf = dark_money.calc_batch(df, None)  # ffill 已嵌 intraday 字段, 跳过内部 merge
+        if mf is None or mf.empty:
+            return
+        # 构造行 (big_order_diff/light_money 显式 None, 不写 pandas NaN; 仿 _run_sector_flow)
+        rows = [
+            (r.code, r.flow_time, r.main_net, None, r.dark_money, None,
+             r.pressure_diff_5level, r.buy_pressure, r.sell_pressure, r.net_flow)
+            for r in mf[_MONEY_FLOW_COLS].itertuples(index=False)
+        ]
+        executemany_batch(con, 'qd_money_flow', _MONEY_FLOW_COLS, rows)
+        ctx.money_flow_df = mf  # 当轮刷新, 供 p08/p12 + H1 首轮校验
+        logger.info('写入 qd_money_flow: {} 行', len(rows))
+    except Exception as e:
+        logger.warning('个股资金流失败: {}', e)
+
+
 def run(con=None):
     """盘中主循环
 
@@ -449,6 +495,8 @@ def run(con=None):
                     logger.error('k2 失败: {}', e)
                 # 构建 ctx (依赖 qd_signals 已有数据)
                 ctx = _build_context(con, graph)
+                # 个股明暗资金 → qd_money_flow + 刷新 ctx.money_flow_df (须在策略遍历前, 供 p08/p12)
+                _run_money_flow(con, ctx)
                 # H1 护栏: 首轮校验策略 required_fields 是否在 ctx 列中 (一次性, 暴露字段错配)
                 if not fields_checked:
                     missing = StrategyRegistry.validate_required_fields(ctx)
