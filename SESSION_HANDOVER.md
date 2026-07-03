@@ -83,7 +83,10 @@
 
 ### 调度推送层
 
-- **H3** [intraday_loop.py](runner/intraday_loop.py) `_process_decisions`：扩展 watch 推送（让 p17/p18 提示触达飞书，配 [notify_dedup.py](lib/notify_dedup.py) 频控）
+- **H3** [intraday_loop.py](runner/intraday_loop.py) `_process_decisions`：扩展 watch 推送（让 p17/p18 提示触达飞书，配 [notify_dedup.py](lib/notify_dedup.py) 频控） ✅ **已修**（commit `836616b`）
+  - 推送集合 `buy/sell` → `buy/sell/watch/warn`
+  - buy/sell 关键决策不频控（每条都到），watch/warn 接 Deduper 180s TTL（避免 60s 一轮刷屏）
+  - 验证 (2026-07-03 23:55)：mock push_decision 测 3 场景（首轮 4 条全推；同 code 第 2 轮 watch/warn 被拦截 buy/sell 仍推；新 code watch 通过）
 - **H5** [lib/qdb.py](lib/qdb.py) `connect`：加 keepalive + OperationalError 重连（断连不空转） ✅ **已修**（commit `d8ea329`）
   - libpq keepalives_idle=30/interval=10/count=3 + SQL 层 `_ensure_alive` ping 兜底
   - `_exec_with_reconnect` 包 query_df/executemany_batch/query_one，OperationalError 自动重试 1 次（DEDUP UPSERT 幂等，SELECT 重读新数据 → 安全）
