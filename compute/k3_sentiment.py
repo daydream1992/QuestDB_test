@@ -85,7 +85,10 @@ EMOTION_LABELS = ['冰点', '低迷', '中性', '活跃', '过热']
 
 def _safe_float(v, default=0.0):
     try:
-        return float(v)
+        r = float(v)
+        if r != r:  # NaN (tqcenter 偶尔返回 nan, int(nan) 会抛 ValueError)
+            return default
+        return r
     except (TypeError, ValueError):
         return default
 
