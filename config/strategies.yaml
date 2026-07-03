@@ -1,0 +1,81 @@
+# 策略开关配置 (enable/disable)
+# 每个策略可在运行时动态开关, 无需改代码
+
+strategies:
+  # === 入场策略 ===
+  zt_daban:
+    enabled: true
+    name: 涨停打板
+  zha_fanbao:
+    enabled: true
+    name: 炸板反包
+  macd_golden_vol:
+    enabled: true
+    name: MACD金叉放量
+  break_pressure:
+    enabled: true
+    name: 突破压力位
+  sector_rotation:
+    enabled: true
+    name: 板块轮动
+  resonance_triple:
+    enabled: true
+    name: 多层共振
+  divergence_warn:
+    enabled: true
+    name: 背离预警
+  dark_money_anomaly:
+    enabled: true
+    name: 暗资金异动
+
+  # === 竞价策略 ===
+  auction_rush:
+    enabled: true
+    name: 竞价抢筹
+  auction_gap:
+    enabled: true
+    name: 竞价缺口异动
+  auction_close:
+    enabled: true
+    name: 尾盘竞价异动
+
+  # === L2 大单策略 ===
+  big_order_pulse:
+    enabled: true
+    name: 大单跟单
+
+  # === 龙虎榜策略 ===
+  lhb_institution:
+    enabled: true
+    name: 机构龙虎榜
+  lhb_hotmoney:
+    enabled: true
+    name: 游资龙虎榜
+
+  # === 出场策略 ===
+  stop_loss:
+    enabled: true
+    name: 止损退出
+  stop_profit:
+    enabled: true
+    name: 止盈退出
+
+# === 风控参数 ===
+risk:
+  max_total_position: 80      # 最大总仓位 %
+  max_single_position: 30     # 单只最大仓位 %
+  max_strategies_per_day: 5   # 每日最多策略触发次数
+  push_cooldown_sec: 300      # 飞书推送频控 (秒)
+
+# === 拉取频率 ===
+schedule:
+  pricevol_interval: 10       # 全场价量 (秒)
+  snapshot_focus_interval: 10 # 重点快照 (秒)
+  snapshot_rotate_interval: 60 # 全场轮换 (秒)
+  more_info_focus_interval: 10 # 重点 88 字段 (秒)
+  more_info_full_interval: 60  # 全场 88 字段 (秒)
+  kline_interval: 60          # K 线 (秒)
+  indicator_interval: 10      # 指标计算 (秒)
+  strategy_interval: 10       # 策略评估 (秒)
+  sector_flow_interval: 60    # 板块资金流 (秒)
+  resonance_interval: 60      # 共振分析 (秒)

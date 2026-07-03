@@ -1,0 +1,57 @@
+# --- Secrets & environment ---
+.env
+.env.*
+!.env.example
+*.key
+*.pem
+secrets/
+
+# --- Runtime logs & output ---
+logs/
+*.log
+
+# --- Python ---
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+.venv/
+venv/
+env/
+build/
+dist/
+*.egg-info/
+.eggs/
+pip-wheel-metadata/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+.tox/
+
+# --- Jupyter ---
+.ipynb_checkpoints/
+
+# --- QuestDB / DB local data ---
+db/
+*.db
+*.sqlite
+*.sqlite3
+
+# --- IDE / Editor ---
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.project
+
+# --- OS ---
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# --- Claude / agent local state ---
+.claude/

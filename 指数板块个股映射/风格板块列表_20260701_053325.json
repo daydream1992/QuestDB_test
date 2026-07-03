@@ -1,0 +1,614 @@
+[
+  {
+    "block_code": "0",
+    "block_name": "深股通标的"
+  },
+  {
+    "block_code": "880081.SH",
+    "block_name": "轮动趋势"
+  },
+  {
+    "block_code": "880082.SH",
+    "block_name": "板块趋势"
+  },
+  {
+    "block_code": "880526.SH",
+    "block_name": "高分红股"
+  },
+  {
+    "block_code": "880527.SH",
+    "block_name": "承诺不减"
+  },
+  {
+    "block_code": "880531.SH",
+    "block_name": "低安全分"
+  },
+  {
+    "block_code": "880532.SH",
+    "block_name": "整体上市"
+  },
+  {
+    "block_code": "880536.SH",
+    "block_name": "微盘精选"
+  },
+  {
+    "block_code": "880538.SH",
+    "block_name": "参股金融"
+  },
+  {
+    "block_code": "880539.SH",
+    "block_name": "股权激励"
+  },
+  {
+    "block_code": "880543.SH",
+    "block_name": "外资背景"
+  },
+  {
+    "block_code": "880551.SH",
+    "block_name": "大基金持股"
+  },
+  {
+    "block_code": "880554.SH",
+    "block_name": "科创板次新"
+  },
+  {
+    "block_code": "880556.SH",
+    "block_name": "昨ST连板"
+  },
+  {
+    "block_code": "880559.SH",
+    "block_name": "要约收购"
+  },
+  {
+    "block_code": "880562.SH",
+    "block_name": "高校背景"
+  },
+  {
+    "block_code": "880565.SH",
+    "block_name": "送转潜力"
+  },
+  {
+    "block_code": "880570.SH",
+    "block_name": "高应收款"
+  },
+  {
+    "block_code": "880573.SH",
+    "block_name": "摘帽"
+  },
+  {
+    "block_code": "880576.SH",
+    "block_name": "并购重组股"
+  },
+  {
+    "block_code": "880578.SH",
+    "block_name": "专项贷款"
+  },
+  {
+    "block_code": "880581.SH",
+    "block_name": "控制权变更"
+  },
+  {
+    "block_code": "880603.SH",
+    "block_name": "新进指标股"
+  },
+  {
+    "block_code": "880619.SH",
+    "block_name": "业绩预增"
+  },
+  {
+    "block_code": "880620.SH",
+    "block_name": "券商金股"
+  },
+  {
+    "block_code": "880622.SH",
+    "block_name": "破增发价"
+  },
+  {
+    "block_code": "880625.SH",
+    "block_name": "主营变更"
+  },
+  {
+    "block_code": "880640.SH",
+    "block_name": "历史新高"
+  },
+  {
+    "block_code": "880641.SH",
+    "block_name": "历史新低"
+  },
+  {
+    "block_code": "880648.SH",
+    "block_name": "私募新进"
+  },
+  {
+    "block_code": "880653.SH",
+    "block_name": "私募重仓"
+  },
+  {
+    "block_code": "880665.SH",
+    "block_name": "昨ST首板"
+  },
+  {
+    "block_code": "880676.SH",
+    "block_name": "活跃ETF"
+  },
+  {
+    "block_code": "880677.SH",
+    "block_name": "活跃可转债"
+  },
+  {
+    "block_code": "880678.SH",
+    "block_name": "陆股通重仓"
+  },
+  {
+    "block_code": "880679.SH",
+    "block_name": "周期股"
+  },
+  {
+    "block_code": "880680.SH",
+    "block_name": "非周期股"
+  },
+  {
+    "block_code": "880687.SH",
+    "block_name": "活跃小盘非融"
+  },
+  {
+    "block_code": "880690.SH",
+    "block_name": "昨日强势"
+  },
+  {
+    "block_code": "880691.SH",
+    "block_name": "昨日弱势"
+  },
+  {
+    "block_code": "880694.SH",
+    "block_name": "活跃小盘国企"
+  },
+  {
+    "block_code": "880698.SH",
+    "block_name": "宽基ETF"
+  },
+  {
+    "block_code": "880699.SH",
+    "block_name": "最近情绪指数"
+  },
+  {
+    "block_code": "880702.SH",
+    "block_name": "壳资源"
+  },
+  {
+    "block_code": "880708.SH",
+    "block_name": "台资背景"
+  },
+  {
+    "block_code": "880712.SH",
+    "block_name": "微小盘股"
+  },
+  {
+    "block_code": "880721.SH",
+    "block_name": "北上重仓"
+  },
+  {
+    "block_code": "880723.SH",
+    "block_name": "发可转债"
+  },
+  {
+    "block_code": "880735.SH",
+    "block_name": "专精特新"
+  },
+  {
+    "block_code": "880751.SH",
+    "block_name": "昨日跌停"
+  },
+  {
+    "block_code": "880752.SH",
+    "block_name": "昨曾跌停"
+  },
+  {
+    "block_code": "880756.SH",
+    "block_name": "机构吸筹"
+  },
+  {
+    "block_code": "880763.SH",
+    "block_name": "自由现金流"
+  },
+  {
+    "block_code": "880769.SH",
+    "block_name": "股权集中"
+  },
+  {
+    "block_code": "880770.SH",
+    "block_name": "昨日上榜"
+  },
+  {
+    "block_code": "880771.SH",
+    "block_name": "MSCI中盘"
+  },
+  {
+    "block_code": "880774.SH",
+    "block_name": "昨日首板"
+  },
+  {
+    "block_code": "880779.SH",
+    "block_name": "高融资盘"
+  },
+  {
+    "block_code": "880780.SH",
+    "block_name": "融资增加"
+  },
+  {
+    "block_code": "880781.SH",
+    "block_name": "QFII新进"
+  },
+  {
+    "block_code": "880782.SH",
+    "block_name": "保险新进"
+  },
+  {
+    "block_code": "880783.SH",
+    "block_name": "社保新进"
+  },
+  {
+    "block_code": "880784.SH",
+    "block_name": "昨日较弱"
+  },
+  {
+    "block_code": "880785.SH",
+    "block_name": "最近多板"
+  },
+  {
+    "block_code": "880786.SH",
+    "block_name": "海外业务"
+  },
+  {
+    "block_code": "880787.SH",
+    "block_name": "高商誉"
+  },
+  {
+    "block_code": "880789.SH",
+    "block_name": "昨成交20"
+  },
+  {
+    "block_code": "880790.SH",
+    "block_name": "高负债率"
+  },
+  {
+    "block_code": "880792.SH",
+    "block_name": "基金增仓"
+  },
+  {
+    "block_code": "880793.SH",
+    "block_name": "基金减仓"
+  },
+  {
+    "block_code": "880801.SH",
+    "block_name": "基金重仓"
+  },
+  {
+    "block_code": "880802.SH",
+    "block_name": "QFII重仓"
+  },
+  {
+    "block_code": "880803.SH",
+    "block_name": "券商重仓"
+  },
+  {
+    "block_code": "880804.SH",
+    "block_name": "信托重仓"
+  },
+  {
+    "block_code": "880805.SH",
+    "block_name": "保险重仓"
+  },
+  {
+    "block_code": "880806.SH",
+    "block_name": "社保重仓"
+  },
+  {
+    "block_code": "880807.SH",
+    "block_name": "股东增持"
+  },
+  {
+    "block_code": "880808.SH",
+    "block_name": "股东减持"
+  },
+  {
+    "block_code": "880809.SH",
+    "block_name": "基金独门"
+  },
+  {
+    "block_code": "880812.SH",
+    "block_name": "昨日连板"
+  },
+  {
+    "block_code": "880813.SH",
+    "block_name": "并购重组预案"
+  },
+  {
+    "block_code": "880814.SH",
+    "block_name": "拟增持"
+  },
+  {
+    "block_code": "880815.SH",
+    "block_name": "拟减持"
+  },
+  {
+    "block_code": "880816.SH",
+    "block_name": "密集调研"
+  },
+  {
+    "block_code": "880817.SH",
+    "block_name": "商誉减值"
+  },
+  {
+    "block_code": "880818.SH",
+    "block_name": "通达信热股"
+  },
+  {
+    "block_code": "880821.SH",
+    "block_name": "大盘股"
+  },
+  {
+    "block_code": "880822.SH",
+    "block_name": "昨收活跃"
+  },
+  {
+    "block_code": "880823.SH",
+    "block_name": "微盘股"
+  },
+  {
+    "block_code": "880824.SH",
+    "block_name": "高市盈率"
+  },
+  {
+    "block_code": "880826.SH",
+    "block_name": "低市盈率"
+  },
+  {
+    "block_code": "880827.SH",
+    "block_name": "高市净率"
+  },
+  {
+    "block_code": "880829.SH",
+    "block_name": "低市净率"
+  },
+  {
+    "block_code": "880833.SH",
+    "block_name": "亏损股"
+  },
+  {
+    "block_code": "880834.SH",
+    "block_name": "微利股"
+  },
+  {
+    "block_code": "880835.SH",
+    "block_name": "绩优股"
+  },
+  {
+    "block_code": "880837.SH",
+    "block_name": "活跃股"
+  },
+  {
+    "block_code": "880842.SH",
+    "block_name": "业绩预升"
+  },
+  {
+    "block_code": "880844.SH",
+    "block_name": "预计扭亏"
+  },
+  {
+    "block_code": "880845.SH",
+    "block_name": "高股息股"
+  },
+  {
+    "block_code": "880846.SH",
+    "block_name": "破净资产"
+  },
+  {
+    "block_code": "880847.SH",
+    "block_name": "行业龙头"
+  },
+  {
+    "block_code": "880848.SH",
+    "block_name": "被举牌"
+  },
+  {
+    "block_code": "880849.SH",
+    "block_name": "回购计划"
+  },
+  {
+    "block_code": "880850.SH",
+    "block_name": "定增预案"
+  },
+  {
+    "block_code": "880852.SH",
+    "block_name": "参股新股"
+  },
+  {
+    "block_code": "880853.SH",
+    "block_name": "中字头"
+  },
+  {
+    "block_code": "880854.SH",
+    "block_name": "预高送转"
+  },
+  {
+    "block_code": "880856.SH",
+    "block_name": "定增股"
+  },
+  {
+    "block_code": "880857.SH",
+    "block_name": "证金汇金持股"
+  },
+  {
+    "block_code": "880858.SH",
+    "block_name": "国开持股"
+  },
+  {
+    "block_code": "880859.SH",
+    "block_name": "员工持股"
+  },
+  {
+    "block_code": "880860.SH",
+    "block_name": "扣非亏损"
+  },
+  {
+    "block_code": "880861.SH",
+    "block_name": "连续亏损"
+  },
+  {
+    "block_code": "880863.SH",
+    "block_name": "昨日涨停"
+  },
+  {
+    "block_code": "880864.SH",
+    "block_name": "昨日振荡"
+  },
+  {
+    "block_code": "880865.SH",
+    "block_name": "近期新高"
+  },
+  {
+    "block_code": "880866.SH",
+    "block_name": "近期新低"
+  },
+  {
+    "block_code": "880867.SH",
+    "block_name": "昨高换手"
+  },
+  {
+    "block_code": "880868.SH",
+    "block_name": "高贝塔值"
+  },
+  {
+    "block_code": "880869.SH",
+    "block_name": "股权转让"
+  },
+  {
+    "block_code": "880870.SH",
+    "block_name": "两年新股"
+  },
+  {
+    "block_code": "880871.SH",
+    "block_name": "股权分散"
+  },
+  {
+    "block_code": "880872.SH",
+    "block_name": "近期复牌"
+  },
+  {
+    "block_code": "880873.SH",
+    "block_name": "个人持股"
+  },
+  {
+    "block_code": "880874.SH",
+    "block_name": "昨曾涨停"
+  },
+  {
+    "block_code": "880875.SH",
+    "block_name": "中小银行"
+  },
+  {
+    "block_code": "880876.SH",
+    "block_name": "户数增加"
+  },
+  {
+    "block_code": "880877.SH",
+    "block_name": "户数减少"
+  },
+  {
+    "block_code": "880878.SH",
+    "block_name": "百元股"
+  },
+  {
+    "block_code": "880879.SH",
+    "block_name": "低价股"
+  },
+  {
+    "block_code": "880880.SH",
+    "block_name": "近期强势"
+  },
+  {
+    "block_code": "880881.SH",
+    "block_name": "近期弱势"
+  },
+  {
+    "block_code": "880882.SH",
+    "block_name": "久不分红"
+  },
+  {
+    "block_code": "880883.SH",
+    "block_name": "MSCI成份"
+  },
+  {
+    "block_code": "880884.SH",
+    "block_name": "最近异动"
+  },
+  {
+    "block_code": "880885.SH",
+    "block_name": "近端次新"
+  },
+  {
+    "block_code": "880886.SH",
+    "block_name": "昨日较强"
+  },
+  {
+    "block_code": "880887.SH",
+    "block_name": "次新超跌"
+  },
+  {
+    "block_code": "880889.SH",
+    "block_name": "不活跃股"
+  },
+  {
+    "block_code": "880891.SH",
+    "block_name": "破发行价"
+  },
+  {
+    "block_code": "880892.SH",
+    "block_name": "高质押股"
+  },
+  {
+    "block_code": "880893.SH",
+    "block_name": "送转超跌"
+  },
+  {
+    "block_code": "880894.SH",
+    "block_name": "养老金持股"
+  },
+  {
+    "block_code": "880895.SH",
+    "block_name": "持续增长"
+  },
+  {
+    "block_code": "880896.SH",
+    "block_name": "风险提示"
+  },
+  {
+    "block_code": "880897.SH",
+    "block_name": "即将解禁"
+  },
+  {
+    "block_code": "880898.SH",
+    "block_name": "近已解禁"
+  },
+  {
+    "block_code": "880915.SH",
+    "block_name": "昨日突涨"
+  },
+  {
+    "block_code": "880947.SH",
+    "block_name": "化债AMC"
+  },
+  {
+    "block_code": "880963.SH",
+    "block_name": "昨日断板"
+  },
+  {
+    "block_code": "880970.SH",
+    "block_name": "分拆上市预期"
+  },
+  {
+    "block_code": "880979.SH",
+    "block_name": "科创成长层"
+  }
+]

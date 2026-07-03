@@ -1,0 +1,514 @@
+[
+  {
+    "block_code": "881002.SH",
+    "block_name": "煤炭开采"
+  },
+  {
+    "block_code": "881005.SH",
+    "block_name": "焦炭加工"
+  },
+  {
+    "block_code": "881007.SH",
+    "block_name": "油气开采"
+  },
+  {
+    "block_code": "881008.SH",
+    "block_name": "油服工程"
+  },
+  {
+    "block_code": "881011.SH",
+    "block_name": "石油化工"
+  },
+  {
+    "block_code": "881016.SH",
+    "block_name": "日用化工"
+  },
+  {
+    "block_code": "881019.SH",
+    "block_name": "化纤"
+  },
+  {
+    "block_code": "881026.SH",
+    "block_name": "化学原料"
+  },
+  {
+    "block_code": "881034.SH",
+    "block_name": "化学制品"
+  },
+  {
+    "block_code": "881044.SH",
+    "block_name": "塑料"
+  },
+  {
+    "block_code": "881051.SH",
+    "block_name": "橡胶"
+  },
+  {
+    "block_code": "881055.SH",
+    "block_name": "农用化工"
+  },
+  {
+    "block_code": "881062.SH",
+    "block_name": "冶钢原料"
+  },
+  {
+    "block_code": "881065.SH",
+    "block_name": "普钢"
+  },
+  {
+    "block_code": "881069.SH",
+    "block_name": "特钢"
+  },
+  {
+    "block_code": "881071.SH",
+    "block_name": "工业金属"
+  },
+  {
+    "block_code": "881075.SH",
+    "block_name": "贵金属"
+  },
+  {
+    "block_code": "881078.SH",
+    "block_name": "能源金属"
+  },
+  {
+    "block_code": "881082.SH",
+    "block_name": "稀有金属"
+  },
+  {
+    "block_code": "881087.SH",
+    "block_name": "金属新材料"
+  },
+  {
+    "block_code": "881091.SH",
+    "block_name": "水泥"
+  },
+  {
+    "block_code": "881094.SH",
+    "block_name": "玻璃玻纤"
+  },
+  {
+    "block_code": "881097.SH",
+    "block_name": "装饰建材"
+  },
+  {
+    "block_code": "881104.SH",
+    "block_name": "非金属材料"
+  },
+  {
+    "block_code": "881106.SH",
+    "block_name": "种植业"
+  },
+  {
+    "block_code": "881111.SH",
+    "block_name": "养殖业"
+  },
+  {
+    "block_code": "881115.SH",
+    "block_name": "林业"
+  },
+  {
+    "block_code": "881116.SH",
+    "block_name": "渔业"
+  },
+  {
+    "block_code": "881119.SH",
+    "block_name": "饲料"
+  },
+  {
+    "block_code": "881123.SH",
+    "block_name": "农产品加工"
+  },
+  {
+    "block_code": "881127.SH",
+    "block_name": "动物保健"
+  },
+  {
+    "block_code": "881130.SH",
+    "block_name": "酿酒"
+  },
+  {
+    "block_code": "881136.SH",
+    "block_name": "饮料乳品"
+  },
+  {
+    "block_code": "881139.SH",
+    "block_name": "调味品"
+  },
+  {
+    "block_code": "881140.SH",
+    "block_name": "休闲食品"
+  },
+  {
+    "block_code": "881144.SH",
+    "block_name": "食品加工"
+  },
+  {
+    "block_code": "881151.SH",
+    "block_name": "纺织制造"
+  },
+  {
+    "block_code": "881157.SH",
+    "block_name": "服装家纺"
+  },
+  {
+    "block_code": "881162.SH",
+    "block_name": "饰品"
+  },
+  {
+    "block_code": "881167.SH",
+    "block_name": "造纸"
+  },
+  {
+    "block_code": "881171.SH",
+    "block_name": "包装印刷"
+  },
+  {
+    "block_code": "881177.SH",
+    "block_name": "家居用品"
+  },
+  {
+    "block_code": "881180.SH",
+    "block_name": "文娱用品"
+  },
+  {
+    "block_code": "881184.SH",
+    "block_name": "白色家电"
+  },
+  {
+    "block_code": "881187.SH",
+    "block_name": "黑色家电"
+  },
+  {
+    "block_code": "881190.SH",
+    "block_name": "小家电"
+  },
+  {
+    "block_code": "881194.SH",
+    "block_name": "厨卫电器"
+  },
+  {
+    "block_code": "881198.SH",
+    "block_name": "家电零部件"
+  },
+  {
+    "block_code": "881200.SH",
+    "block_name": "一般零售"
+  },
+  {
+    "block_code": "881204.SH",
+    "block_name": "商业物业经营"
+  },
+  {
+    "block_code": "881205.SH",
+    "block_name": "专业连锁"
+  },
+  {
+    "block_code": "881206.SH",
+    "block_name": "贸易"
+  },
+  {
+    "block_code": "881207.SH",
+    "block_name": "电子商务"
+  },
+  {
+    "block_code": "881212.SH",
+    "block_name": "乘用车"
+  },
+  {
+    "block_code": "881215.SH",
+    "block_name": "商用车"
+  },
+  {
+    "block_code": "881218.SH",
+    "block_name": "汽车零部件"
+  },
+  {
+    "block_code": "881224.SH",
+    "block_name": "汽车服务"
+  },
+  {
+    "block_code": "881227.SH",
+    "block_name": "摩托车及其他"
+  },
+  {
+    "block_code": "881231.SH",
+    "block_name": "化学制药"
+  },
+  {
+    "block_code": "881234.SH",
+    "block_name": "生物制品"
+  },
+  {
+    "block_code": "881241.SH",
+    "block_name": "医疗器械"
+  },
+  {
+    "block_code": "881247.SH",
+    "block_name": "医疗服务"
+  },
+  {
+    "block_code": "881252.SH",
+    "block_name": "医药商业"
+  },
+  {
+    "block_code": "881256.SH",
+    "block_name": "中药"
+  },
+  {
+    "block_code": "881257.SH",
+    "block_name": "医疗美容"
+  },
+  {
+    "block_code": "881261.SH",
+    "block_name": "电机制造"
+  },
+  {
+    "block_code": "881262.SH",
+    "block_name": "电池"
+  },
+  {
+    "block_code": "881268.SH",
+    "block_name": "电网设备"
+  },
+  {
+    "block_code": "881275.SH",
+    "block_name": "光伏设备"
+  },
+  {
+    "block_code": "881282.SH",
+    "block_name": "风电设备"
+  },
+  {
+    "block_code": "881285.SH",
+    "block_name": "其他发电设备"
+  },
+  {
+    "block_code": "881287.SH",
+    "block_name": "地面兵装"
+  },
+  {
+    "block_code": "881288.SH",
+    "block_name": "航空装备"
+  },
+  {
+    "block_code": "881289.SH",
+    "block_name": "航天装备"
+  },
+  {
+    "block_code": "881290.SH",
+    "block_name": "航海装备"
+  },
+  {
+    "block_code": "881291.SH",
+    "block_name": "军工电子"
+  },
+  {
+    "block_code": "881293.SH",
+    "block_name": "轨交设备"
+  },
+  {
+    "block_code": "881294.SH",
+    "block_name": "通用设备"
+  },
+  {
+    "block_code": "881303.SH",
+    "block_name": "专用设备"
+  },
+  {
+    "block_code": "881310.SH",
+    "block_name": "工程机械"
+  },
+  {
+    "block_code": "881313.SH",
+    "block_name": "自动化设备"
+  },
+  {
+    "block_code": "881319.SH",
+    "block_name": "半导体"
+  },
+  {
+    "block_code": "881326.SH",
+    "block_name": "消费电子"
+  },
+  {
+    "block_code": "881329.SH",
+    "block_name": "光学光电"
+  },
+  {
+    "block_code": "881333.SH",
+    "block_name": "元器件"
+  },
+  {
+    "block_code": "881336.SH",
+    "block_name": "其他电子"
+  },
+  {
+    "block_code": "881338.SH",
+    "block_name": "通信设备"
+  },
+  {
+    "block_code": "881344.SH",
+    "block_name": "电信服务"
+  },
+  {
+    "block_code": "881347.SH",
+    "block_name": "通信工程"
+  },
+  {
+    "block_code": "881352.SH",
+    "block_name": "IT设备"
+  },
+  {
+    "block_code": "881355.SH",
+    "block_name": "软件服务"
+  },
+  {
+    "block_code": "881359.SH",
+    "block_name": "云服务"
+  },
+  {
+    "block_code": "881364.SH",
+    "block_name": "产业互联网"
+  },
+  {
+    "block_code": "881369.SH",
+    "block_name": "游戏"
+  },
+  {
+    "block_code": "881370.SH",
+    "block_name": "广告营销"
+  },
+  {
+    "block_code": "881373.SH",
+    "block_name": "影视院线"
+  },
+  {
+    "block_code": "881376.SH",
+    "block_name": "数字媒体"
+  },
+  {
+    "block_code": "881380.SH",
+    "block_name": "出版业"
+  },
+  {
+    "block_code": "881384.SH",
+    "block_name": "广播电视"
+  },
+  {
+    "block_code": "881386.SH",
+    "block_name": "全国性银行"
+  },
+  {
+    "block_code": "881389.SH",
+    "block_name": "地方性银行"
+  },
+  {
+    "block_code": "881394.SH",
+    "block_name": "证券"
+  },
+  {
+    "block_code": "881395.SH",
+    "block_name": "保险"
+  },
+  {
+    "block_code": "881396.SH",
+    "block_name": "多元金融"
+  },
+  {
+    "block_code": "881406.SH",
+    "block_name": "房屋建设"
+  },
+  {
+    "block_code": "881407.SH",
+    "block_name": "基础建设"
+  },
+  {
+    "block_code": "881410.SH",
+    "block_name": "专业工程"
+  },
+  {
+    "block_code": "881415.SH",
+    "block_name": "工程咨询服务"
+  },
+  {
+    "block_code": "881416.SH",
+    "block_name": "装修装饰"
+  },
+  {
+    "block_code": "881418.SH",
+    "block_name": "房地产开发"
+  },
+  {
+    "block_code": "881422.SH",
+    "block_name": "房产服务"
+  },
+  {
+    "block_code": "881427.SH",
+    "block_name": "体育"
+  },
+  {
+    "block_code": "881428.SH",
+    "block_name": "教育培训"
+  },
+  {
+    "block_code": "881429.SH",
+    "block_name": "酒店餐饮"
+  },
+  {
+    "block_code": "881432.SH",
+    "block_name": "旅游"
+  },
+  {
+    "block_code": "881436.SH",
+    "block_name": "专业服务"
+  },
+  {
+    "block_code": "881442.SH",
+    "block_name": "公路铁路"
+  },
+  {
+    "block_code": "881446.SH",
+    "block_name": "航空机场"
+  },
+  {
+    "block_code": "881449.SH",
+    "block_name": "航运港口"
+  },
+  {
+    "block_code": "881452.SH",
+    "block_name": "物流"
+  },
+  {
+    "block_code": "881459.SH",
+    "block_name": "电力"
+  },
+  {
+    "block_code": "881467.SH",
+    "block_name": "燃气"
+  },
+  {
+    "block_code": "881468.SH",
+    "block_name": "水务"
+  },
+  {
+    "block_code": "881470.SH",
+    "block_name": "环保设备"
+  },
+  {
+    "block_code": "881471.SH",
+    "block_name": "环境治理"
+  },
+  {
+    "block_code": "881476.SH",
+    "block_name": "环境监测"
+  },
+  {
+    "block_code": "881478.SH",
+    "block_name": "综合类"
+  },
+  {
+    "block_code": "881479.SH",
+    "block_name": "电子化学品"
+  }
+]
