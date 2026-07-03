@@ -53,6 +53,11 @@ class StrategyContext:
     # 持仓
     positions: List[dict] = field(default_factory=list)
 
+    # 大盘情绪 (k3_sentiment 写入, p17/p18 + buy 门控消费)
+    sentiment: Optional[dict] = None
+    emotion_rating: Optional[int] = None       # 0-4 (冰点/低迷/中性/活跃/过热)
+    divergence_signals: Optional[list] = None
+
     def get_stock_data(self, code) -> dict:
         """按 code 查个股全部数据"""
         result = {'code': code}

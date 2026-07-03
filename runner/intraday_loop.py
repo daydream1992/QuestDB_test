@@ -11,9 +11,9 @@
   4. c4_kline: 1m K 线 (60s/轮, 每 6 轮跑 1 次)
   5. k1_indicators: 算指标 (10s)
   6. k2_signals: 原子信号 (10s)
-  7. 构建 StrategyContext
+  7. 构建 StrategyContext + k3_sentiment 大盘情绪
   8. 遍历 StrategyRegistry.get_all() → evaluate(ctx) → decisions
-  9. 风控过滤 (risk.can_open)
+  9. 风控过滤 (risk.can_open) + 情绪门控 (大盘冰点/低迷拦截 buy)
   10. 写 qd_decisions + 飞书推送
   11. 60s/轮: 板块资金流 + 共振分析
 """
@@ -43,6 +43,7 @@ import collect.c3_more_info as c3  # noqa: E402
 import collect.c4_kline as c4  # noqa: E402
 import compute.k1_indicators as k1  # noqa: E402
 import compute.k2_signals as k2  # noqa: E402
+import compute.k3_sentiment as k3  # noqa: E402
 
 from strategy.registry import StrategyRegistry  # noqa: E402
 from strategy.context import StrategyContext  # noqa: E402
@@ -73,6 +74,9 @@ _RESONANCE_COLS = ['code', 'resonance_time', 'sector_resonance', 'index_resonanc
 # qd_sector_flow 列顺序 (与 DDL 08_flow.sql 一致)
 _SECTOR_FLOW_COLS = ['code', 'flow_time', 'main_net', 'big_net', 'mid_net',
                      'small_net', 'dark_money', 'light_money', 'total_flow', 'net_pct']
+
+# 情绪门控: emotion_order <= 此值时拦截 buy (0冰点/1低迷)
+EMOTION_BLOCK_BUY_ORDER = 1
 
 
 def _safe_float(v, default=0.0):
@@ -209,24 +213,31 @@ def _build_context(con, graph):
     return ctx
 
 
-def _process_decisions(con, decisions, risk):
-    """风控过滤 + 写 qd_decisions + 飞书推送
+def _process_decisions(con, decisions, risk, ctx=None):
+    """风控过滤 + 情绪门控 + 写 qd_decisions + 飞书推送
 
     Args:
         con: psycopg2 连接
         decisions: list[Decision]
         risk: RiskManager
+        ctx: StrategyContext (用于情绪门控; None 则不门控)
     """
     if not decisions:
         return
     now = datetime.now()
+    emotion = getattr(ctx, 'emotion_rating', None) if ctx else None
     rows = []
     for d in decisions:
-        # 风控: buy 需校验仓位上限
-        if d.action == 'buy' and not risk.can_open(d.position_pct):
-            logger.info('风控拦截 buy {} {} (仓位 {}%)',
-                        d.code, d.strategy, d.position_pct)
-            continue
+        # buy: 情绪门控 (大盘冰点/低迷) + 仓位风控
+        if d.action == 'buy':
+            if emotion is not None and emotion <= EMOTION_BLOCK_BUY_ORDER:
+                logger.info('情绪门控拦截 buy {} {} (大盘冰点/低迷 order={})',
+                            d.code, d.strategy, emotion)
+                continue
+            if not risk.can_open(d.position_pct):
+                logger.info('风控拦截 buy {} {} (仓位 {}%)',
+                            d.code, d.strategy, d.position_pct)
+                continue
         reason = d.reason
         if d.score:
             reason = '{} [评分{:.0f}]'.format(reason, d.score)
@@ -404,7 +415,7 @@ def run(con=None):
             except Exception as e:
                 logger.error('c3 失败: {}', e)
 
-            # === 60s 任务: K 线 → 指标 → 信号 → 策略 ===
+            # === 60s 任务: K 线 → 指标 → 信号 → 情绪 → 策略 ===
             # k4→k1→k2 必须按顺序执行, 因为 k2 依赖 k1 产出 qd_signals
             # 策略 ctx 也在此块构建, 依赖 k2 的 qd_signals
             if round_idx % kline_every == 0:
@@ -433,6 +444,14 @@ def run(con=None):
                         logger.warning('字段护栏: {} 处 required_fields 缺失 (见上文 error 日志)',
                                        len(missing))
                     fields_checked = True
+                # k3 大盘情绪 (挂 ctx.sentiment 供 p17/p18 + buy 门控; 必须在遍历策略前)
+                try:
+                    snt = k3.run(con, ctx)
+                    ctx.sentiment = snt
+                    ctx.emotion_rating = snt.get('emotion_order')
+                    ctx.divergence_signals = snt.get('divergences')
+                except Exception as e:
+                    logger.error('k3 情绪失败: {}', e)
                 # 遍历策略
                 decisions = []
                 for name, cls in StrategyRegistry.get_all().items():
@@ -444,8 +463,8 @@ def run(con=None):
                         logger.error('策略 {} 评估失败: {}', name, e)
                 if decisions:
                     logger.info('策略产出 {} 条决策', len(decisions))
-                # 风控 + 飞书推送
-                _process_decisions(con, decisions, risk)
+                # 风控 + 情绪门控 + 飞书推送
+                _process_decisions(con, decisions, risk, ctx)
                 # 板块资金流 → 共振（共振依赖 sector_flow_df，必须先写流再读流）
                 _run_sector_flow(con, ctx)
                 _run_resonance(con, ctx)

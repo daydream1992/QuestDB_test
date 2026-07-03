@@ -41,6 +41,7 @@ DDL_FILES = [
     '10_auction.sql',
     '11_big_order.sql',
     '12_lhb.sql',
+    '13_sentiment.sql',
 ]
 
 def main():

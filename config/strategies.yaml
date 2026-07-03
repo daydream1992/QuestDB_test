@@ -60,6 +60,14 @@ strategies:
     enabled: true
     name: 止盈退出
 
+  # === 大盘情绪 (k3_sentiment) ===
+  market_emotion:
+    enabled: true
+    name: 大盘情绪
+  turn_alert:
+    enabled: true
+    name: 变盘预警
+
 # === 风控参数 ===
 risk:
   max_total_position: 80      # 最大总仓位 %
