@@ -67,9 +67,11 @@
    - intraday_loop 60s 块调它写 qd_money_flow；**p08 required_fields 对齐**（p08 现要 dark_money/buy_pressure/sell_pressure，calc_batch 输出已对齐 dark_money/buy_pressure/sell_pressure/pressure_diff_5level/net_flow/main_net 全部 6 列可用）
    - **本会话验证**（2026-07-03 22:56，QuestDB 重启后）：手动跑 `_run_money_flow` 等价逻辑 → **5533 行写入 qd_money_flow**；p08 evaluate 跑通，required_fields 0 缺失
    - 已知 caveat：Zjl 全 NaN（c2 c3@T+1s 配对时 intraday 字段无来源）→ main_net=0、dark_money=0、p08 全过滤；等盘中真实数据落库后，p08 自然出 watch
-2. **big_order → qd_big_order**（复活 p12）
-   - [big_order.py:100](strategy/big_order.py#L100) `detect_batch(code, frames, mi)` 是**单只多帧**，全场需循环 per code
-   - p12 required_fields(order_type/order_level) 对齐 detect 输出(level/direction)
+2. ✅ **big_order → qd_big_order**（复活 p12）
+   - [big_order.py:100](strategy/big_order.py#L100) `detect_batch(code, frames, mi)` 是**单只多帧**，全场 per code 循环
+   - p12 required_fields(order_type/order_level) 对齐 detect 输出(level/direction) — p12 `_is_huge_buy` 已兼容两种 schema
+   - **本会话已接通**（commit `4fe8b2b`）：intraday_loop 60s 块 `_run_big_order` 在 `_run_money_flow` 之前调用
+   - 验证 (2026-07-03 23:03)：95156 行快照扫描，链路跑通；detect_batch DEBUG 触发（002384/300308/603986 各 1 事件），实际 0 达 100 万阈值——采样间隔 60s + 阈值的固有张力，等盘中真实活跃股数据
 3. **sector_flow.detect_rotation → ctx.rotation_signal**（p05 部分）
    - [sector_flow.py:85](strategy/sector_flow.py#L85) 需 sector_flow_history（≥2 期），intraday_loop 累积
 4. **positions**（p05/p15/p16）：建 qd_positions 持仓表 + 持仓源（外部券商/手动）—— **需用户定持仓来源**
