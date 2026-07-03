@@ -47,6 +47,7 @@ import compute.k3_sentiment as k3  # noqa: E402
 import compute.k5_kline_synth as k5  # noqa: E402
 import strategy.intraday_engine as intraday_engine  # noqa: E402
 from strategy import dark_money  # noqa: E402
+from strategy import big_order  # noqa: E402
 
 from strategy.registry import StrategyRegistry  # noqa: E402
 from strategy.context import StrategyContext  # noqa: E402
@@ -82,6 +83,10 @@ _SECTOR_FLOW_COLS = ['code', 'flow_time', 'main_net', 'big_net', 'mid_net',
 _MONEY_FLOW_COLS = ['code', 'flow_time', 'main_net', 'big_order_diff',
                     'dark_money', 'light_money', 'pressure_diff_5level',
                     'buy_pressure', 'sell_pressure', 'net_flow']
+
+# qd_big_order 列顺序 (与 DDL 11_big_order.sql 一致)
+_BIG_ORDER_COLS = ['code', 'order_time', 'order_type', 'price', 'volume',
+                   'amount', 'order_level', 'broker']
 
 # 情绪门控: emotion_order <= 此值时拦截 buy (0冰点/1低迷)
 EMOTION_BLOCK_BUY_ORDER = 1
@@ -343,6 +348,65 @@ def _run_sector_flow(con, ctx):
         logger.warning('板块资金流失败: {}', e)
 
 
+def _run_big_order(con, ctx):
+    """大单检测 → qd_big_order (60s/轮), 刷新 ctx.big_order_df 供 p12 当轮读取
+
+    输入: ctx.snapshot_focus_df (qd_stock_snapshot: c2 Amount/Now + c3 intraday Zjl)
+    C8 应对: 同 _run_money_flow, intraday 字段 bfill+ffill 同轮回填到 c2 行, 再过滤 NowVol 非空。
+    DDL 对齐: detect 输出 direction/level → order_type/order_level; neutral 方向不写 (DDL 仅 buy/sell);
+              volume = amount / price 估算 (detect 不直出); broker=None (无 L2 数据源)。
+    """
+    snap = ctx.snapshot_focus_df
+    if snap is None or snap.empty:
+        return
+    try:
+        df = snap.copy()
+        df = df.sort_values(['code', 'snapshot_time'])
+        # C8: c2@T 与同轮 c3@T+1s 配对 → intraday 字段 bfill+ffill 同轮回填
+        for c in ('Zjl', 'Zjl_HB', 'FCAmo', 'FCb', 'Wtb'):
+            if c in df.columns:
+                df[c] = df.groupby('code')[c].bfill().ffill()
+        # 只留 c2 行 (Amount 必填), 保证 amount_diff 差分有意义
+        if 'Amount' in df.columns:
+            df = df[df['Amount'].notna()]
+        if df.empty:
+            return
+        # 按 code 分组 → 每组按 snapshot_time 排序 → 相邻帧 detect
+        events = []
+        for code, g in df.groupby('code', sort=False):
+            frames = g.to_dict('records')
+            evs = big_order.detect_batch(code, frames)
+            for ev in evs:
+                direction = ev.get('direction')
+                if direction not in ('buy', 'sell'):
+                    continue  # neutral 跳过 (DDL 仅 buy/sell)
+                price = _safe_float(ev.get('price'))
+                amount_diff = _safe_float(ev.get('amount_diff'))
+                volume = int(round(amount_diff / price)) if price > 0 else 0
+                events.append({
+                    'code': code,
+                    'order_time': ev.get('time'),
+                    'order_type': direction,
+                    'price': price,
+                    'volume': volume,
+                    'amount': amount_diff,
+                    'order_level': ev.get('level'),
+                    'broker': None,
+                })
+        if not events:
+            return
+        rows = [(e['code'], e['order_time'], e['order_type'], e['price'],
+                 e['volume'], e['amount'], e['order_level'], e['broker'])
+                for e in events]
+        executemany_batch(con, 'qd_big_order', _BIG_ORDER_COLS, rows)
+        # 刷新 ctx.big_order_df 供 p12 当轮 + H1 首轮校验
+        import pandas as _pd
+        ctx.big_order_df = _pd.DataFrame(rows, columns=_BIG_ORDER_COLS)
+        logger.info('写入 qd_big_order: {} 行', len(rows))
+    except Exception as e:
+        logger.warning('大单检测失败: {}', e)
+
+
 def _run_money_flow(con, ctx):
     """个股明暗资金 → qd_money_flow (60s/轮), 并刷新 ctx.money_flow_df 供 p08/p12 当轮读取
 
@@ -502,6 +566,8 @@ def run(con=None):
                     logger.error('k2 失败: {}', e)
                 # 构建 ctx (依赖 qd_signals 已有数据)
                 ctx = _build_context(con, graph)
+                # 大单检测 → qd_big_order + 刷新 ctx.big_order_df (须在策略遍历前, 供 p12)
+                _run_big_order(con, ctx)
                 # 个股明暗资金 → qd_money_flow + 刷新 ctx.money_flow_df (须在策略遍历前, 供 p08/p12)
                 _run_money_flow(con, ctx)
                 # H1 护栏: 首轮校验策略 required_fields 是否在 ctx 列中 (一次性, 暴露字段错配)
