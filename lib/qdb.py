@@ -9,14 +9,18 @@
   - QuestDB PG 协议占位符用 %s (? 会报错)
   - autocommit=True, 避免跨连接 read-after-write 延迟
   - QuestDB 9.4.3 不支持 DELETE FROM, 用 DEDUP UPSERT KEYS 幂等
+  - H5: connect 加 libpq TCP keepalives (Linux/macOS 有效, Windows 仅 PG 客户端 ≥16 支持),
+    提供 _ensure_alive(con) 工具在 query/写前 ping + OperationalError 重连一次
 """
 
 import os
 from datetime import datetime, timedelta
 
 import psycopg2
+from psycopg2 import OperationalError
 import pandas as pd
 from dotenv import load_dotenv
+from loguru import logger
 
 
 def cutoff(seconds=0, minutes=0, hours=0, days=0):
@@ -42,11 +46,17 @@ QDB_DBNAME = os.getenv('QDB_DBNAME', 'qdb')
 
 
 def connect():
-    """返回 autocommit=True 的 psycopg2 连接
+    """返回 autocommit=True 的 psycopg2 连接 (H5: TCP keepalives 防静默断)
 
     QuestDB PG 协议:
       - 占位符用 %s (? 会报错)
       - autocommit=True 避免跨连接 read-after-write 延迟
+      - keepalives_idle/interval/count: libpq 参数, 30s 空闲后发 keepalive,
+        每 10s 重试, 共 3 次失败视为断 (≈60s 检测到断连)
+        Linux/macOS 有效; Windows 仅当 PG 客户端 ≥16 才生效, 否则静默忽略
+
+    Returns:
+        psycopg2.connection: autocommit=True, 带 keepalives (平台支持时)
     """
     con = psycopg2.connect(
         host=QDB_HOST,
@@ -54,13 +64,52 @@ def connect():
         user=QDB_USER,
         password=QDB_PASSWORD,
         dbname=QDB_DBNAME,
+        # H5: TCP keepalive (libpq); Windows 上如驱动不支持会被 libpq 静默忽略
+        keepalives=1,
+        keepalives_idle=30,
+        keepalives_interval=10,
+        keepalives_count=3,
     )
     con.autocommit = True
     return con
 
 
+def _ensure_alive(con, max_retry=1):
+    """H5: ping 连接, OperationalError 时自动重连一次返回新连接
+
+    用 SELECT 1 而非 con.closed (closed 只反映 close() 调用, 不断网);
+    OperationalError 是 psycopg2 网络断的标准异常 (PG 客户端编码层)。
+
+    Args:
+        con: 旧连接
+        max_retry: 重试次数, 默认 1 (再断就让上层抛)
+
+    Returns:
+        psycopg2.connection: 健康连接 (可能 == 原 con, 也可能 == 新 con)
+    """
+    if con is None:
+        return connect()
+    try:
+        cur = con.cursor()
+        try:
+            cur.execute('SELECT 1')
+            cur.fetchone()
+        finally:
+            cur.close()
+        return con
+    except OperationalError as e:
+        if max_retry <= 0:
+            raise
+        logger.warning('QuestDB 连接失效, 自动重连: {}', e)
+        try:
+            con.close()
+        except Exception:
+            pass
+        return connect()
+
+
 def executemany_batch(con, table, columns, rows, batch_size=500):
-    """批量写入 QuestDB
+    """批量写入 QuestDB (H5: OperationalError 自动重连一次重试)
 
     用 psycopg2 executemany 分批写入, 每 batch_size 行一批。
     占位符用 %s (QuestDB PG 协议要求)。
@@ -81,6 +130,16 @@ def executemany_batch(con, table, columns, rows, batch_size=500):
     placeholders = ', '.join(['%s'] * len(columns))
     sql = 'INSERT INTO {table} ({cols}) VALUES ({ph})'.format(
         table=table, cols=cols, ph=placeholders)
+    # H5: 重连后重试一次 (DEDUP UPSERT 幂等, 重写无副作用)
+    try:
+        return _exec_with_reconnect(con, lambda c: _do_executemany(c, sql, rows, batch_size))
+    except Exception as e:
+        logger.warning('executemany_batch 失败 {}.{}: {}', table, len(rows), e)
+        raise
+
+
+def _do_executemany(con, sql, rows, batch_size):
+    """executemany_batch 实际执行 (分离出来便于 _ensure_alive 重试)"""
     cur = con.cursor()
     total = 0
     try:
@@ -93,19 +152,32 @@ def executemany_batch(con, table, columns, rows, batch_size=500):
     return total
 
 
+def _exec_with_reconnect(con, fn, max_retry=1):
+    """H5: 调 fn(con), OperationalError 时 _ensure_alive 后重试一次"""
+    try:
+        return fn(con)
+    except OperationalError:
+        if max_retry <= 0:
+            raise
+        new_con = _ensure_alive(con, max_retry=max_retry - 1)
+        return fn(new_con)
+
+
 def query_df(con, sql, params=None):
-    """执行查询, 返回 pandas DataFrame
+    """执行查询, 返回 pandas DataFrame (H5: OperationalError 自动重连一次重试)
 
     Args:
         con: psycopg2 连接
         sql: SQL 语句 (占位符用 %s)
         params: 参数 (tuple/list/dict)
     """
-    return pd.read_sql_query(sql, con, params=params)
+    def _do(c):
+        return pd.read_sql_query(sql, c, params=params)
+    return _exec_with_reconnect(con, _do)
 
 
 def query_one(con, sql, params=None):
-    """执行查询, 返回单行 (dict) 或 None
+    """执行查询, 返回单行 (dict) 或 None (H5: OperationalError 自动重连一次重试)
 
     Args:
         con: psycopg2 连接
@@ -115,13 +187,15 @@ def query_one(con, sql, params=None):
     Returns:
         dict: 列名 → 值; 无结果返回 None
     """
-    cur = con.cursor()
-    try:
-        cur.execute(sql, params or ())
-        row = cur.fetchone()
-        if row is None:
-            return None
-        cols = [desc[0] for desc in cur.description]
-        return dict(zip(cols, row))
-    finally:
-        cur.close()
+    def _do(c):
+        cur = c.cursor()
+        try:
+            cur.execute(sql, params or ())
+            row = cur.fetchone()
+            if row is None:
+                return None
+            cols = [desc[0] for desc in cur.description]
+            return dict(zip(cols, row))
+        finally:
+            cur.close()
+    return _exec_with_reconnect(con, _do)
