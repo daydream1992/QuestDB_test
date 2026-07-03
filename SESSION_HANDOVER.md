@@ -72,8 +72,12 @@
    - p12 required_fields(order_type/order_level) 对齐 detect 输出(level/direction) — p12 `_is_huge_buy` 已兼容两种 schema
    - **本会话已接通**（commit `4fe8b2b`）：intraday_loop 60s 块 `_run_big_order` 在 `_run_money_flow` 之前调用
    - 验证 (2026-07-03 23:03)：95156 行快照扫描，链路跑通；detect_batch DEBUG 触发（002384/300308/603986 各 1 事件），实际 0 达 100 万阈值——采样间隔 60s + 阈值的固有张力，等盘中真实活跃股数据
-3. **sector_flow.detect_rotation → ctx.rotation_signal**（p05 部分）
+3. ✅ **sector_flow.detect_rotation → ctx.rotation_signal**（p05 部分）
    - [sector_flow.py:85](strategy/sector_flow.py#L85) 需 sector_flow_history（≥2 期），intraday_loop 累积
+   - **本会话已接通**（commit `4d5fb52`）：模块级 `_SECTOR_FLOW_HISTORY` 维护每板块最近 5 期，每 60s 块调 `_run_rotation` → `ctx.rotation_signal`
+   - 时序：`_run_sector_flow` 前移到策略遍历前（产 agg dict 喂 `_run_rotation` → p05 当轮读 ctx.rotation_signal）
+   - 验证 (2026-07-03 23:23)：模拟 3 期 inflow_accelerate → inflow_accelerate 链路跑通；真实 qd_sector_flow 1 期（历史不足，盘中累积后自然出信号）
+   - 已知 caveat：rotation_signal 是 ctx attribute 不是 df column，H1 跨 df 校验会一直报 missing（已知盲区，p05 自带 insufficient 兜底，不阻断）
 4. **positions**（p05/p15/p16）：建 qd_positions 持仓表 + 持仓源（外部券商/手动）—— **需用户定持仓来源**
 5. **lhb_analyzer.analyze**（p13/p14）：daily_close 调 → ctx.lhb_data（龙虎榜 T+1，盘后才出）
 
