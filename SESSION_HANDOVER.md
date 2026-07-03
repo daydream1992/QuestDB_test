@@ -84,7 +84,10 @@
 ### 调度推送层
 
 - **H3** [intraday_loop.py](runner/intraday_loop.py) `_process_decisions`：扩展 watch 推送（让 p17/p18 提示触达飞书，配 [notify_dedup.py](lib/notify_dedup.py) 频控）
-- **H5** [qdb.py](lib/qdb.py) `connect`：加 keepalive + OperationalError 重连（断连不空转）
+- **H5** [lib/qdb.py](lib/qdb.py) `connect`：加 keepalive + OperationalError 重连（断连不空转） ✅ **已修**（commit `d8ea329`）
+  - libpq keepalives_idle=30/interval=10/count=3 + SQL 层 `_ensure_alive` ping 兜底
+  - `_exec_with_reconnect` 包 query_df/executemany_batch/query_one，OperationalError 自动重试 1 次（DEDUP UPSERT 幂等，SELECT 重读新数据 → 安全）
+  - **Windows caveat**：当前 psycopg2 驱动不暴露 keepalive 参数给 Python 层（需 PG 客户端 ≥16）；靠 SQL ping 兜底才是核心防线
 - **H6** [market_clock.py](lib/market_clock.py)：加 HOLIDAYS set + FORCE_TRADE_DAY 开关（假日数据接 akshare `tool_trade_date_hist_sina`）
 - ~~**全局时区**（之前发现的时区错位 bug）~~ ✅ **已修**（commit `0c06eb1`），见顶部"已修复陷阱"
 - ✅ **H8 缺 pyyaml** 已加（requirements）
