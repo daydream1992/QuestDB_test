@@ -62,9 +62,11 @@
 
 函数都已实现，**只是没接入 loop**：
 
-1. **dark_money → qd_money_flow**（复活 p08）
+1. ✅ **dark_money → qd_money_flow**（复活 p08）
    - [dark_money.py:117](strategy/dark_money.py#L117) `calc_batch(df_snapshot, df_more_info) → DataFrame`
-   - intraday_loop 60s 块调它写 qd_money_flow；**p08 required_fields 对齐**（p08 现要 dark_money/buy_pressure/sell_pressure，calc_batch 输出 total_flow/pressure_diff/label，需改 p08 或 calc_batch 列名）
+   - intraday_loop 60s 块调它写 qd_money_flow；**p08 required_fields 对齐**（p08 现要 dark_money/buy_pressure/sell_pressure，calc_batch 输出已对齐 dark_money/buy_pressure/sell_pressure/pressure_diff_5level/net_flow/main_net 全部 6 列可用）
+   - **本会话验证**（2026-07-03 22:56，QuestDB 重启后）：手动跑 `_run_money_flow` 等价逻辑 → **5533 行写入 qd_money_flow**；p08 evaluate 跑通，required_fields 0 缺失
+   - 已知 caveat：Zjl 全 NaN（c2 c3@T+1s 配对时 intraday 字段无来源）→ main_net=0、dark_money=0、p08 全过滤；等盘中真实数据落库后，p08 自然出 watch
 2. **big_order → qd_big_order**（复活 p12）
    - [big_order.py:100](strategy/big_order.py#L100) `detect_batch(code, frames, mi)` 是**单只多帧**，全场需循环 per code
    - p12 required_fields(order_type/order_level) 对齐 detect 输出(level/direction)
