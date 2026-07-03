@@ -104,7 +104,11 @@
 - **H7** [scheduler.py](runner/scheduler.py)：finally 加 tq close + 子进程 Job Object（COM 不泄漏）
 
 ### 优化项（可选）
-- k1 增量（只算新 K线的 code）
+- k1 增量（只算新 K线的 code） ✅ **已修**（commit `7c54099`）
+  - 模块级 `_LAST_KLINE_TS` watermark + `fetch_kline(since_ts=...)` 增量路径
+  - 实测 (2026-07-04 00:38)：第 1 轮全量 14.24s；增量 0.00s（无新 K 线时）；fetch_kline 增量 0.01s
+  - 盘中节省 80%+ 计算时间（5m K 线 5 分钟一次，60s 轮每 5 轮 1 轮重算 ~200 code）
+  - **QuestDB 9.4.3 不支持 `IN (SELECT ...)` 子查询** → 改两步：先 SELECT DISTINCT code → 外层 IN 字面量
 - c2 focus 收紧
 - H1 护栏：首轮校验延后到 ctx 各 df 有数据，减误报
 
