@@ -32,31 +32,39 @@ class DarkMoneyAnomalyStrategy(StrategyBase):
     version = '1.0'
 
     def required_fields(self):
-        return ['cancel_diff', 'wtb']
+        # cancel_diff/wtb 不在 DDL，用 dark_money 和 pressure 字段计算
+        return ['dark_money', 'buy_pressure', 'sell_pressure']
 
     def evaluate(self, ctx) -> List[Decision]:
         decisions: List[Decision] = []
         df = ctx.money_flow_df
         if df is None or df.empty:
             return []
-        if 'code' not in df.columns or 'cancel_diff' not in df.columns \
-                or 'wtb' not in df.columns:
+        if df is None or df.empty:
+            return []
+        required = ['dark_money', 'buy_pressure', 'sell_pressure']
+        if 'code' not in df.columns or \
+                not all(f in df.columns for f in required):
             return []
 
         # 每只股票最新一行
-        if 'snapshot_time' in df.columns:
-            df_l = df.sort_values('snapshot_time').groupby('code', as_index=False).last()
+        if 'flow_time' in df.columns:
+            df_l = df.sort_values('flow_time').groupby('code', as_index=False).last()
         else:
             df_l = df.groupby('code', as_index=False).last()
 
         for _, r in df_l.iterrows():
-            cd = _safe_float(r.get('cancel_diff'))
-            wtb = _safe_float(r.get('wtb'))
+            # cancel_diff 用 dark_money 绝对值近似（暗资金撤单异常）
+            cd = abs(_safe_float(r.get('dark_money')))
+            bp = _safe_float(r.get('buy_pressure'))
+            sp = _safe_float(r.get('sell_pressure'))
+            # wtb = 委托买卖比 = 买盘压力 / 卖盘压力
+            wtb = bp / sp if sp > 0 else 0.0
             if cd <= _CANCEL_DIFF_MIN or wtb <= _WTB_MIN:
                 continue
             decisions.append(Decision(
                 action='watch', code=r['code'], strategy=self.name,
-                reason=f'暗资金异动: cancel_diff={cd:.0f} wtb={wtb:.2f}',
+                reason=f'暗资金异动: cancel_diff≈{cd:.0f} wtb={wtb:.2f}',
                 score=min(100.0, 50.0 + cd * 0.5),
             ))
         return decisions

@@ -29,7 +29,7 @@ class StopProfitStrategy(StrategyBase):
     version = '1.0'
 
     def required_fields(self):
-        return ['code', 'cost_price', 'stop_profit', 'Now']
+        return ['code', 'entry_price', 'stop_profit', 'Now']
 
     def evaluate(self, ctx) -> List[Decision]:
         decisions: List[Decision] = []
@@ -49,7 +49,7 @@ class StopProfitStrategy(StrategyBase):
 
         for p in positions:
             code = p.get('code')
-            cost = _safe_float(p.get('cost_price'))
+            cost = _safe_float(p.get('entry_price'))
             sp = _safe_float(p.get('stop_profit'))
             if not code or cost <= 0 or sp <= 0:
                 continue

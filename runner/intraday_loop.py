@@ -434,9 +434,9 @@ def run(con=None):
                     logger.info('策略产出 {} 条决策', len(decisions))
                 # 风控 + 飞书推送
                 _process_decisions(con, decisions, risk)
-                # 共振 + 板块资金流
-                _run_resonance(con, ctx)
+                # 板块资金流 → 共振（共振依赖 sector_flow_df，必须先写流再读流）
                 _run_sector_flow(con, ctx)
+                _run_resonance(con, ctx)
 
             # 轮次计数放在最后 (确保 k4%6 在本轮开始时正确判定)
             round_idx += 1

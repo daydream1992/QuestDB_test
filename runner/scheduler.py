@@ -154,9 +154,9 @@ def run():
     auction_proc = None
     intraday_proc = None
 
-    # 启动时检测是否有已运行的子进程 (scheduler 重启时防止重复拉起)
-    auction_proc = _attach_if_running('auction_monitor')
-    intraday_proc = _attach_if_running('intraday_loop')
+    # 启动时杀掉已运行的旧子进程，防止重复拉起
+    _attach_if_running('auction_monitor')
+    _attach_if_running('intraday_loop')
 
     try:
         while True:

@@ -47,7 +47,7 @@ class BigOrderPulseStrategy(StrategyBase):
     version = '1.0'
 
     def required_fields(self):
-        return ['order_type', 'order_level', 'Now', 'LastClose', 'zjl']
+        return ['order_type', 'order_level', 'Now', 'LastClose', 'Zjl']
 
     def evaluate(self, ctx) -> List[Decision]:
         decisions: List[Decision] = []
@@ -74,9 +74,9 @@ class BigOrderPulseStrategy(StrategyBase):
         # zjl 映射 (money_flow_df 优先, 回退 more_info.Zjl)
         zjl_map = {}
         mf = ctx.money_flow_df
-        if mf is not None and not mf.empty and 'code' in mf.columns and 'zjl' in mf.columns:
+        if mf is not None and not mf.empty and 'code' in mf.columns and 'Zjl' in mf.columns:
             for c, g in mf.groupby('code'):
-                zjl_map[c] = _safe_float(g.iloc[-1]['zjl'])
+                zjl_map[c] = _safe_float(g.iloc[-1]['Zjl'])
         else:
             mi = ctx.more_info_df
             if mi is not None and not mi.empty and 'Zjl' in mi.columns:

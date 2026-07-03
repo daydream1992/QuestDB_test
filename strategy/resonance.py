@@ -111,11 +111,11 @@ def _detect_divergence(stock_chg, sector_code, context):
     if not sector_code or context.sector_flow_df is None \
             or context.sector_flow_df.empty:
         return None
-    row = context.sector_flow_df[context.sector_flow_df['block_code'] == sector_code]
+    row = context.sector_flow_df[context.sector_flow_df['code'] == sector_code]
     if row.empty:
         return None
     try:
-        net_flow = float(row.iloc[0].get('net_flow', 0) or 0)
+        net_flow = float(row.iloc[0].get('main_net', 0) or 0)
     except (TypeError, ValueError):
         net_flow = 0.0
     if stock_chg > _DIVERGENCE_THRESHOLD and net_flow < 0:

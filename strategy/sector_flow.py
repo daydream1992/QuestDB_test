@@ -152,9 +152,9 @@ def flow_divergence(block_code, context) -> dict:
 
     net_flow = 0.0
     if context.sector_flow_df is not None and not context.sector_flow_df.empty:
-        row = context.sector_flow_df[context.sector_flow_df['block_code'] == block_code]
+        row = context.sector_flow_df[context.sector_flow_df['code'] == block_code]
         if not row.empty:
-            net_flow = _safe_float(row.iloc[0].get('net_flow'))
+            net_flow = _safe_float(row.iloc[0].get('main_net'))
 
     divergence = None
     if price_change > 1.0 and net_flow < 0:
