@@ -5175,12 +5175,13 @@
           "sample": 0.0,
           "data_status": "sparse",
           "category": "realtime",
-          "capability": "封单额(打板结实度核心)",
+          "capability": "封单额(万元); 权威涨跌停判定: FCAmo>0涨停 / <0跌停 / =0未封(可能 Now>=ZTPrice 触价但无封单=炸板风险)",
           "verify_type": "live_must",
           "provenance": "verified",
           "constraint": "仅涨停票有值; 盘后为收盘封单",
           "chinese_name": "封单额（万元）",
-          "apply_target": "stock"
+          "apply_target": "stock",
+          "authoritative_rule": true
         },
         {
           "name": "FCb",
@@ -5454,6 +5455,20 @@
       "field": "XsFlag",
       "wrong": "标志(臆测❌)",
       "right": "小数位数(权威✓)"
+    }
+  ],
+  "business_rules": [
+    {
+      "rule": "涨停跌停判定",
+      "authoritative": true,
+      "source": "用户(业务权威) + get_more_info 取 FCAmo",
+      "logic": "FCAmo > 0 → 涨停 (有买单封单); FCAmo < 0 → 跌停 (有卖单封单); FCAmo = 0 → 未封板",
+      "caveat": "Now >= ZTPrice 不等于涨停! 可能是触及涨停价但无封单(炸板/假涨停)。p01/intraday_engine 用 Now>=ZTPrice 判定, 会误选假涨停, 待修。",
+      "code_status": {
+        "compute/k3_sentiment.py::classify_stock": "✓ 一致 (FCAmo>0涨停/<0跌停/=0+Max>=ZTPrice炸板)",
+        "strategy/plugins/p01_zt_daban.py": "⚠️ 不一致 (Now>=ZTPrice*0.999, 会选入触价未封的假涨停)",
+        "strategy/intraday_engine.py::_check_limit": "⚠️ 不一致 (现价>=ZTPrice 且 Sellv1<=100手, 同问题)"
+      }
     }
   ]
 }
