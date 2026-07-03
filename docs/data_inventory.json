@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-07-04T02:37:53.573860",
+  "generated_at": "2026-07-04T02:47:22.938633",
   "note": "骨架: 真实数据统计由脚本查, 语义层(来源/能力/边界/验证状态)待补",
   "tables": {
     "qd_auction_snapshot": {
@@ -15,10 +15,7 @@
           "sample": null,
           "data_status": "empty_table",
           "category": "realtime",
-          "chinese_name": "证券代码",
-          "spec_note": "证券代码",
-          "spec_source": "获取新股申购信息 get_ipo_info",
-          "capability_authoritative": "证券代码"
+          "chinese_name": "证券代码"
         },
         {
           "name": "auction_time",
@@ -29,7 +26,8 @@
           "max": null,
           "sample": null,
           "data_status": "empty_table",
-          "category": "realtime"
+          "category": "realtime",
+          "chinese_name": "datetime.now() (竞价采集时刻)"
         },
         {
           "name": "auction_price",
@@ -40,7 +38,8 @@
           "max": null,
           "sample": null,
           "data_status": "empty_table",
-          "category": "realtime"
+          "category": "realtime",
+          "chinese_name": "竞价价格 (撮合参考价)"
         },
         {
           "name": "auction_volume",
@@ -51,7 +50,8 @@
           "max": null,
           "sample": null,
           "data_status": "empty_table",
-          "category": "realtime"
+          "category": "realtime",
+          "chinese_name": "竞价成交量"
         },
         {
           "name": "auction_amount",
@@ -65,7 +65,8 @@
           "category": "realtime",
           "capability": "竞价成交额(抢筹强度)",
           "verify_type": "live_must",
-          "provenance": "pending_intraday"
+          "provenance": "pending_intraday",
+          "chinese_name": "竞价成交额"
         },
         {
           "name": "gap_pct",
@@ -79,7 +80,8 @@
           "category": "realtime",
           "capability": "竞价缺口%(高开/低开)",
           "verify_type": "live_must",
-          "provenance": "pending_intraday"
+          "provenance": "pending_intraday",
+          "chinese_name": "缺口百分比 (相对前收盘)"
         },
         {
           "name": "auction_type",
@@ -93,7 +95,8 @@
           "category": "realtime",
           "capability": "竞价类型(open开盘/close收盘)",
           "verify_type": "live_must",
-          "provenance": "pending_intraday"
+          "provenance": "pending_intraday",
+          "chinese_name": "竞价类型 (open/close)"
         },
         {
           "name": "prev_close",
@@ -104,7 +107,8 @@
           "max": null,
           "sample": null,
           "data_status": "empty_table",
-          "category": "realtime"
+          "category": "realtime",
+          "chinese_name": "前一日收盘价 (用于计算 gap_pct)"
         }
       ],
       "category": "realtime",
@@ -124,10 +128,7 @@
           "max": null,
           "sample": null,
           "data_status": "empty_table",
-          "chinese_name": "证券代码",
-          "spec_note": "证券代码",
-          "spec_source": "获取新股申购信息 get_ipo_info",
-          "capability_authoritative": "证券代码"
+          "chinese_name": "证券代码"
         },
         {
           "name": "order_time",
@@ -137,7 +138,8 @@
           "min": null,
           "max": null,
           "sample": null,
-          "data_status": "empty_table"
+          "data_status": "empty_table",
+          "chinese_name": "大单成交时间"
         },
         {
           "name": "order_type",
@@ -151,7 +153,8 @@
           "category": "derived",
           "capability": "buy/sell 主动方向",
           "verify_type": "live_must",
-          "provenance": "pending_intraday"
+          "provenance": "pending_intraday",
+          "chinese_name": "订单类型 (buy/sell)"
         },
         {
           "name": "price",
@@ -161,7 +164,8 @@
           "min": null,
           "max": null,
           "sample": null,
-          "data_status": "empty_table"
+          "data_status": "empty_table",
+          "chinese_name": "成交价"
         },
         {
           "name": "volume",
@@ -172,10 +176,7 @@
           "max": null,
           "sample": null,
           "data_status": "empty_table",
-          "chinese_name": "成交量",
-          "spec_note": "成交量",
-          "spec_source": "获取K线行情 get_market_data",
-          "capability_authoritative": "成交量"
+          "chinese_name": "成交量 (股)"
         },
         {
           "name": "amount",
@@ -190,9 +191,7 @@
           "capability": "成交额差分",
           "verify_type": "live_must",
           "provenance": "pending_intraday",
-          "chinese_name": "成交额",
-          "spec_note": "",
-          "spec_source": "get_etf_nav"
+          "chinese_name": "成交额"
         },
         {
           "name": "order_level",
@@ -206,7 +205,8 @@
           "category": "derived",
           "capability": "big(100万)/huge(500万)/super(1000万)",
           "verify_type": "live_must",
-          "provenance": "pending_intraday"
+          "provenance": "pending_intraday",
+          "chinese_name": "大单级别 (big/huge/super, 对应大单/特大单/超大单)"
         },
         {
           "name": "broker",
@@ -216,7 +216,8 @@
           "min": null,
           "max": null,
           "sample": null,
-          "data_status": "empty_table"
+          "data_status": "empty_table",
+          "chinese_name": "所属营业部 (L2 可见时填充)"
         }
       ],
       "category": "derived",
@@ -237,10 +238,7 @@
           "sample": "000001.SZ",
           "data_status": "healthy",
           "category": "reference",
-          "chinese_name": "证券代码",
-          "spec_note": "证券代码",
-          "spec_source": "获取新股申购信息 get_ipo_info",
-          "capability_authoritative": "证券代码"
+          "chinese_name": "证券代码"
         },
         {
           "name": "tdx_code",
@@ -251,7 +249,8 @@
           "max": null,
           "sample": "0#000001",
           "data_status": "healthy",
-          "category": "reference"
+          "category": "reference",
+          "chinese_name": "通达信代码"
         },
         {
           "name": "name",
@@ -263,10 +262,7 @@
           "sample": "",
           "data_status": "healthy",
           "category": "reference",
-          "chinese_name": "证券名称",
-          "spec_note": "证券名称",
-          "spec_source": "获取新股申购信息 get_ipo_info",
-          "capability_authoritative": "证券名称"
+          "chinese_name": "证券名称"
         },
         {
           "name": "code_type",
@@ -277,7 +273,8 @@
           "max": null,
           "sample": "stock",
           "data_status": "healthy",
-          "category": "reference"
+          "category": "reference",
+          "chinese_name": "代码类型(stock/sector/index)"
         },
         {
           "name": "market",
@@ -289,9 +286,7 @@
           "sample": "SZ",
           "data_status": "healthy",
           "category": "reference",
-          "chinese_name": "所属市场",
-          "spec_note": "",
-          "spec_source": "get_security_list"
+          "chinese_name": "所属市场"
         },
         {
           "name": "first_seen",
@@ -302,7 +297,8 @@
           "max": null,
           "sample": "2026-07-03T10:51:54.588691",
           "data_status": "healthy",
-          "category": "reference"
+          "category": "reference",
+          "chinese_name": "首次发现"
         },
         {
           "name": "last_seen",
@@ -313,7 +309,8 @@
           "max": null,
           "sample": "2026-07-03T10:51:54.588691",
           "data_status": "healthy",
-          "category": "reference"
+          "category": "reference",
+          "chinese_name": "末次发现"
         },
         {
           "name": "is_active",
@@ -324,7 +321,8 @@
           "max": null,
           "sample": null,
           "data_status": "unknown",
-          "category": "reference"
+          "category": "reference",
+          "chinese_name": "是否活跃"
         },
         {
           "name": "sector_category",
@@ -335,7 +333,8 @@
           "max": null,
           "sample": null,
           "data_status": "near_empty",
-          "category": "reference"
+          "category": "reference",
+          "chinese_name": "板块类别"
         }
       ],
       "category": "reference",
@@ -353,7 +352,8 @@
           "min": null,
           "max": null,
           "sample": "2026-07-04T01:30:32.878275",
-          "data_status": "healthy"
+          "data_status": "healthy",
+          "chinese_name": "决策时间"
         },
         {
           "name": "code",
@@ -364,10 +364,7 @@
           "max": null,
           "sample": "000001.SH",
           "data_status": "healthy",
-          "chinese_name": "证券代码",
-          "spec_note": "证券代码",
-          "spec_source": "获取新股申购信息 get_ipo_info",
-          "capability_authoritative": "证券代码"
+          "chinese_name": "证券代码"
         },
         {
           "name": "strategy_name",
@@ -377,7 +374,8 @@
           "min": null,
           "max": null,
           "sample": "market_emotion",
-          "data_status": "healthy"
+          "data_status": "healthy",
+          "chinese_name": "策略标识"
         },
         {
           "name": "action",
@@ -387,7 +385,8 @@
           "min": null,
           "max": null,
           "sample": "watch",
-          "data_status": "healthy"
+          "data_status": "healthy",
+          "chinese_name": "决策动作 (buy/sell/hold/stop_loss/stop_profit)"
         },
         {
           "name": "position_size",
@@ -397,7 +396,8 @@
           "min": null,
           "max": null,
           "sample": 0.0,
-          "data_status": "healthy"
+          "data_status": "healthy",
+          "chinese_name": "建议仓位 (%)"
         },
         {
           "name": "price",
@@ -407,7 +407,8 @@
           "min": null,
           "max": null,
           "sample": 0.0,
-          "data_status": "healthy"
+          "data_status": "healthy",
+          "chinese_name": "成交价"
         },
         {
           "name": "reason",
@@ -417,7 +418,8 @@
           "min": null,
           "max": null,
           "sample": "大盘情绪低迷(冰点/低迷) 涨停160 涨跌比2.32 buy已门控, 建议观望 [评分1]",
-          "data_status": "healthy"
+          "data_status": "healthy",
+          "chinese_name": "上榜原因 (涨幅偏离/振幅/换手率等)"
         }
       ],
       "category": "derived",
@@ -437,10 +439,7 @@
           "sample": "000001.SH",
           "data_status": "healthy",
           "category": "history",
-          "chinese_name": "证券代码",
-          "spec_note": "证券代码",
-          "spec_source": "获取新股申购信息 get_ipo_info",
-          "capability_authoritative": "证券代码"
+          "chinese_name": "证券代码"
         },
         {
           "name": "date",
@@ -452,10 +451,7 @@
           "sample": "2026-07-03T00:00:00",
           "data_status": "healthy",
           "category": "history",
-          "chinese_name": "日期",
-          "spec_note": "日期",
-          "spec_source": "获取K线行情 get_market_data",
-          "capability_authoritative": "日期"
+          "chinese_name": "日期"
         },
         {
           "name": "HqDate",
@@ -467,10 +463,7 @@
           "sample": "20260703",
           "data_status": "healthy",
           "category": "history",
-          "chinese_name": "行情日期",
-          "spec_note": "行情日期",
-          "spec_source": "获取股票更多信息 get_more_info",
-          "capability_authoritative": "行情日期"
+          "chinese_name": "行情日期"
         },
         {
           "name": "ZAFYesterday",
@@ -482,10 +475,7 @@
           "sample": -2.03,
           "data_status": "healthy",
           "category": "history",
-          "chinese_name": "昨日涨幅",
-          "spec_note": "昨日涨幅",
-          "spec_source": "获取股票更多信息 get_more_info",
-          "capability_authoritative": "昨日涨幅"
+          "chinese_name": "昨日涨幅"
         },
         {
           "name": "ZAFPre5",
@@ -497,10 +487,7 @@
           "sample": 0.41,
           "data_status": "healthy",
           "category": "history",
-          "chinese_name": "5 日涨幅",
-          "spec_note": "5 日涨幅",
-          "spec_source": "获取股票更多信息 get_more_info",
-          "capability_authoritative": "5 日涨幅"
+          "chinese_name": "5 日涨幅"
         },
         {
           "name": "ZAFPre10",
@@ -512,10 +499,7 @@
           "sample": -1.15,
           "data_status": "healthy",
           "category": "history",
-          "chinese_name": "10 日涨幅",
-          "spec_note": "10 日涨幅",
-          "spec_source": "获取股票更多信息 get_more_info",
-          "capability_authoritative": "10 日涨幅"
+          "chinese_name": "10 日涨幅"
         },
         {
           "name": "ZAFPre20",
@@ -527,10 +511,7 @@
           "sample": -0.35,
           "data_status": "healthy",
           "category": "history",
-          "chinese_name": "20 日涨幅",
-          "spec_note": "20 日涨幅",
-          "spec_source": "获取股票更多信息 get_more_info",
-          "capability_authoritative": "20 日涨幅"
+          "chinese_name": "20 日涨幅"
         },
         {
           "name": "ZAFPre60",
@@ -542,10 +523,7 @@
           "sample": 4.21,
           "data_status": "healthy",
           "category": "history",
-          "chinese_name": "60 日涨幅",
-          "spec_note": "60 日涨幅",
-          "spec_source": "获取股票更多信息 get_more_info",
-          "capability_authoritative": "60 日涨幅"
+          "chinese_name": "60 日涨幅"
         },
         {
           "name": "ZAFYear",
@@ -557,10 +535,7 @@
           "sample": 1.88,
           "data_status": "healthy",
           "category": "history",
-          "chinese_name": "年初至今涨幅",
-          "spec_note": "年初至今涨幅",
-          "spec_source": "获取股票更多信息 get_more_info",
-          "capability_authoritative": "年初至今涨幅"
+          "chinese_name": "年初至今涨幅"
         },
         {
           "name": "Zsz",
@@ -572,10 +547,7 @@
           "sample": 674862.05,
           "data_status": "healthy",
           "category": "history",
-          "chinese_name": "总市值（亿）",
-          "spec_note": "总市值（亿）",
-          "spec_source": "获取股票更多信息 get_more_info",
-          "capability_authoritative": "总市值（亿）"
+          "chinese_name": "总市值（亿）"
         },
         {
           "name": "Ltsz",
@@ -587,10 +559,7 @@
           "sample": 624864.52,
           "data_status": "healthy",
           "category": "history",
-          "chinese_name": "流通市值（亿）",
-          "spec_note": "流通市值（亿）",
-          "spec_source": "获取股票更多信息 get_more_info",
-          "capability_authoritative": "流通市值（亿）"
+          "chinese_name": "流通市值（亿）"
         },
         {
           "name": "MA5Value",
@@ -602,10 +571,7 @@
           "sample": 4070.66,
           "data_status": "healthy",
           "category": "history",
-          "chinese_name": "5 日均价",
-          "spec_note": "5 日均价",
-          "spec_source": "获取股票更多信息 get_more_info",
-          "capability_authoritative": "5 日均价"
+          "chinese_name": "5 日均价"
         }
       ],
       "category": "history",
@@ -625,10 +591,7 @@
           "sample": "000001.SH",
           "data_status": "healthy",
           "category": "realtime",
-          "chinese_name": "证券代码",
-          "spec_note": "证券代码",
-          "spec_source": "获取新股申购信息 get_ipo_info",
-          "capability_authoritative": "证券代码"
+          "chinese_name": "证券代码"
         },
         {
           "name": "snapshot_time",
@@ -639,7 +602,8 @@
           "max": null,
           "sample": "2026-07-03T10:52:19.380238",
           "data_status": "healthy",
-          "category": "realtime"
+          "category": "realtime",
+          "chinese_name": "快照时间"
         },
         {
           "name": "ItemNum",
@@ -651,10 +615,7 @@
           "sample": 1613.0,
           "data_status": "healthy",
           "category": "realtime",
-          "chinese_name": "快照笔数",
-          "spec_note": "快照笔数",
-          "spec_source": "获取快照数据 get_market_snapshot",
-          "capability_authoritative": "快照笔数"
+          "chinese_name": "快照笔数"
         },
         {
           "name": "LastClose",
@@ -666,10 +627,7 @@
           "sample": 4028.9,
           "data_status": "healthy",
           "category": "realtime",
-          "chinese_name": "前收盘价",
-          "spec_note": "前收盘价",
-          "spec_source": "获取快照数据 get_market_snapshot",
-          "capability_authoritative": "前收盘价"
+          "chinese_name": "前收盘价"
         },
         {
           "name": "Open",
@@ -681,10 +639,7 @@
           "sample": 4031.34,
           "data_status": "healthy",
           "category": "realtime",
-          "chinese_name": "开盘价",
-          "spec_note": "原始价 OHLC",
-          "spec_source": "get_etf_nav",
-          "capability_authoritative": "原始价 OHLC"
+          "chinese_name": "开盘价"
         },
         {
           "name": "Max",
@@ -696,10 +651,7 @@
           "sample": 4057.71,
           "data_status": "healthy",
           "category": "realtime",
-          "chinese_name": "最高价",
-          "spec_note": "最高价",
-          "spec_source": "获取快照数据 get_market_snapshot",
-          "capability_authoritative": "最高价"
+          "chinese_name": "最高价"
         },
         {
           "name": "Min",
@@ -711,10 +663,7 @@
           "sample": 4027.26,
           "data_status": "healthy",
           "category": "realtime",
-          "chinese_name": "最低价",
-          "spec_note": "最低价",
-          "spec_source": "获取快照数据 get_market_snapshot",
-          "capability_authoritative": "最低价"
+          "chinese_name": "最低价"
         },
         {
           "name": "Now",
@@ -726,10 +675,7 @@
           "sample": 4055.1,
           "data_status": "healthy",
           "category": "realtime",
-          "chinese_name": "现价",
-          "spec_note": "现价",
-          "spec_source": "获取快照数据 get_market_snapshot",
-          "capability_authoritative": "现价"
+          "chinese_name": "现价"
         },
         {
           "name": "Volume",
@@ -741,10 +687,7 @@
           "sample": "322361378",
           "data_status": "healthy",
           "category": "realtime",
-          "chinese_name": "成交量",
-          "spec_note": "成交量",
-          "spec_source": "获取K线行情 get_market_data",
-          "capability_authoritative": "成交量"
+          "chinese_name": "成交量 (股)"
         },
         {
           "name": "Amount",
@@ -756,9 +699,7 @@
           "sample": 77865472.0,
           "data_status": "healthy",
           "category": "realtime",
-          "chinese_name": "成交额",
-          "spec_note": "",
-          "spec_source": "get_etf_nav"
+          "chinese_name": "成交额"
         },
         {
           "name": "Average",
@@ -770,10 +711,7 @@
           "sample": 4045.72,
           "data_status": "healthy",
           "category": "realtime",
-          "chinese_name": "均价",
-          "spec_note": "均价",
-          "spec_source": "获取快照数据 get_market_snapshot",
-          "capability_authoritative": "均价"
+          "chinese_name": "均价"
         },
         {
           "name": "TickDiff",
@@ -785,10 +723,7 @@
           "sample": 0.0,
           "data_status": "healthy",
           "category": "realtime",
-          "chinese_name": "笔涨跌",
-          "spec_note": "笔涨跌",
-          "spec_source": "获取快照数据 get_market_snapshot",
-          "capability_authoritative": "笔涨跌"
+          "chinese_name": "笔涨跌"
         },
         {
           "name": "ZAFPre3",
@@ -800,10 +735,7 @@
           "sample": -0.96,
           "data_status": "healthy",
           "category": "realtime",
-          "chinese_name": "3 日涨幅",
-          "spec_note": "3 日涨幅",
-          "spec_source": "获取快照数据 get_market_snapshot",
-          "capability_authoritative": "3 日涨幅"
+          "chinese_name": "3 日涨幅"
         }
       ],
       "category": "realtime",
@@ -822,10 +754,7 @@
           "max": null,
           "sample": "000001.SH",
           "data_status": "healthy",
-          "chinese_name": "证券代码",
-          "spec_note": "证券代码",
-          "spec_source": "获取新股申购信息 get_ipo_info",
-          "capability_authoritative": "证券代码"
+          "chinese_name": "证券代码"
         },
         {
           "name": "calc_time",
@@ -835,7 +764,8 @@
           "min": null,
           "max": null,
           "sample": "2026-07-02T15:00:00",
-          "data_status": "healthy"
+          "data_status": "healthy",
+          "chinese_name": "datetime.now() (计算时刻)"
         },
         {
           "name": "close",
@@ -846,10 +776,7 @@
           "max": null,
           "sample": 4028.9,
           "data_status": "healthy",
-          "chinese_name": "收盘价",
-          "spec_note": "原始价 OHLC",
-          "spec_source": "get_etf_nav",
-          "capability_authoritative": "原始价 OHLC"
+          "chinese_name": "收盘价"
         },
         {
           "name": "macd_dif",
@@ -863,7 +790,8 @@
           "category": "derived",
           "capability": "MACD DIF(趋势)",
           "verify_type": "eod_ok",
-          "provenance": "verified"
+          "provenance": "verified",
+          "chinese_name": "MACD DIF 线"
         },
         {
           "name": "macd_dea",
@@ -873,7 +801,8 @@
           "min": null,
           "max": null,
           "sample": -9.140923240647671,
-          "data_status": "healthy"
+          "data_status": "healthy",
+          "chinese_name": "MACD DEA 线"
         },
         {
           "name": "macd_hist",
@@ -887,7 +816,8 @@
           "category": "derived",
           "capability": "MACD柱",
           "verify_type": "eod_ok",
-          "provenance": "verified"
+          "provenance": "verified",
+          "chinese_name": "MACD 柱 (2*(DIF-DEA))"
         },
         {
           "name": "pressure_high",
@@ -901,7 +831,8 @@
           "category": "derived",
           "capability": "20根最高(压力位)",
           "verify_type": "eod_ok",
-          "provenance": "verified"
+          "provenance": "verified",
+          "chinese_name": "近期压力位 (前高/密集成交区)"
         },
         {
           "name": "support_low",
@@ -915,7 +846,8 @@
           "category": "derived",
           "capability": "20根最低(支撑位)",
           "verify_type": "eod_ok",
-          "provenance": "verified"
+          "provenance": "verified",
+          "chinese_name": "近期支撑位 (前低/密集成交区)"
         },
         {
           "name": "boll_upper",
@@ -929,7 +861,8 @@
           "category": "derived",
           "capability": "布林上轨",
           "verify_type": "eod_ok",
-          "provenance": "verified"
+          "provenance": "verified",
+          "chinese_name": "布林带上轨"
         },
         {
           "name": "boll_mid",
@@ -939,7 +872,8 @@
           "min": null,
           "max": null,
           "sample": 4046.647,
-          "data_status": "healthy"
+          "data_status": "healthy",
+          "chinese_name": "布林带中轨"
         },
         {
           "name": "boll_lower",
@@ -949,7 +883,8 @@
           "min": null,
           "max": null,
           "sample": 4024.567056974712,
-          "data_status": "healthy"
+          "data_status": "healthy",
+          "chinese_name": "布林带下轨"
         },
         {
           "name": "ma5",
@@ -964,10 +899,7 @@
           "capability": "5周期均线",
           "verify_type": "eod_ok",
           "provenance": "verified",
-          "chinese_name": "5日均线",
-          "spec_note": "MA(CLOSE,5)",
-          "spec_source": "get_etf_nav",
-          "capability_authoritative": "MA(CLOSE,5)"
+          "chinese_name": "5日均线"
         },
         {
           "name": "ma10",
@@ -978,10 +910,7 @@
           "max": null,
           "sample": 4039.022,
           "data_status": "healthy",
-          "chinese_name": "10日均线",
-          "spec_note": "MA(CLOSE,10)",
-          "spec_source": "get_etf_nav",
-          "capability_authoritative": "MA(CLOSE,10)"
+          "chinese_name": "10日均线"
         },
         {
           "name": "ma20",
@@ -992,10 +921,7 @@
           "max": null,
           "sample": 4046.647,
           "data_status": "healthy",
-          "chinese_name": "20日均线",
-          "spec_note": "MA(CLOSE,20)",
-          "spec_source": "get_etf_nav",
-          "capability_authoritative": "MA(CLOSE,20)"
+          "chinese_name": "20日均线"
         }
       ],
       "category": "derived",
@@ -1013,7 +939,8 @@
           "min": null,
           "max": null,
           "sample": "2026-07-03T14:37:21.038282",
-          "data_status": "healthy"
+          "data_status": "healthy",
+          "chinese_name": "事件时间"
         },
         {
           "name": "code",
@@ -1024,10 +951,7 @@
           "max": null,
           "sample": "000004.SZ",
           "data_status": "healthy",
-          "chinese_name": "证券代码",
-          "spec_note": "证券代码",
-          "spec_source": "获取新股申购信息 get_ipo_info",
-          "capability_authoritative": "证券代码"
+          "chinese_name": "证券代码"
         },
         {
           "name": "event_type",
@@ -1037,7 +961,8 @@
           "min": null,
           "max": null,
           "sample": "surge_down",
-          "data_status": "healthy"
+          "data_status": "healthy",
+          "chinese_name": "事件类型(intraday:surge_up/down/limit_seal/limit_break/capital_in/out; sentiment:turn_zt_drop/turn_udr_flip/emotion_crossing)"
         },
         {
           "name": "description",
@@ -1047,7 +972,8 @@
           "min": null,
           "max": null,
           "sample": "5分钟急跌-2.22%",
-          "data_status": "healthy"
+          "data_status": "healthy",
+          "chinese_name": "共振描述 (人类可读)"
         },
         {
           "name": "critical",
@@ -1057,7 +983,8 @@
           "min": null,
           "max": null,
           "sample": null,
-          "data_status": "unknown"
+          "data_status": "unknown",
+          "chinese_name": "是否关键(即时推送)"
         }
       ],
       "category": "derived",
@@ -1077,10 +1004,7 @@
           "sample": "880778.SH",
           "data_status": "healthy",
           "category": "history",
-          "chinese_name": "证券代码",
-          "spec_note": "证券代码",
-          "spec_source": "获取新股申购信息 get_ipo_info",
-          "capability_authoritative": "证券代码"
+          "chinese_name": "证券代码"
         },
         {
           "name": "kline_time",
@@ -1091,7 +1015,8 @@
           "max": null,
           "sample": "2026-06-18T14:22:00",
           "data_status": "healthy",
-          "category": "history"
+          "category": "history",
+          "chinese_name": "K 线时间 (datetime)"
         },
         {
           "name": "open",
@@ -1103,10 +1028,7 @@
           "sample": 1924.09,
           "data_status": "healthy",
           "category": "history",
-          "chinese_name": "开盘价",
-          "spec_note": "原始价 OHLC",
-          "spec_source": "get_etf_nav",
-          "capability_authoritative": "原始价 OHLC"
+          "chinese_name": "开盘价"
         },
         {
           "name": "high",
@@ -1118,10 +1040,7 @@
           "sample": 1924.09,
           "data_status": "healthy",
           "category": "history",
-          "chinese_name": "最高价",
-          "spec_note": "原始价 OHLC",
-          "spec_source": "get_etf_nav",
-          "capability_authoritative": "原始价 OHLC"
+          "chinese_name": "最高价"
         },
         {
           "name": "low",
@@ -1133,10 +1052,7 @@
           "sample": 1924.09,
           "data_status": "healthy",
           "category": "history",
-          "chinese_name": "最低价",
-          "spec_note": "原始价 OHLC",
-          "spec_source": "get_etf_nav",
-          "capability_authoritative": "原始价 OHLC"
+          "chinese_name": "最低价"
         },
         {
           "name": "close",
@@ -1148,10 +1064,7 @@
           "sample": 1924.09,
           "data_status": "healthy",
           "category": "history",
-          "chinese_name": "收盘价",
-          "spec_note": "原始价 OHLC",
-          "spec_source": "get_etf_nav",
-          "capability_authoritative": "原始价 OHLC"
+          "chinese_name": "收盘价"
         },
         {
           "name": "volume",
@@ -1163,10 +1076,7 @@
           "sample": "0",
           "data_status": "healthy",
           "category": "history",
-          "chinese_name": "成交量",
-          "spec_note": "成交量",
-          "spec_source": "获取K线行情 get_market_data",
-          "capability_authoritative": "成交量"
+          "chinese_name": "成交量 (股)"
         },
         {
           "name": "amount",
@@ -1178,9 +1088,7 @@
           "sample": 0.0,
           "data_status": "healthy",
           "category": "history",
-          "chinese_name": "成交额",
-          "spec_note": "",
-          "spec_source": "get_etf_nav"
+          "chinese_name": "成交额"
         }
       ],
       "category": "history",
@@ -1200,10 +1108,7 @@
           "sample": "880778.SH",
           "data_status": "healthy",
           "category": "history",
-          "chinese_name": "证券代码",
-          "spec_note": "证券代码",
-          "spec_source": "获取新股申购信息 get_ipo_info",
-          "capability_authoritative": "证券代码"
+          "chinese_name": "证券代码"
         },
         {
           "name": "kline_time",
@@ -1214,7 +1119,8 @@
           "max": null,
           "sample": "2026-06-18T10:20:00",
           "data_status": "healthy",
-          "category": "history"
+          "category": "history",
+          "chinese_name": "K 线时间 (datetime)"
         },
         {
           "name": "open",
@@ -1226,10 +1132,7 @@
           "sample": 1924.09,
           "data_status": "healthy",
           "category": "history",
-          "chinese_name": "开盘价",
-          "spec_note": "原始价 OHLC",
-          "spec_source": "get_etf_nav",
-          "capability_authoritative": "原始价 OHLC"
+          "chinese_name": "开盘价"
         },
         {
           "name": "high",
@@ -1244,10 +1147,7 @@
           "capability": "最高",
           "verify_type": "eod_ok",
           "provenance": "verified",
-          "chinese_name": "最高价",
-          "spec_note": "原始价 OHLC",
-          "spec_source": "get_etf_nav",
-          "capability_authoritative": "原始价 OHLC"
+          "chinese_name": "最高价"
         },
         {
           "name": "low",
@@ -1262,10 +1162,7 @@
           "capability": "最低",
           "verify_type": "eod_ok",
           "provenance": "verified",
-          "chinese_name": "最低价",
-          "spec_note": "原始价 OHLC",
-          "spec_source": "get_etf_nav",
-          "capability_authoritative": "原始价 OHLC"
+          "chinese_name": "最低价"
         },
         {
           "name": "close",
@@ -1280,10 +1177,7 @@
           "capability": "收盘价(指标计算)",
           "verify_type": "eod_ok",
           "provenance": "verified",
-          "chinese_name": "收盘价",
-          "spec_note": "原始价 OHLC",
-          "spec_source": "get_etf_nav",
-          "capability_authoritative": "原始价 OHLC"
+          "chinese_name": "收盘价"
         },
         {
           "name": "volume",
@@ -1298,10 +1192,7 @@
           "capability": "成交量",
           "verify_type": "eod_ok",
           "provenance": "verified",
-          "chinese_name": "成交量",
-          "spec_note": "成交量",
-          "spec_source": "获取K线行情 get_market_data",
-          "capability_authoritative": "成交量"
+          "chinese_name": "成交量 (股)"
         },
         {
           "name": "amount",
@@ -1313,9 +1204,7 @@
           "sample": 0.0,
           "data_status": "healthy",
           "category": "history",
-          "chinese_name": "成交额",
-          "spec_note": "",
-          "spec_source": "get_etf_nav"
+          "chinese_name": "成交额"
         }
       ],
       "category": "history",
@@ -1335,7 +1224,8 @@
           "max": null,
           "sample": null,
           "data_status": "empty_table",
-          "category": "history"
+          "category": "history",
+          "chinese_name": "营业部名称"
         },
         {
           "name": "update_time",
@@ -1346,7 +1236,8 @@
           "max": null,
           "sample": null,
           "data_status": "empty_table",
-          "category": "history"
+          "category": "history",
+          "chinese_name": "更新时间"
         },
         {
           "name": "broker_type",
@@ -1357,7 +1248,8 @@
           "max": null,
           "sample": null,
           "data_status": "empty_table",
-          "category": "history"
+          "category": "history",
+          "chinese_name": "营业部类型 (hot_money/institution/north)"
         },
         {
           "name": "broker_label",
@@ -1368,7 +1260,8 @@
           "max": null,
           "sample": null,
           "data_status": "empty_table",
-          "category": "history"
+          "category": "history",
+          "chinese_name": "营业部标签"
         },
         {
           "name": "total_buy_30d",
@@ -1379,7 +1272,8 @@
           "max": null,
           "sample": null,
           "data_status": "empty_table",
-          "category": "history"
+          "category": "history",
+          "chinese_name": "30 日累计买入额 (元)"
         },
         {
           "name": "total_sell_30d",
@@ -1390,7 +1284,8 @@
           "max": null,
           "sample": null,
           "data_status": "empty_table",
-          "category": "history"
+          "category": "history",
+          "chinese_name": "30 日累计卖出额 (元)"
         },
         {
           "name": "appear_count_30d",
@@ -1401,7 +1296,8 @@
           "max": null,
           "sample": null,
           "data_status": "empty_table",
-          "category": "history"
+          "category": "history",
+          "chinese_name": "30 日上榜次数"
         },
         {
           "name": "hot_level",
@@ -1415,7 +1311,8 @@
           "category": "history",
           "capability": "席位热度(知名游资识别)",
           "verify_type": "eod_ok",
-          "provenance": "empty_no_source"
+          "provenance": "empty_no_source",
+          "chinese_name": "热度评级 (1-5, 5 为最热)"
         }
       ],
       "category": "history",
@@ -1436,10 +1333,7 @@
           "sample": null,
           "data_status": "empty_table",
           "category": "history",
-          "chinese_name": "证券代码",
-          "spec_note": "证券代码",
-          "spec_source": "获取新股申购信息 get_ipo_info",
-          "capability_authoritative": "证券代码"
+          "chinese_name": "证券代码"
         },
         {
           "name": "lhb_date",
@@ -1450,7 +1344,8 @@
           "max": null,
           "sample": null,
           "data_status": "empty_table",
-          "category": "history"
+          "category": "history",
+          "chinese_name": "龙虎榜日期 (收盘后公布)"
         },
         {
           "name": "reason",
@@ -1464,7 +1359,8 @@
           "category": "history",
           "capability": "上榜原因",
           "verify_type": "eod_ok",
-          "provenance": "empty_no_source"
+          "provenance": "empty_no_source",
+          "chinese_name": "上榜原因 (涨幅偏离/振幅/换手率等)"
         },
         {
           "name": "rank",
@@ -1475,7 +1371,8 @@
           "max": null,
           "sample": null,
           "data_status": "empty_table",
-          "category": "history"
+          "category": "history",
+          "chinese_name": "上榜排名"
         },
         {
           "name": "buy_amount",
@@ -1486,7 +1383,8 @@
           "max": null,
           "sample": null,
           "data_status": "empty_table",
-          "category": "history"
+          "category": "history",
+          "chinese_name": "买入金额 (元)"
         },
         {
           "name": "sell_amount",
@@ -1497,7 +1395,8 @@
           "max": null,
           "sample": null,
           "data_status": "empty_table",
-          "category": "history"
+          "category": "history",
+          "chinese_name": "卖出金额 (元)"
         },
         {
           "name": "net_amount",
@@ -1511,7 +1410,8 @@
           "category": "history",
           "capability": "净买入额",
           "verify_type": "eod_ok",
-          "provenance": "empty_no_source"
+          "provenance": "empty_no_source",
+          "chinese_name": "净额 (买-卖, 元)"
         },
         {
           "name": "broker_name",
@@ -1522,7 +1422,8 @@
           "max": null,
           "sample": null,
           "data_status": "empty_table",
-          "category": "history"
+          "category": "history",
+          "chinese_name": "营业部名称"
         },
         {
           "name": "broker_type",
@@ -1536,7 +1437,8 @@
           "category": "history",
           "capability": "席位类型(机构/游资/营业部)",
           "verify_type": "eod_ok",
-          "provenance": "empty_no_source"
+          "provenance": "empty_no_source",
+          "chinese_name": "营业部类型 (hot_money/institution/north)"
         },
         {
           "name": "broker_label",
@@ -1547,7 +1449,8 @@
           "max": null,
           "sample": null,
           "data_status": "empty_table",
-          "category": "history"
+          "category": "history",
+          "chinese_name": "营业部标签"
         }
       ],
       "category": "history",
@@ -1567,7 +1470,8 @@
           "max": null,
           "sample": "含H股",
           "data_status": "healthy",
-          "category": "reference"
+          "category": "reference",
+          "chinese_name": "概念板块名称"
         },
         {
           "name": "code",
@@ -1579,10 +1483,7 @@
           "sample": "000002.SZ",
           "data_status": "healthy",
           "category": "reference",
-          "chinese_name": "证券代码",
-          "spec_note": "证券代码",
-          "spec_source": "获取新股申购信息 get_ipo_info",
-          "capability_authoritative": "证券代码"
+          "chinese_name": "证券代码"
         },
         {
           "name": "update_time",
@@ -1593,7 +1494,8 @@
           "max": null,
           "sample": "2026-07-03T10:51:03.966943",
           "data_status": "healthy",
-          "category": "reference"
+          "category": "reference",
+          "chinese_name": "更新时间"
         },
         {
           "name": "weight",
@@ -1604,7 +1506,8 @@
           "max": null,
           "sample": null,
           "data_status": "near_empty",
-          "category": "reference"
+          "category": "reference",
+          "chinese_name": "成份股权重 (%)"
         }
       ],
       "category": "reference",
@@ -1623,7 +1526,8 @@
           "max": null,
           "sample": "0",
           "data_status": "healthy",
-          "category": "reference"
+          "category": "reference",
+          "chinese_name": "指数代码"
         },
         {
           "name": "code",
@@ -1635,10 +1539,7 @@
           "sample": "000001.SZ",
           "data_status": "healthy",
           "category": "reference",
-          "chinese_name": "证券代码",
-          "spec_note": "证券代码",
-          "spec_source": "获取新股申购信息 get_ipo_info",
-          "capability_authoritative": "证券代码"
+          "chinese_name": "证券代码"
         },
         {
           "name": "update_time",
@@ -1649,7 +1550,8 @@
           "max": null,
           "sample": "2026-07-03T10:51:03.966943",
           "data_status": "healthy",
-          "category": "reference"
+          "category": "reference",
+          "chinese_name": "更新时间"
         },
         {
           "name": "weight",
@@ -1660,7 +1562,8 @@
           "max": null,
           "sample": null,
           "data_status": "near_empty",
-          "category": "reference"
+          "category": "reference",
+          "chinese_name": "成份股权重 (%)"
         }
       ],
       "category": "reference",
@@ -1679,7 +1582,8 @@
           "max": null,
           "sample": "黑龙江",
           "data_status": "healthy",
-          "category": "reference"
+          "category": "reference",
+          "chinese_name": "地域名称 (省份/城市)"
         },
         {
           "name": "code",
@@ -1691,10 +1595,7 @@
           "sample": "000711.SZ",
           "data_status": "healthy",
           "category": "reference",
-          "chinese_name": "证券代码",
-          "spec_note": "证券代码",
-          "spec_source": "获取新股申购信息 get_ipo_info",
-          "capability_authoritative": "证券代码"
+          "chinese_name": "证券代码"
         },
         {
           "name": "update_time",
@@ -1705,7 +1606,8 @@
           "max": null,
           "sample": "2026-07-03T10:51:03.966943",
           "data_status": "healthy",
-          "category": "reference"
+          "category": "reference",
+          "chinese_name": "更新时间"
         }
       ],
       "category": "reference",
@@ -1724,7 +1626,8 @@
           "max": null,
           "sample": "沪深300",
           "data_status": "healthy",
-          "category": "reference"
+          "category": "reference",
+          "chinese_name": "风格名称"
         },
         {
           "name": "code",
@@ -1736,10 +1639,7 @@
           "sample": "000001.SZ",
           "data_status": "healthy",
           "category": "reference",
-          "chinese_name": "证券代码",
-          "spec_note": "证券代码",
-          "spec_source": "获取新股申购信息 get_ipo_info",
-          "capability_authoritative": "证券代码"
+          "chinese_name": "证券代码"
         },
         {
           "name": "update_time",
@@ -1750,7 +1650,8 @@
           "max": null,
           "sample": "2026-07-03T10:51:03.966943",
           "data_status": "healthy",
-          "category": "reference"
+          "category": "reference",
+          "chinese_name": "更新时间"
         }
       ],
       "category": "reference",
@@ -1769,10 +1670,7 @@
           "max": null,
           "sample": "000001.SZ",
           "data_status": "healthy",
-          "chinese_name": "证券代码",
-          "spec_note": "证券代码",
-          "spec_source": "获取新股申购信息 get_ipo_info",
-          "capability_authoritative": "证券代码"
+          "chinese_name": "证券代码"
         },
         {
           "name": "flow_time",
@@ -1782,7 +1680,8 @@
           "min": null,
           "max": null,
           "sample": "2026-07-03T14:40:23.118312",
-          "data_status": "healthy"
+          "data_status": "healthy",
+          "chinese_name": "资金流时间"
         },
         {
           "name": "main_net",
@@ -1797,7 +1696,8 @@
           "capability": "个股主力资金净额, 判主力方向(正净流入/负净流出)",
           "verify_type": "eod_ok",
           "provenance": "verified",
-          "constraint": "受C8影响: Zjl在c3@T+1s行, 须合并双行; 盘后为收盘累计值"
+          "constraint": "受C8影响: Zjl在c3@T+1s行, 须合并双行; 盘后为收盘累计值",
+          "chinese_name": "主力净流入 (元)"
         },
         {
           "name": "big_order_diff",
@@ -1810,7 +1710,8 @@
           "data_status": "near_empty",
           "source": "无来源(填None)",
           "capability": "无",
-          "provenance": "empty_no_source"
+          "provenance": "empty_no_source",
+          "chinese_name": "大单差 (买单-卖单, 元)"
         },
         {
           "name": "dark_money",
@@ -1825,7 +1726,8 @@
           "capability": "暗资金撤单异常检测",
           "verify_type": "live_must",
           "provenance": "suspect",
-          "constraint": "撤单是实时行为, 盘后NowVol不变→diff=0; 须盘中跨帧验证"
+          "constraint": "撤单是实时行为, 盘后NowVol不变→diff=0; 须盘中跨帧验证",
+          "chinese_name": "暗资金净流入 (元)"
         },
         {
           "name": "light_money",
@@ -1838,7 +1740,8 @@
           "data_status": "near_empty",
           "source": "无来源(填None)",
           "capability": "无",
-          "provenance": "empty_no_source"
+          "provenance": "empty_no_source",
+          "chinese_name": "明资金净流入 (元)"
         },
         {
           "name": "pressure_diff_5level",
@@ -1853,7 +1756,8 @@
           "capability": "买卖盘压力差, 判承接/抛压",
           "verify_type": "live_must",
           "provenance": "suspect",
-          "constraint": "⚠️ 5档在c2@T行(C8), 若取不到会算成0; 须合并双行"
+          "constraint": "⚠️ 5档在c2@T行(C8), 若取不到会算成0; 须合并双行",
+          "chinese_name": "5 档压力差 (买盘压力-卖盘压力, 元)"
         },
         {
           "name": "buy_pressure",
@@ -1868,7 +1772,8 @@
           "capability": "5档买盘总金额",
           "verify_type": "live_must",
           "provenance": "suspect",
-          "constraint": "同上C8"
+          "constraint": "同上C8",
+          "chinese_name": "买盘压力 (5档买盘总金额)"
         },
         {
           "name": "sell_pressure",
@@ -1883,7 +1788,8 @@
           "capability": "5档卖盘总金额",
           "verify_type": "live_must",
           "provenance": "suspect",
-          "constraint": "同上C8"
+          "constraint": "同上C8",
+          "chinese_name": "卖盘压力 (5档卖盘总金额)"
         },
         {
           "name": "net_flow",
@@ -1898,7 +1804,8 @@
           "capability": "综合资金流(明+暗)",
           "verify_type": "live_must",
           "provenance": "suspect",
-          "constraint": "依赖多个实时字段, 任一C8取空则结果失真"
+          "constraint": "依赖多个实时字段, 任一C8取空则结果失真",
+          "chinese_name": "净流入 (元)"
         }
       ],
       "category": "derived",
@@ -1917,7 +1824,8 @@
           "max": null,
           "sample": null,
           "data_status": "empty_table",
-          "category": "reference"
+          "category": "reference",
+          "chinese_name": "更新时间"
         },
         {
           "name": "code",
@@ -1929,10 +1837,7 @@
           "sample": null,
           "data_status": "empty_table",
           "category": "reference",
-          "chinese_name": "证券代码",
-          "spec_note": "证券代码",
-          "spec_source": "获取新股申购信息 get_ipo_info",
-          "capability_authoritative": "证券代码"
+          "chinese_name": "证券代码"
         },
         {
           "name": "direction",
@@ -1943,7 +1848,8 @@
           "max": null,
           "sample": null,
           "data_status": "empty_table",
-          "category": "reference"
+          "category": "reference",
+          "chinese_name": "方向 (long/short)"
         },
         {
           "name": "entry_price",
@@ -1954,7 +1860,8 @@
           "max": null,
           "sample": null,
           "data_status": "empty_table",
-          "category": "reference"
+          "category": "reference",
+          "chinese_name": "开仓价"
         },
         {
           "name": "current_price",
@@ -1965,7 +1872,8 @@
           "max": null,
           "sample": null,
           "data_status": "empty_table",
-          "category": "reference"
+          "category": "reference",
+          "chinese_name": "当前价"
         },
         {
           "name": "quantity",
@@ -1976,7 +1884,8 @@
           "max": null,
           "sample": null,
           "data_status": "empty_table",
-          "category": "reference"
+          "category": "reference",
+          "chinese_name": "持仓数量"
         },
         {
           "name": "pnl",
@@ -1987,7 +1896,8 @@
           "max": null,
           "sample": null,
           "data_status": "empty_table",
-          "category": "reference"
+          "category": "reference",
+          "chinese_name": "浮动盈亏 (元)"
         },
         {
           "name": "pnl_pct",
@@ -1998,7 +1908,8 @@
           "max": null,
           "sample": null,
           "data_status": "empty_table",
-          "category": "reference"
+          "category": "reference",
+          "chinese_name": "浮动盈亏 (%)"
         },
         {
           "name": "stop_loss_price",
@@ -2009,7 +1920,8 @@
           "max": null,
           "sample": null,
           "data_status": "empty_table",
-          "category": "reference"
+          "category": "reference",
+          "chinese_name": "止损价"
         },
         {
           "name": "take_profit_price",
@@ -2020,7 +1932,8 @@
           "max": null,
           "sample": null,
           "data_status": "empty_table",
-          "category": "reference"
+          "category": "reference",
+          "chinese_name": "止盈价"
         },
         {
           "name": "status",
@@ -2032,9 +1945,7 @@
           "sample": null,
           "data_status": "empty_table",
           "category": "reference",
-          "chinese_name": "状态码（0成功）",
-          "spec_note": "",
-          "spec_source": "get_message"
+          "chinese_name": "状态码（0成功）"
         }
       ],
       "category": "reference",
@@ -2055,10 +1966,7 @@
           "sample": "000001.SZ",
           "data_status": "healthy",
           "category": "realtime",
-          "chinese_name": "证券代码",
-          "spec_note": "证券代码",
-          "spec_source": "获取新股申购信息 get_ipo_info",
-          "capability_authoritative": "证券代码"
+          "chinese_name": "证券代码"
         },
         {
           "name": "snapshot_time",
@@ -2069,7 +1977,8 @@
           "max": null,
           "sample": "2026-07-03T14:21:07.343027",
           "data_status": "healthy",
-          "category": "realtime"
+          "category": "realtime",
+          "chinese_name": "快照时间"
         },
         {
           "name": "LastClose",
@@ -2081,10 +1990,7 @@
           "sample": 10.28,
           "data_status": "healthy",
           "category": "realtime",
-          "chinese_name": "前收盘价",
-          "spec_note": "前收盘价",
-          "spec_source": "获取快照数据 get_market_snapshot",
-          "capability_authoritative": "前收盘价"
+          "chinese_name": "前收盘价"
         },
         {
           "name": "Now",
@@ -2096,10 +2002,7 @@
           "sample": 10.27,
           "data_status": "healthy",
           "category": "realtime",
-          "chinese_name": "现价",
-          "spec_note": "现价",
-          "spec_source": "获取快照数据 get_market_snapshot",
-          "capability_authoritative": "现价"
+          "chinese_name": "现价"
         },
         {
           "name": "Volume",
@@ -2111,10 +2014,7 @@
           "sample": "739796",
           "data_status": "healthy",
           "category": "realtime",
-          "chinese_name": "成交量",
-          "spec_note": "成交量",
-          "spec_source": "获取K线行情 get_market_data",
-          "capability_authoritative": "成交量"
+          "chinese_name": "成交量 (股)"
         }
       ],
       "category": "realtime",
@@ -2133,10 +2033,7 @@
           "max": null,
           "sample": "000001.SZ",
           "data_status": "healthy",
-          "chinese_name": "证券代码",
-          "spec_note": "证券代码",
-          "spec_source": "获取新股申购信息 get_ipo_info",
-          "capability_authoritative": "证券代码"
+          "chinese_name": "证券代码"
         },
         {
           "name": "resonance_time",
@@ -2146,7 +2043,8 @@
           "min": null,
           "max": null,
           "sample": "2026-07-03T11:00:20.378079",
-          "data_status": "healthy"
+          "data_status": "healthy",
+          "chinese_name": "共振时间"
         },
         {
           "name": "sector_resonance",
@@ -2156,7 +2054,8 @@
           "min": null,
           "max": null,
           "sample": null,
-          "data_status": "near_empty"
+          "data_status": "near_empty",
+          "chinese_name": "板块共振分 (0-100, 板块强度与个股同步性)"
         },
         {
           "name": "index_resonance",
@@ -2166,7 +2065,8 @@
           "min": null,
           "max": null,
           "sample": null,
-          "data_status": "near_empty"
+          "data_status": "near_empty",
+          "chinese_name": "指数共振分 (0-100, 大盘配合度)"
         },
         {
           "name": "macd_resonance",
@@ -2176,7 +2076,8 @@
           "min": null,
           "max": null,
           "sample": null,
-          "data_status": "near_empty"
+          "data_status": "near_empty",
+          "chinese_name": "MACD 共振分 (0-100, 多周期 MACD 同向性)"
         },
         {
           "name": "volume_resonance",
@@ -2186,7 +2087,8 @@
           "min": null,
           "max": null,
           "sample": null,
-          "data_status": "near_empty"
+          "data_status": "near_empty",
+          "chinese_name": "量能共振分 (0-100, 放量/缩量配合度)"
         },
         {
           "name": "flow_resonance",
@@ -2196,7 +2098,8 @@
           "min": null,
           "max": null,
           "sample": null,
-          "data_status": "near_empty"
+          "data_status": "near_empty",
+          "chinese_name": "资金流共振分 (0-100, 主力资金配合度)"
         },
         {
           "name": "total_score",
@@ -2206,7 +2109,8 @@
           "min": null,
           "max": null,
           "sample": 40.43,
-          "data_status": "healthy"
+          "data_status": "healthy",
+          "chinese_name": "综合共振分 (加权总分 0-100)"
         },
         {
           "name": "signal_type",
@@ -2216,7 +2120,8 @@
           "min": null,
           "max": null,
           "sample": "watch",
-          "data_status": "healthy"
+          "data_status": "healthy",
+          "chinese_name": "信号类型 (strong_buy/buy/watch/sell)"
         },
         {
           "name": "description",
@@ -2226,7 +2131,8 @@
           "min": null,
           "max": null,
           "sample": "共振分数 40.43",
-          "data_status": "healthy"
+          "data_status": "healthy",
+          "chinese_name": "共振描述 (人类可读)"
         }
       ],
       "category": "derived",
@@ -2246,10 +2152,7 @@
           "sample": "880081.SH",
           "data_status": "healthy",
           "category": "history",
-          "chinese_name": "证券代码",
-          "spec_note": "证券代码",
-          "spec_source": "获取新股申购信息 get_ipo_info",
-          "capability_authoritative": "证券代码"
+          "chinese_name": "证券代码"
         },
         {
           "name": "date",
@@ -2261,10 +2164,7 @@
           "sample": "2026-07-03T00:00:00",
           "data_status": "healthy",
           "category": "history",
-          "chinese_name": "日期",
-          "spec_note": "日期",
-          "spec_source": "获取K线行情 get_market_data",
-          "capability_authoritative": "日期"
+          "chinese_name": "日期"
         },
         {
           "name": "HqDate",
@@ -2276,10 +2176,7 @@
           "sample": "20260703",
           "data_status": "healthy",
           "category": "history",
-          "chinese_name": "行情日期",
-          "spec_note": "行情日期",
-          "spec_source": "获取股票更多信息 get_more_info",
-          "capability_authoritative": "行情日期"
+          "chinese_name": "行情日期"
         },
         {
           "name": "ZAFYesterday",
@@ -2291,10 +2188,7 @@
           "sample": -3.66,
           "data_status": "healthy",
           "category": "history",
-          "chinese_name": "昨日涨幅",
-          "spec_note": "昨日涨幅",
-          "spec_source": "获取股票更多信息 get_more_info",
-          "capability_authoritative": "昨日涨幅"
+          "chinese_name": "昨日涨幅"
         },
         {
           "name": "ZAFPre5",
@@ -2306,10 +2200,7 @@
           "sample": 0.51,
           "data_status": "healthy",
           "category": "history",
-          "chinese_name": "5 日涨幅",
-          "spec_note": "5 日涨幅",
-          "spec_source": "获取股票更多信息 get_more_info",
-          "capability_authoritative": "5 日涨幅"
+          "chinese_name": "5 日涨幅"
         },
         {
           "name": "ZAFPre10",
@@ -2321,10 +2212,7 @@
           "sample": -0.08,
           "data_status": "healthy",
           "category": "history",
-          "chinese_name": "10 日涨幅",
-          "spec_note": "10 日涨幅",
-          "spec_source": "获取股票更多信息 get_more_info",
-          "capability_authoritative": "10 日涨幅"
+          "chinese_name": "10 日涨幅"
         },
         {
           "name": "ZAFPre20",
@@ -2336,10 +2224,7 @@
           "sample": -0.73,
           "data_status": "healthy",
           "category": "history",
-          "chinese_name": "20 日涨幅",
-          "spec_note": "20 日涨幅",
-          "spec_source": "获取股票更多信息 get_more_info",
-          "capability_authoritative": "20 日涨幅"
+          "chinese_name": "20 日涨幅"
         },
         {
           "name": "ZTGPNum",
@@ -2351,10 +2236,7 @@
           "sample": 0.0,
           "data_status": "healthy",
           "category": "history",
-          "chinese_name": "板块指数的涨停家数",
-          "spec_note": "板块指数的涨停家数",
-          "spec_source": "获取股票更多信息 get_more_info",
-          "capability_authoritative": "板块指数的涨停家数"
+          "chinese_name": "板块指数的涨停家数"
         },
         {
           "name": "fLianB",
@@ -2366,10 +2248,7 @@
           "sample": 1.37,
           "data_status": "healthy",
           "category": "history",
-          "chinese_name": "量比",
-          "spec_note": "量比",
-          "spec_source": "获取股票更多信息 get_more_info",
-          "capability_authoritative": "量比"
+          "chinese_name": "量比"
         },
         {
           "name": "LastStartZT",
@@ -2381,10 +2260,7 @@
           "sample": "1",
           "data_status": "healthy",
           "category": "history",
-          "chinese_name": "几天",
-          "spec_note": "几天",
-          "spec_source": "获取股票更多信息 get_more_info",
-          "capability_authoritative": "几天"
+          "chinese_name": "几天"
         },
         {
           "name": "EverZTCount",
@@ -2396,10 +2272,7 @@
           "sample": 0.0,
           "data_status": "healthy",
           "category": "history",
-          "chinese_name": "连板天",
-          "spec_note": "连板天",
-          "spec_source": "获取股票更多信息 get_more_info",
-          "capability_authoritative": "连板天"
+          "chinese_name": "连板天"
         },
         {
           "name": "YearZTDay",
@@ -2411,10 +2284,7 @@
           "sample": 0.0,
           "data_status": "healthy",
           "category": "history",
-          "chinese_name": "年涨停天数",
-          "spec_note": "年涨停天数",
-          "spec_source": "获取股票更多信息 get_more_info",
-          "capability_authoritative": "年涨停天数"
+          "chinese_name": "年涨停天数"
         },
         {
           "name": "OpenAmoPre1",
@@ -2426,10 +2296,7 @@
           "sample": 1199.99,
           "data_status": "healthy",
           "category": "history",
-          "chinese_name": "昨开盘金额（万元）",
-          "spec_note": "昨开盘金额（万元）",
-          "spec_source": "获取股票更多信息 get_more_info",
-          "capability_authoritative": "昨开盘金额（万元）"
+          "chinese_name": "昨开盘金额（万元）"
         },
         {
           "name": "CJJEPre1",
@@ -2441,10 +2308,7 @@
           "sample": 516834.56,
           "data_status": "healthy",
           "category": "history",
-          "chinese_name": "昨成交额（万元）",
-          "spec_note": "昨成交额（万元）",
-          "spec_source": "获取股票更多信息 get_more_info",
-          "capability_authoritative": "昨成交额（万元）"
+          "chinese_name": "昨成交额（万元）"
         },
         {
           "name": "CJJEPre3",
@@ -2456,10 +2320,7 @@
           "sample": 1202795.83,
           "data_status": "healthy",
           "category": "history",
-          "chinese_name": "3 日成交额（万元）",
-          "spec_note": "3 日成交额（万元）",
-          "spec_source": "获取股票更多信息 get_more_info",
-          "capability_authoritative": "3 日成交额（万元）"
+          "chinese_name": "3 日成交额（万元）"
         },
         {
           "name": "FDEPre1",
@@ -2471,10 +2332,7 @@
           "sample": 0.0,
           "data_status": "healthy",
           "category": "history",
-          "chinese_name": "昨封单额（万元）",
-          "spec_note": "昨封单额（万元）",
-          "spec_source": "获取股票更多信息 get_more_info",
-          "capability_authoritative": "昨封单额（万元）"
+          "chinese_name": "昨封单额（万元）"
         },
         {
           "name": "FDEPre2",
@@ -2486,10 +2344,7 @@
           "sample": 0.0,
           "data_status": "healthy",
           "category": "history",
-          "chinese_name": "前封单额（万元）",
-          "spec_note": "前封单额（万元）",
-          "spec_source": "获取股票更多信息 get_more_info",
-          "capability_authoritative": "前封单额（万元）"
+          "chinese_name": "前封单额（万元）"
         }
       ],
       "category": "history",
@@ -2508,10 +2363,7 @@
           "max": null,
           "sample": "0",
           "data_status": "healthy",
-          "chinese_name": "证券代码",
-          "spec_note": "证券代码",
-          "spec_source": "获取新股申购信息 get_ipo_info",
-          "capability_authoritative": "证券代码"
+          "chinese_name": "证券代码"
         },
         {
           "name": "flow_time",
@@ -2521,7 +2373,8 @@
           "min": null,
           "max": null,
           "sample": "2026-07-03T14:38:33.863221",
-          "data_status": "healthy"
+          "data_status": "healthy",
+          "chinese_name": "资金流时间"
         },
         {
           "name": "main_net",
@@ -2536,7 +2389,8 @@
           "capability": "板块主力净流入",
           "verify_type": "live_must",
           "provenance": "suspect",
-          "constraint": "C8连锁, 当前值全空"
+          "constraint": "C8连锁, 当前值全空",
+          "chinese_name": "主力净流入 (元)"
         },
         {
           "name": "big_net",
@@ -2546,7 +2400,8 @@
           "min": null,
           "max": null,
           "sample": null,
-          "data_status": "near_empty"
+          "data_status": "near_empty",
+          "chinese_name": "超大单净流入 (元)"
         },
         {
           "name": "mid_net",
@@ -2556,7 +2411,8 @@
           "min": null,
           "max": null,
           "sample": null,
-          "data_status": "near_empty"
+          "data_status": "near_empty",
+          "chinese_name": "中单净流入 (元)"
         },
         {
           "name": "small_net",
@@ -2566,7 +2422,8 @@
           "min": null,
           "max": null,
           "sample": null,
-          "data_status": "near_empty"
+          "data_status": "near_empty",
+          "chinese_name": "小单净流入 (元)"
         },
         {
           "name": "dark_money",
@@ -2576,7 +2433,8 @@
           "min": null,
           "max": null,
           "sample": null,
-          "data_status": "near_empty"
+          "data_status": "near_empty",
+          "chinese_name": "暗资金净流入 (元)"
         },
         {
           "name": "light_money",
@@ -2586,7 +2444,8 @@
           "min": null,
           "max": null,
           "sample": null,
-          "data_status": "near_empty"
+          "data_status": "near_empty",
+          "chinese_name": "明资金净流入 (元)"
         },
         {
           "name": "total_flow",
@@ -2600,7 +2459,8 @@
           "category": "derived",
           "capability": "板块总成交额",
           "verify_type": "live_must",
-          "provenance": "suspect"
+          "provenance": "suspect",
+          "chinese_name": "总成交额 (元)"
         },
         {
           "name": "net_pct",
@@ -2614,7 +2474,8 @@
           "category": "derived",
           "capability": "净流入占比%",
           "verify_type": "live_must",
-          "provenance": "verified"
+          "provenance": "verified",
+          "chinese_name": "净流入占比 (%)"
         }
       ],
       "category": "derived",
@@ -2634,7 +2495,8 @@
           "max": null,
           "sample": "881002.SH",
           "data_status": "healthy",
-          "category": "reference"
+          "category": "reference",
+          "chinese_name": "板块代码"
         },
         {
           "name": "sector_name",
@@ -2645,7 +2507,8 @@
           "max": null,
           "sample": "煤炭开采",
           "data_status": "healthy",
-          "category": "reference"
+          "category": "reference",
+          "chinese_name": "板块名称"
         },
         {
           "name": "sector_type",
@@ -2656,7 +2519,8 @@
           "max": null,
           "sample": "industry",
           "data_status": "healthy",
-          "category": "reference"
+          "category": "reference",
+          "chinese_name": "板块类型 (industry/concept/region/style)"
         },
         {
           "name": "update_time",
@@ -2667,7 +2531,8 @@
           "max": null,
           "sample": "2026-07-03T10:51:03.966943",
           "data_status": "healthy",
-          "category": "reference"
+          "category": "reference",
+          "chinese_name": "更新时间"
         },
         {
           "name": "stock_count",
@@ -2678,7 +2543,8 @@
           "max": null,
           "sample": "25",
           "data_status": "healthy",
-          "category": "reference"
+          "category": "reference",
+          "chinese_name": "板块内股票数量"
         },
         {
           "name": "description",
@@ -2689,7 +2555,8 @@
           "max": null,
           "sample": "",
           "data_status": "healthy",
-          "category": "reference"
+          "category": "reference",
+          "chinese_name": "共振描述 (人类可读)"
         }
       ],
       "category": "reference",
@@ -2709,10 +2576,7 @@
           "sample": null,
           "data_status": "empty_table",
           "category": "realtime",
-          "chinese_name": "证券代码",
-          "spec_note": "证券代码",
-          "spec_source": "获取新股申购信息 get_ipo_info",
-          "capability_authoritative": "证券代码"
+          "chinese_name": "证券代码"
         },
         {
           "name": "snapshot_time",
@@ -2723,7 +2587,8 @@
           "max": null,
           "sample": null,
           "data_status": "empty_table",
-          "category": "realtime"
+          "category": "realtime",
+          "chinese_name": "快照时间"
         },
         {
           "name": "ItemNum",
@@ -2735,10 +2600,7 @@
           "sample": null,
           "data_status": "empty_table",
           "category": "realtime",
-          "chinese_name": "快照笔数",
-          "spec_note": "快照笔数",
-          "spec_source": "获取快照数据 get_market_snapshot",
-          "capability_authoritative": "快照笔数"
+          "chinese_name": "快照笔数"
         },
         {
           "name": "LastClose",
@@ -2750,10 +2612,7 @@
           "sample": null,
           "data_status": "empty_table",
           "category": "realtime",
-          "chinese_name": "前收盘价",
-          "spec_note": "前收盘价",
-          "spec_source": "获取快照数据 get_market_snapshot",
-          "capability_authoritative": "前收盘价"
+          "chinese_name": "前收盘价"
         },
         {
           "name": "Open",
@@ -2765,10 +2624,7 @@
           "sample": null,
           "data_status": "empty_table",
           "category": "realtime",
-          "chinese_name": "开盘价",
-          "spec_note": "原始价 OHLC",
-          "spec_source": "get_etf_nav",
-          "capability_authoritative": "原始价 OHLC"
+          "chinese_name": "开盘价"
         },
         {
           "name": "Max",
@@ -2780,10 +2636,7 @@
           "sample": null,
           "data_status": "empty_table",
           "category": "realtime",
-          "chinese_name": "最高价",
-          "spec_note": "最高价",
-          "spec_source": "获取快照数据 get_market_snapshot",
-          "capability_authoritative": "最高价"
+          "chinese_name": "最高价"
         },
         {
           "name": "Min",
@@ -2795,10 +2648,7 @@
           "sample": null,
           "data_status": "empty_table",
           "category": "realtime",
-          "chinese_name": "最低价",
-          "spec_note": "最低价",
-          "spec_source": "获取快照数据 get_market_snapshot",
-          "capability_authoritative": "最低价"
+          "chinese_name": "最低价"
         },
         {
           "name": "Now",
@@ -2810,10 +2660,7 @@
           "sample": null,
           "data_status": "empty_table",
           "category": "realtime",
-          "chinese_name": "现价",
-          "spec_note": "现价",
-          "spec_source": "获取快照数据 get_market_snapshot",
-          "capability_authoritative": "现价"
+          "chinese_name": "现价"
         },
         {
           "name": "Volume",
@@ -2825,10 +2672,7 @@
           "sample": null,
           "data_status": "empty_table",
           "category": "realtime",
-          "chinese_name": "成交量",
-          "spec_note": "成交量",
-          "spec_source": "获取K线行情 get_market_data",
-          "capability_authoritative": "成交量"
+          "chinese_name": "成交量 (股)"
         },
         {
           "name": "NowVol",
@@ -2840,10 +2684,7 @@
           "sample": null,
           "data_status": "empty_table",
           "category": "realtime",
-          "chinese_name": "现手",
-          "spec_note": "现手",
-          "spec_source": "获取快照数据 get_market_snapshot",
-          "capability_authoritative": "现手"
+          "chinese_name": "现手"
         },
         {
           "name": "Amount",
@@ -2855,9 +2696,7 @@
           "sample": null,
           "data_status": "empty_table",
           "category": "realtime",
-          "chinese_name": "成交额",
-          "spec_note": "",
-          "spec_source": "get_etf_nav"
+          "chinese_name": "成交额"
         },
         {
           "name": "Inside",
@@ -2869,10 +2708,7 @@
           "sample": null,
           "data_status": "empty_table",
           "category": "realtime",
-          "chinese_name": "内盘（板块指数时为跌停家数）",
-          "spec_note": "内盘（板块指数时为跌停家数）",
-          "spec_source": "获取快照数据 get_market_snapshot",
-          "capability_authoritative": "内盘（板块指数时为跌停家数）"
+          "chinese_name": "内盘（板块指数时为跌停家数）"
         },
         {
           "name": "Outside",
@@ -2884,10 +2720,7 @@
           "sample": null,
           "data_status": "empty_table",
           "category": "realtime",
-          "chinese_name": "外盘（板块指数时为涨停家数）",
-          "spec_note": "外盘（板块指数时为涨停家数）",
-          "spec_source": "获取快照数据 get_market_snapshot",
-          "capability_authoritative": "外盘（板块指数时为涨停家数）"
+          "chinese_name": "外盘（板块指数时为涨停家数）"
         },
         {
           "name": "TickDiff",
@@ -2899,10 +2732,7 @@
           "sample": null,
           "data_status": "empty_table",
           "category": "realtime",
-          "chinese_name": "笔涨跌",
-          "spec_note": "笔涨跌",
-          "spec_source": "获取快照数据 get_market_snapshot",
-          "capability_authoritative": "笔涨跌"
+          "chinese_name": "笔涨跌"
         },
         {
           "name": "InOutFlag",
@@ -2914,10 +2744,7 @@
           "sample": null,
           "data_status": "empty_table",
           "category": "realtime",
-          "chinese_name": "内外盘标志：0 Buy 1 Sell 2 Unknown",
-          "spec_note": "内外盘标志：0 Buy 1 Sell 2 Unknown",
-          "spec_source": "获取快照数据 get_market_snapshot",
-          "capability_authoritative": "内外盘标志：0 Buy 1 Sell 2 Unknown"
+          "chinese_name": "内外盘标志：0 Buy 1 Sell 2 Unknown"
         },
         {
           "name": "Average",
@@ -2929,10 +2756,7 @@
           "sample": null,
           "data_status": "empty_table",
           "category": "realtime",
-          "chinese_name": "均价",
-          "spec_note": "均价",
-          "spec_source": "获取快照数据 get_market_snapshot",
-          "capability_authoritative": "均价"
+          "chinese_name": "均价"
         },
         {
           "name": "XsFlag",
@@ -2944,10 +2768,7 @@
           "sample": null,
           "data_status": "empty_table",
           "category": "realtime",
-          "chinese_name": "数据精度（仅 `formula_process_mul_zb` 支持）",
-          "spec_note": "数据精度（仅 `formula_process_mul_zb` 支持）",
-          "spec_source": "",
-          "capability_authoritative": "数据精度（仅 `formula_process_mul_zb` 支持）"
+          "chinese_name": "数据精度（仅 `formula_process_mul_zb` 支持）"
         },
         {
           "name": "UpHome",
@@ -2959,10 +2780,7 @@
           "sample": null,
           "data_status": "empty_table",
           "category": "realtime",
-          "chinese_name": "上涨家数（对于指数有效）",
-          "spec_note": "上涨家数（对于指数有效）",
-          "spec_source": "获取快照数据 get_market_snapshot",
-          "capability_authoritative": "上涨家数（对于指数有效）"
+          "chinese_name": "上涨家数（对于指数有效）"
         },
         {
           "name": "DownHome",
@@ -2974,10 +2792,7 @@
           "sample": null,
           "data_status": "empty_table",
           "category": "realtime",
-          "chinese_name": "下跌家数（对于指数有效）",
-          "spec_note": "下跌家数（对于指数有效）",
-          "spec_source": "获取快照数据 get_market_snapshot",
-          "capability_authoritative": "下跌家数（对于指数有效）"
+          "chinese_name": "下跌家数（对于指数有效）"
         },
         {
           "name": "Before5MinNow",
@@ -2989,10 +2804,7 @@
           "sample": null,
           "data_status": "empty_table",
           "category": "realtime",
-          "chinese_name": "5 分钟前价格",
-          "spec_note": "5 分钟前价格",
-          "spec_source": "获取快照数据 get_market_snapshot",
-          "capability_authoritative": "5 分钟前价格"
+          "chinese_name": "5 分钟前价格"
         },
         {
           "name": "Zangsu",
@@ -3004,10 +2816,7 @@
           "sample": null,
           "data_status": "empty_table",
           "category": "realtime",
-          "chinese_name": "涨速",
-          "spec_note": "涨速",
-          "spec_source": "获取快照数据 get_market_snapshot",
-          "capability_authoritative": "涨速"
+          "chinese_name": "涨速"
         },
         {
           "name": "ZAFPre3",
@@ -3019,10 +2828,7 @@
           "sample": null,
           "data_status": "empty_table",
           "category": "realtime",
-          "chinese_name": "3 日涨幅",
-          "spec_note": "3 日涨幅",
-          "spec_source": "获取快照数据 get_market_snapshot",
-          "capability_authoritative": "3 日涨幅"
+          "chinese_name": "3 日涨幅"
         },
         {
           "name": "Jjjz",
@@ -3034,10 +2840,7 @@
           "sample": null,
           "data_status": "empty_table",
           "category": "realtime",
-          "chinese_name": "基金净值",
-          "spec_note": "基金净值",
-          "spec_source": "获取快照数据 get_market_snapshot",
-          "capability_authoritative": "基金净值"
+          "chinese_name": "基金净值"
         }
       ],
       "category": "realtime",
@@ -3056,10 +2859,7 @@
           "max": null,
           "sample": null,
           "data_status": "empty_table",
-          "chinese_name": "日期",
-          "spec_note": "日期",
-          "spec_source": "获取K线行情 get_market_data",
-          "capability_authoritative": "日期"
+          "chinese_name": "日期"
         },
         {
           "name": "emotion",
@@ -3069,7 +2869,8 @@
           "min": null,
           "max": null,
           "sample": null,
-          "data_status": "empty_table"
+          "data_status": "empty_table",
+          "chinese_name": "情绪标签(冰点/低迷/中性/活跃/过热)"
         },
         {
           "name": "zt_cnt_max",
@@ -3079,7 +2880,8 @@
           "min": null,
           "max": null,
           "sample": null,
-          "data_status": "empty_table"
+          "data_status": "empty_table",
+          "chinese_name": "涨停数峰值"
         },
         {
           "name": "fbl_avg",
@@ -3089,7 +2891,8 @@
           "min": null,
           "max": null,
           "sample": null,
-          "data_status": "empty_table"
+          "data_status": "empty_table",
+          "chinese_name": "封板率均值"
         },
         {
           "name": "max_lb",
@@ -3099,7 +2902,8 @@
           "min": null,
           "max": null,
           "sample": null,
-          "data_status": "empty_table"
+          "data_status": "empty_table",
+          "chinese_name": "最高连板"
         },
         {
           "name": "summary",
@@ -3109,7 +2913,8 @@
           "min": null,
           "max": null,
           "sample": null,
-          "data_status": "empty_table"
+          "data_status": "empty_table",
+          "chinese_name": "总结"
         }
       ],
       "category": "derived",
@@ -3127,7 +2932,8 @@
           "min": null,
           "max": null,
           "sample": null,
-          "data_status": "empty_table"
+          "data_status": "empty_table",
+          "chinese_name": "事件时间"
         },
         {
           "name": "event_type",
@@ -3137,7 +2943,8 @@
           "min": null,
           "max": null,
           "sample": null,
-          "data_status": "empty_table"
+          "data_status": "empty_table",
+          "chinese_name": "事件类型(intraday:surge_up/down/limit_seal/limit_break/capital_in/out; sentiment:turn_zt_drop/turn_udr_flip/emotion_crossing)"
         },
         {
           "name": "description",
@@ -3147,7 +2954,8 @@
           "min": null,
           "max": null,
           "sample": null,
-          "data_status": "empty_table"
+          "data_status": "empty_table",
+          "chinese_name": "共振描述 (人类可读)"
         },
         {
           "name": "detail",
@@ -3157,7 +2965,8 @@
           "min": null,
           "max": null,
           "sample": null,
-          "data_status": "empty_table"
+          "data_status": "empty_table",
+          "chinese_name": "事件详情(JSON)"
         }
       ],
       "category": "derived",
@@ -3175,7 +2984,8 @@
           "min": null,
           "max": null,
           "sample": "2026-07-04T01:29:00",
-          "data_status": "healthy"
+          "data_status": "healthy",
+          "chinese_name": "快照时间"
         },
         {
           "name": "emotion",
@@ -3185,7 +2995,8 @@
           "min": null,
           "max": null,
           "sample": "低迷",
-          "data_status": "healthy"
+          "data_status": "healthy",
+          "chinese_name": "情绪标签(冰点/低迷/中性/活跃/过热)"
         },
         {
           "name": "emotion_order",
@@ -3195,7 +3006,8 @@
           "min": null,
           "max": null,
           "sample": "1",
-          "data_status": "healthy"
+          "data_status": "healthy",
+          "chinese_name": "情绪档位(0-4)"
         },
         {
           "name": "zt_cnt",
@@ -3205,7 +3017,8 @@
           "min": null,
           "max": null,
           "sample": "160",
-          "data_status": "healthy"
+          "data_status": "healthy",
+          "chinese_name": "涨停数"
         },
         {
           "name": "dt_cnt",
@@ -3215,7 +3028,8 @@
           "min": null,
           "max": null,
           "sample": "23",
-          "data_status": "healthy"
+          "data_status": "healthy",
+          "chinese_name": "跌停数"
         },
         {
           "name": "break_cnt",
@@ -3225,7 +3039,8 @@
           "min": null,
           "max": null,
           "sample": "69",
-          "data_status": "healthy"
+          "data_status": "healthy",
+          "chinese_name": "炸板数"
         },
         {
           "name": "fbl",
@@ -3235,7 +3050,8 @@
           "min": null,
           "max": null,
           "sample": 69.86899563318777,
-          "data_status": "healthy"
+          "data_status": "healthy",
+          "chinese_name": "封板率%"
         },
         {
           "name": "max_lb",
@@ -3245,7 +3061,8 @@
           "min": null,
           "max": null,
           "sample": "20",
-          "data_status": "healthy"
+          "data_status": "healthy",
+          "chinese_name": "最高连板"
         },
         {
           "name": "udr",
@@ -3255,7 +3072,8 @@
           "min": null,
           "max": null,
           "sample": 2.318981200727714,
-          "data_status": "healthy"
+          "data_status": "healthy",
+          "chinese_name": "涨跌比"
         },
         {
           "name": "up_cnt",
@@ -3265,7 +3083,8 @@
           "min": null,
           "max": null,
           "sample": "3824",
-          "data_status": "healthy"
+          "data_status": "healthy",
+          "chinese_name": "上涨家数"
         },
         {
           "name": "down_cnt",
@@ -3275,7 +3094,8 @@
           "min": null,
           "max": null,
           "sample": "1649",
-          "data_status": "healthy"
+          "data_status": "healthy",
+          "chinese_name": "下跌家数"
         },
         {
           "name": "index_zaf",
@@ -3285,7 +3105,8 @@
           "min": null,
           "max": null,
           "sample": 0.0,
-          "data_status": "healthy"
+          "data_status": "healthy",
+          "chinese_name": "指数涨幅%"
         },
         {
           "name": "top_sectors",
@@ -3295,7 +3116,8 @@
           "min": null,
           "max": null,
           "sample": "[{\"code\": \"0\", \"name\": \"深股通标的\", \"score\": 27096.2, ",
-          "data_status": "healthy"
+          "data_status": "healthy",
+          "chinese_name": "热门板块"
         },
         {
           "name": "lb_tier",
@@ -3305,7 +3127,8 @@
           "min": null,
           "max": null,
           "sample": "{\"lb2\": [\"000407.SZ\", \"000514.SZ\", \"000520.SZ\", \"0",
-          "data_status": "healthy"
+          "data_status": "healthy",
+          "chinese_name": "连板梯队"
         }
       ],
       "category": "derived",
@@ -3323,7 +3146,8 @@
           "min": null,
           "max": null,
           "sample": null,
-          "data_status": "empty_table"
+          "data_status": "empty_table",
+          "chinese_name": "日志时间"
         },
         {
           "name": "strategy_name",
@@ -3333,7 +3157,8 @@
           "min": null,
           "max": null,
           "sample": null,
-          "data_status": "empty_table"
+          "data_status": "empty_table",
+          "chinese_name": "策略标识"
         },
         {
           "name": "signal_count",
@@ -3343,7 +3168,8 @@
           "min": null,
           "max": null,
           "sample": null,
-          "data_status": "empty_table"
+          "data_status": "empty_table",
+          "chinese_name": "当前窗口内信号累计次数"
         },
         {
           "name": "last_push_time",
@@ -3353,7 +3179,8 @@
           "min": null,
           "max": null,
           "sample": null,
-          "data_status": "empty_table"
+          "data_status": "empty_table",
+          "chinese_name": "上次推送时间"
         },
         {
           "name": "cooldown_sec",
@@ -3363,7 +3190,8 @@
           "min": null,
           "max": null,
           "sample": null,
-          "data_status": "empty_table"
+          "data_status": "empty_table",
+          "chinese_name": "冷却时间 (秒)"
         },
         {
           "name": "pushed",
@@ -3373,7 +3201,8 @@
           "min": null,
           "max": null,
           "sample": null,
-          "data_status": "empty_table"
+          "data_status": "empty_table",
+          "chinese_name": "本次是否实际推送"
         }
       ],
       "category": "derived",
@@ -3392,10 +3221,7 @@
           "max": null,
           "sample": "000001.SZ",
           "data_status": "healthy",
-          "chinese_name": "证券代码",
-          "spec_note": "证券代码",
-          "spec_source": "获取新股申购信息 get_ipo_info",
-          "capability_authoritative": "证券代码"
+          "chinese_name": "证券代码"
         },
         {
           "name": "signal_time",
@@ -3405,7 +3231,8 @@
           "min": null,
           "max": null,
           "sample": "2026-07-03T14:40:00",
-          "data_status": "healthy"
+          "data_status": "healthy",
+          "chinese_name": "datetime.now() (信号触发时刻)"
         },
         {
           "name": "strategy_name",
@@ -3415,7 +3242,8 @@
           "min": null,
           "max": null,
           "sample": "k2_atom",
-          "data_status": "healthy"
+          "data_status": "healthy",
+          "chinese_name": "策略标识"
         },
         {
           "name": "signal_type",
@@ -3425,7 +3253,8 @@
           "min": null,
           "max": null,
           "sample": "break_pressure",
-          "data_status": "healthy"
+          "data_status": "healthy",
+          "chinese_name": "信号类型 (strong_buy/buy/watch/sell)"
         },
         {
           "name": "signal_score",
@@ -3435,7 +3264,8 @@
           "min": null,
           "max": null,
           "sample": 1.0,
-          "data_status": "healthy"
+          "data_status": "healthy",
+          "chinese_name": "信号评分 (0-100, 越高越强)"
         },
         {
           "name": "price",
@@ -3445,7 +3275,8 @@
           "min": null,
           "max": null,
           "sample": 10.32,
-          "data_status": "healthy"
+          "data_status": "healthy",
+          "chinese_name": "成交价"
         },
         {
           "name": "volume",
@@ -3456,10 +3287,7 @@
           "max": null,
           "sample": null,
           "data_status": "near_empty",
-          "chinese_name": "成交量",
-          "spec_note": "成交量",
-          "spec_source": "获取K线行情 get_market_data",
-          "capability_authoritative": "成交量"
+          "chinese_name": "成交量 (股)"
         },
         {
           "name": "reason",
@@ -3469,7 +3297,8 @@
           "min": null,
           "max": null,
           "sample": "突破压力位 close 上穿 pressure_high",
-          "data_status": "healthy"
+          "data_status": "healthy",
+          "chinese_name": "上榜原因 (涨幅偏离/振幅/换手率等)"
         },
         {
           "name": "metadata",
@@ -3479,7 +3308,8 @@
           "min": null,
           "max": null,
           "sample": "{\"close\": 10.32, \"dif\": 0.008947608501317816, \"dea",
-          "data_status": "healthy"
+          "data_status": "healthy",
+          "chinese_name": "附加数据 (JSON 字符串, 存放策略特有参数)"
         }
       ],
       "category": "derived",
@@ -3499,10 +3329,7 @@
           "sample": "000001.SZ",
           "data_status": "healthy",
           "category": "history",
-          "chinese_name": "证券代码",
-          "spec_note": "证券代码",
-          "spec_source": "获取新股申购信息 get_ipo_info",
-          "capability_authoritative": "证券代码"
+          "chinese_name": "证券代码"
         },
         {
           "name": "date",
@@ -3514,10 +3341,7 @@
           "sample": "2026-07-03T00:00:00",
           "data_status": "healthy",
           "category": "history",
-          "chinese_name": "日期",
-          "spec_note": "日期",
-          "spec_source": "获取K线行情 get_market_data",
-          "capability_authoritative": "日期"
+          "chinese_name": "日期"
         },
         {
           "name": "HqDate",
@@ -3529,10 +3353,7 @@
           "sample": "20260703",
           "data_status": "healthy",
           "category": "history",
-          "chinese_name": "行情日期",
-          "spec_note": "行情日期",
-          "spec_source": "获取股票更多信息 get_more_info",
-          "capability_authoritative": "行情日期"
+          "chinese_name": "行情日期"
         },
         {
           "name": "ZTPrice",
@@ -3547,10 +3368,7 @@
           "capability": "涨停价",
           "verify_type": "eod_ok",
           "provenance": "verified",
-          "chinese_name": "涨停价",
-          "spec_note": "涨停价",
-          "spec_source": "获取股票更多信息 get_more_info",
-          "capability_authoritative": "涨停价"
+          "chinese_name": "涨停价"
         },
         {
           "name": "DTPrice",
@@ -3562,10 +3380,7 @@
           "sample": 9.25,
           "data_status": "healthy",
           "category": "history",
-          "chinese_name": "跌停价",
-          "spec_note": "跌停价",
-          "spec_source": "获取股票更多信息 get_more_info",
-          "capability_authoritative": "跌停价"
+          "chinese_name": "跌停价"
         },
         {
           "name": "ZAFYesterday",
@@ -3580,10 +3395,7 @@
           "capability": "昨日涨幅",
           "verify_type": "eod_ok",
           "provenance": "verified",
-          "chinese_name": "昨日涨幅",
-          "spec_note": "昨日涨幅",
-          "spec_source": "获取股票更多信息 get_more_info",
-          "capability_authoritative": "昨日涨幅"
+          "chinese_name": "昨日涨幅"
         },
         {
           "name": "ZAFPre2D",
@@ -3598,10 +3410,7 @@
           "capability": "2日前涨幅(轨迹)",
           "verify_type": "eod_ok",
           "provenance": "verified",
-          "chinese_name": "前天涨幅",
-          "spec_note": "前天涨幅",
-          "spec_source": "获取股票更多信息 get_more_info",
-          "capability_authoritative": "前天涨幅"
+          "chinese_name": "前天涨幅"
         },
         {
           "name": "ZAFPre5",
@@ -3616,10 +3425,7 @@
           "capability": "5日前涨幅",
           "verify_type": "eod_ok",
           "provenance": "verified",
-          "chinese_name": "5 日涨幅",
-          "spec_note": "5 日涨幅",
-          "spec_source": "获取股票更多信息 get_more_info",
-          "capability_authoritative": "5 日涨幅"
+          "chinese_name": "5 日涨幅"
         },
         {
           "name": "ZAFPre10",
@@ -3634,10 +3440,7 @@
           "capability": "10日前涨幅",
           "verify_type": "eod_ok",
           "provenance": "verified",
-          "chinese_name": "10 日涨幅",
-          "spec_note": "10 日涨幅",
-          "spec_source": "获取股票更多信息 get_more_info",
-          "capability_authoritative": "10 日涨幅"
+          "chinese_name": "10 日涨幅"
         },
         {
           "name": "ZAFPre20",
@@ -3649,10 +3452,7 @@
           "sample": -1.43,
           "data_status": "healthy",
           "category": "history",
-          "chinese_name": "20 日涨幅",
-          "spec_note": "20 日涨幅",
-          "spec_source": "获取股票更多信息 get_more_info",
-          "capability_authoritative": "20 日涨幅"
+          "chinese_name": "20 日涨幅"
         },
         {
           "name": "ZAFPre30",
@@ -3667,10 +3467,7 @@
           "capability": "30日前涨幅",
           "verify_type": "eod_ok",
           "provenance": "verified",
-          "chinese_name": "30 日涨幅",
-          "spec_note": "30 日涨幅",
-          "spec_source": "获取股票更多信息 get_more_info",
-          "capability_authoritative": "30 日涨幅"
+          "chinese_name": "30 日涨幅"
         },
         {
           "name": "ZAFPre60",
@@ -3682,10 +3479,7 @@
           "sample": -4.18,
           "data_status": "healthy",
           "category": "history",
-          "chinese_name": "60 日涨幅",
-          "spec_note": "60 日涨幅",
-          "spec_source": "获取股票更多信息 get_more_info",
-          "capability_authoritative": "60 日涨幅"
+          "chinese_name": "60 日涨幅"
         },
         {
           "name": "ZAFYear",
@@ -3697,10 +3491,7 @@
           "sample": -6.7,
           "data_status": "healthy",
           "category": "history",
-          "chinese_name": "年初至今涨幅",
-          "spec_note": "年初至今涨幅",
-          "spec_source": "获取股票更多信息 get_more_info",
-          "capability_authoritative": "年初至今涨幅"
+          "chinese_name": "年初至今涨幅"
         },
         {
           "name": "ZAFPreMyMonth",
@@ -3712,10 +3503,7 @@
           "sample": 2.59,
           "data_status": "healthy",
           "category": "history",
-          "chinese_name": "涨幅（本月来）",
-          "spec_note": "涨幅（本月来）",
-          "spec_source": "获取股票更多信息 get_more_info",
-          "capability_authoritative": "涨幅（本月来）"
+          "chinese_name": "涨幅（本月来）"
         },
         {
           "name": "ZAFPreOneYear",
@@ -3727,10 +3515,7 @@
           "sample": -12.03,
           "data_status": "healthy",
           "category": "history",
-          "chinese_name": "涨幅（一年来）",
-          "spec_note": "涨幅（一年来）",
-          "spec_source": "获取股票更多信息 get_more_info",
-          "capability_authoritative": "涨幅（一年来）"
+          "chinese_name": "涨幅（一年来）"
         },
         {
           "name": "Zsz",
@@ -3745,10 +3530,7 @@
           "capability": "总市值",
           "verify_type": "eod_ok",
           "provenance": "verified",
-          "chinese_name": "总市值（亿）",
-          "spec_note": "总市值（亿）",
-          "spec_source": "获取股票更多信息 get_more_info",
-          "capability_authoritative": "总市值（亿）"
+          "chinese_name": "总市值（亿）"
         },
         {
           "name": "Ltsz",
@@ -3763,10 +3545,7 @@
           "capability": "流通市值(流动性/题材容量)",
           "verify_type": "eod_ok",
           "provenance": "verified",
-          "chinese_name": "流通市值（亿）",
-          "spec_note": "流通市值（亿）",
-          "spec_source": "获取股票更多信息 get_more_info",
-          "capability_authoritative": "流通市值（亿）"
+          "chinese_name": "流通市值（亿）"
         },
         {
           "name": "DynaPE",
@@ -3781,10 +3560,7 @@
           "capability": "动态市盈率(趋势票估值)",
           "verify_type": "eod_ok",
           "provenance": "verified",
-          "chinese_name": "动态市盈率",
-          "spec_note": "动态市盈率",
-          "spec_source": "获取股票更多信息 get_more_info",
-          "capability_authoritative": "动态市盈率"
+          "chinese_name": "动态市盈率"
         },
         {
           "name": "MorePE",
@@ -3796,10 +3572,7 @@
           "sample": 4.68,
           "data_status": "healthy",
           "category": "history",
-          "chinese_name": "市盈率（港股：动，其他扩展：静）",
-          "spec_note": "市盈率（港股：动，其他扩展：静）",
-          "spec_source": "获取股票更多信息 get_more_info",
-          "capability_authoritative": "市盈率（港股：动，其他扩展：静）"
+          "chinese_name": "市盈率（港股：动，其他扩展：静）"
         },
         {
           "name": "StaticPE_TTM",
@@ -3811,10 +3584,7 @@
           "sample": 4.63,
           "data_status": "healthy",
           "category": "history",
-          "chinese_name": "市盈率（TTM）",
-          "spec_note": "市盈率（TTM）",
-          "spec_source": "获取股票更多信息 get_more_info",
-          "capability_authoritative": "市盈率（TTM）"
+          "chinese_name": "市盈率（TTM）"
         },
         {
           "name": "DYRatio",
@@ -3826,10 +3596,7 @@
           "sample": 5.8,
           "data_status": "healthy",
           "category": "history",
-          "chinese_name": "股息率",
-          "spec_note": "股息率",
-          "spec_source": "获取股票更多信息 get_more_info",
-          "capability_authoritative": "股息率"
+          "chinese_name": "股息率"
         },
         {
           "name": "PB_MRQ",
@@ -3844,10 +3611,7 @@
           "capability": "市净率",
           "verify_type": "eod_ok",
           "provenance": "verified",
-          "chinese_name": "市净率（MRQ）",
-          "spec_note": "市净率（MRQ）",
-          "spec_source": "获取股票更多信息 get_more_info",
-          "capability_authoritative": "市净率（MRQ）"
+          "chinese_name": "市净率（MRQ）"
         },
         {
           "name": "Yield",
@@ -3859,10 +3623,7 @@
           "sample": 1121.51,
           "data_status": "healthy",
           "category": "history",
-          "chinese_name": "应计利息（债券），占款天数（回购）",
-          "spec_note": "应计利息（债券），占款天数（回购）",
-          "spec_source": "获取股票更多信息 get_more_info",
-          "capability_authoritative": "应计利息（债券），占款天数（回购）"
+          "chinese_name": "应计利息（债券），占款天数（回购）"
         },
         {
           "name": "FreeLtgb",
@@ -3874,10 +3635,7 @@
           "sample": 816048.13,
           "data_status": "healthy",
           "category": "history",
-          "chinese_name": "自由流通股本（万）",
-          "spec_note": "自由流通股本（万）",
-          "spec_source": "获取股票更多信息 get_more_info",
-          "capability_authoritative": "自由流通股本（万）"
+          "chinese_name": "自由流通股本（万）"
         },
         {
           "name": "BetaValue",
@@ -3892,10 +3650,7 @@
           "capability": "Beta(波动/风险)",
           "verify_type": "eod_ok",
           "provenance": "verified",
-          "chinese_name": "贝塔系数",
-          "spec_note": "贝塔系数",
-          "spec_source": "获取股票更多信息 get_more_info",
-          "capability_authoritative": "贝塔系数"
+          "chinese_name": "贝塔系数"
         },
         {
           "name": "fLianB",
@@ -3910,10 +3665,7 @@
           "capability": "连板数",
           "verify_type": "eod_ok",
           "provenance": "verified",
-          "chinese_name": "量比",
-          "spec_note": "量比",
-          "spec_source": "获取股票更多信息 get_more_info",
-          "capability_authoritative": "量比"
+          "chinese_name": "量比"
         },
         {
           "name": "LastZTHzNum",
@@ -3928,10 +3680,7 @@
           "capability": "最近涨停后连板数",
           "verify_type": "eod_ok",
           "provenance": "verified",
-          "chinese_name": "几板",
-          "spec_note": "几板",
-          "spec_source": "获取股票更多信息 get_more_info",
-          "capability_authoritative": "几板"
+          "chinese_name": "几板"
         },
         {
           "name": "EverZTCount",
@@ -3946,10 +3695,7 @@
           "capability": "历史涨停次数(股性活跃度, 次日溢价率参考)",
           "verify_type": "eod_ok",
           "provenance": "verified",
-          "chinese_name": "连板天",
-          "spec_note": "连板天",
-          "spec_source": "获取股票更多信息 get_more_info",
-          "capability_authoritative": "连板天"
+          "chinese_name": "连板天"
         },
         {
           "name": "YearZTDay",
@@ -3964,10 +3710,7 @@
           "capability": "今年涨停天数",
           "verify_type": "eod_ok",
           "provenance": "verified",
-          "chinese_name": "年涨停天数",
-          "spec_note": "年涨停天数",
-          "spec_source": "获取股票更多信息 get_more_info",
-          "capability_authoritative": "年涨停天数"
+          "chinese_name": "年涨停天数"
         },
         {
           "name": "ConZAFDateNum",
@@ -3979,10 +3722,7 @@
           "sample": 3.0,
           "data_status": "healthy",
           "category": "history",
-          "chinese_name": "连涨天数",
-          "spec_note": "连涨天数",
-          "spec_source": "获取股票更多信息 get_more_info",
-          "capability_authoritative": "连涨天数"
+          "chinese_name": "连涨天数"
         },
         {
           "name": "LastStartZT",
@@ -3994,10 +3734,7 @@
           "sample": "1",
           "data_status": "healthy",
           "category": "history",
-          "chinese_name": "几天",
-          "spec_note": "几天",
-          "spec_source": "获取股票更多信息 get_more_info",
-          "capability_authoritative": "几天"
+          "chinese_name": "几天"
         },
         {
           "name": "ZTGPNum",
@@ -4009,10 +3746,7 @@
           "sample": 0.0,
           "data_status": "healthy",
           "category": "history",
-          "chinese_name": "板块指数的涨停家数",
-          "spec_note": "板块指数的涨停家数",
-          "spec_source": "获取股票更多信息 get_more_info",
-          "capability_authoritative": "板块指数的涨停家数"
+          "chinese_name": "板块指数的涨停家数"
         },
         {
           "name": "OpenAmo",
@@ -4027,10 +3761,7 @@
           "capability": "开盘成交额",
           "verify_type": "eod_ok",
           "provenance": "verified",
-          "chinese_name": "开盘金额（万元）（A 股和板块指数有效）",
-          "spec_note": "开盘金额（万元）（A 股和板块指数有效）",
-          "spec_source": "获取股票更多信息 get_more_info",
-          "capability_authoritative": "开盘金额（万元）（A 股和板块指数有效）"
+          "chinese_name": "开盘金额（万元）（A 股和板块指数有效）"
         },
         {
           "name": "OpenAmoPre1",
@@ -4042,10 +3773,7 @@
           "sample": 1760.21,
           "data_status": "healthy",
           "category": "history",
-          "chinese_name": "昨开盘金额（万元）",
-          "spec_note": "昨开盘金额（万元）",
-          "spec_source": "获取股票更多信息 get_more_info",
-          "capability_authoritative": "昨开盘金额（万元）"
+          "chinese_name": "昨开盘金额（万元）"
         },
         {
           "name": "OpenVolPre1",
@@ -4057,10 +3785,7 @@
           "sample": 17257.0,
           "data_status": "healthy",
           "category": "history",
-          "chinese_name": "昨开盘量",
-          "spec_note": "昨开盘量",
-          "spec_source": "获取股票更多信息 get_more_info",
-          "capability_authoritative": "昨开盘量"
+          "chinese_name": "昨开盘量"
         },
         {
           "name": "CJJEPre1",
@@ -4075,10 +3800,7 @@
           "capability": "前1日成交额(承接力/流动性)",
           "verify_type": "eod_ok",
           "provenance": "verified",
-          "chinese_name": "昨成交额（万元）",
-          "spec_note": "昨成交额（万元）",
-          "spec_source": "获取股票更多信息 get_more_info",
-          "capability_authoritative": "昨成交额（万元）"
+          "chinese_name": "昨成交额（万元）"
         },
         {
           "name": "CJJEPre3",
@@ -4093,10 +3815,7 @@
           "capability": "前3日成交额",
           "verify_type": "eod_ok",
           "provenance": "verified",
-          "chinese_name": "3 日成交额（万元）",
-          "spec_note": "3 日成交额（万元）",
-          "spec_source": "获取股票更多信息 get_more_info",
-          "capability_authoritative": "3 日成交额（万元）"
+          "chinese_name": "3 日成交额（万元）"
         },
         {
           "name": "FDEPre1",
@@ -4108,10 +3827,7 @@
           "sample": 0.0,
           "data_status": "healthy",
           "category": "history",
-          "chinese_name": "昨封单额（万元）",
-          "spec_note": "昨封单额（万元）",
-          "spec_source": "获取股票更多信息 get_more_info",
-          "capability_authoritative": "昨封单额（万元）"
+          "chinese_name": "昨封单额（万元）"
         },
         {
           "name": "FDEPre2",
@@ -4123,10 +3839,7 @@
           "sample": 0.0,
           "data_status": "healthy",
           "category": "history",
-          "chinese_name": "前封单额（万元）",
-          "spec_note": "前封单额（万元）",
-          "spec_source": "获取股票更多信息 get_more_info",
-          "capability_authoritative": "前封单额（万元）"
+          "chinese_name": "前封单额（万元）"
         },
         {
           "name": "OpenZTBuy",
@@ -4141,10 +3854,7 @@
           "capability": "开盘涨停买单额(开盘强势度)",
           "verify_type": "eod_ok",
           "provenance": "verified",
-          "chinese_name": "竞价涨停买入金额（万元）",
-          "spec_note": "竞价涨停买入金额（万元）",
-          "spec_source": "获取股票更多信息 get_more_info",
-          "capability_authoritative": "竞价涨停买入金额（万元）"
+          "chinese_name": "竞价涨停买入金额（万元）"
         },
         {
           "name": "OpenZAF",
@@ -4158,7 +3868,8 @@
           "category": "history",
           "capability": "开盘涨幅",
           "verify_type": "eod_ok",
-          "provenance": "verified"
+          "provenance": "verified",
+          "chinese_name": "开盘涨幅%"
         },
         {
           "name": "VOpenZAF",
@@ -4170,10 +3881,7 @@
           "sample": 0.0,
           "data_status": "healthy",
           "category": "history",
-          "chinese_name": "抢筹涨幅",
-          "spec_note": "抢筹涨幅",
-          "spec_source": "获取股票更多信息 get_more_info",
-          "capability_authoritative": "抢筹涨幅"
+          "chinese_name": "抢筹涨幅"
         },
         {
           "name": "MA5Value",
@@ -4185,10 +3893,7 @@
           "sample": 10.21,
           "data_status": "healthy",
           "category": "history",
-          "chinese_name": "5 日均价",
-          "spec_note": "5 日均价",
-          "spec_source": "获取股票更多信息 get_more_info",
-          "capability_authoritative": "5 日均价"
+          "chinese_name": "5 日均价"
         },
         {
           "name": "Wtb",
@@ -4200,10 +3905,7 @@
           "sample": -45.68,
           "data_status": "healthy",
           "category": "history",
-          "chinese_name": "委比",
-          "spec_note": "委比",
-          "spec_source": "获取股票更多信息 get_more_info",
-          "capability_authoritative": "委比"
+          "chinese_name": "委比"
         },
         {
           "name": "HisHigh",
@@ -4218,10 +3920,7 @@
           "capability": "历史最高(压力位)",
           "verify_type": "eod_ok",
           "provenance": "verified",
-          "chinese_name": "52 周最高",
-          "spec_note": "52 周最高",
-          "spec_source": "获取股票更多信息 get_more_info",
-          "capability_authoritative": "52 周最高"
+          "chinese_name": "52 周最高"
         },
         {
           "name": "HisLow",
@@ -4236,10 +3935,7 @@
           "capability": "历史最低(支撑位)",
           "verify_type": "eod_ok",
           "provenance": "verified",
-          "chinese_name": "52 周最低",
-          "spec_note": "52 周最低",
-          "spec_source": "获取股票更多信息 get_more_info",
-          "capability_authoritative": "52 周最低"
+          "chinese_name": "52 周最低"
         },
         {
           "name": "MainBusiness",
@@ -4251,10 +3947,7 @@
           "sample": "零售金融业务",
           "data_status": "healthy",
           "category": "history",
-          "chinese_name": "主营构成",
-          "spec_note": "主营构成",
-          "spec_source": "获取股票更多信息 get_more_info",
-          "capability_authoritative": "主营构成"
+          "chinese_name": "主营构成"
         },
         {
           "name": "IPO_Price",
@@ -4266,10 +3959,7 @@
           "sample": 40.0,
           "data_status": "healthy",
           "category": "history",
-          "chinese_name": "发行价",
-          "spec_note": "发行价",
-          "spec_source": "获取股票更多信息 get_more_info",
-          "capability_authoritative": "发行价"
+          "chinese_name": "发行价"
         },
         {
           "name": "SafeValue",
@@ -4281,10 +3971,7 @@
           "sample": 95.0,
           "data_status": "healthy",
           "category": "history",
-          "chinese_name": "安全分",
-          "spec_note": "安全分",
-          "spec_source": "获取股票更多信息 get_more_info",
-          "capability_authoritative": "安全分"
+          "chinese_name": "安全分"
         },
         {
           "name": "ShineValue",
@@ -4296,10 +3983,7 @@
           "sample": 8.0,
           "data_status": "healthy",
           "category": "history",
-          "chinese_name": "亮点数",
-          "spec_note": "亮点数",
-          "spec_source": "获取股票更多信息 get_more_info",
-          "capability_authoritative": "亮点数"
+          "chinese_name": "亮点数"
         },
         {
           "name": "ShapeValue",
@@ -4311,10 +3995,7 @@
           "sample": 70213.0,
           "data_status": "healthy",
           "category": "history",
-          "chinese_name": "短期形态+中期形态+长期形态编号",
-          "spec_note": "短期形态+中期形态+长期形态编号",
-          "spec_source": "获取股票更多信息 get_more_info",
-          "capability_authoritative": "短期形态+中期形态+长期形态编号"
+          "chinese_name": "短期形态+中期形态+长期形态编号"
         }
       ],
       "category": "history",
@@ -4334,10 +4015,7 @@
           "sample": "000001.SZ",
           "data_status": "healthy",
           "category": "reference",
-          "chinese_name": "证券代码",
-          "spec_note": "证券代码",
-          "spec_source": "获取新股申购信息 get_ipo_info",
-          "capability_authoritative": "证券代码"
+          "chinese_name": "证券代码"
         },
         {
           "name": "update_time",
@@ -4348,7 +4026,8 @@
           "max": null,
           "sample": "2026-07-03T10:51:03.966943",
           "data_status": "healthy",
-          "category": "reference"
+          "category": "reference",
+          "chinese_name": "更新时间"
         },
         {
           "name": "industry_l1",
@@ -4359,7 +4038,8 @@
           "max": null,
           "sample": "银行",
           "data_status": "healthy",
-          "category": "reference"
+          "category": "reference",
+          "chinese_name": "一级行业"
         },
         {
           "name": "industry_l2",
@@ -4370,7 +4050,8 @@
           "max": null,
           "sample": "全国性银行",
           "data_status": "healthy",
-          "category": "reference"
+          "category": "reference",
+          "chinese_name": "二级行业"
         },
         {
           "name": "industry_l3",
@@ -4381,7 +4062,8 @@
           "max": null,
           "sample": "股份制银行",
           "data_status": "healthy",
-          "category": "reference"
+          "category": "reference",
+          "chinese_name": "三级行业"
         }
       ],
       "category": "reference",
@@ -4401,10 +4083,7 @@
           "sample": "000001.SZ",
           "data_status": "healthy",
           "category": "realtime",
-          "chinese_name": "证券代码",
-          "spec_note": "证券代码",
-          "spec_source": "获取新股申购信息 get_ipo_info",
-          "capability_authoritative": "证券代码"
+          "chinese_name": "证券代码"
         },
         {
           "name": "snapshot_time",
@@ -4415,7 +4094,8 @@
           "max": null,
           "sample": "2026-07-03T10:52:19.380238",
           "data_status": "healthy",
-          "category": "realtime"
+          "category": "realtime",
+          "chinese_name": "快照时间"
         },
         {
           "name": "ItemNum",
@@ -4427,10 +4107,7 @@
           "sample": 1557.0,
           "data_status": "healthy",
           "category": "realtime",
-          "chinese_name": "快照笔数",
-          "spec_note": "快照笔数",
-          "spec_source": "获取快照数据 get_market_snapshot",
-          "capability_authoritative": "快照笔数"
+          "chinese_name": "快照笔数"
         },
         {
           "name": "LastClose",
@@ -4445,10 +4122,7 @@
           "capability": "前收盘(算涨幅基准)",
           "verify_type": "eod_ok",
           "provenance": "verified",
-          "chinese_name": "前收盘价",
-          "spec_note": "前收盘价",
-          "spec_source": "获取快照数据 get_market_snapshot",
-          "capability_authoritative": "前收盘价"
+          "chinese_name": "前收盘价"
         },
         {
           "name": "Open",
@@ -4463,10 +4137,7 @@
           "capability": "开盘价",
           "verify_type": "eod_ok",
           "provenance": "verified",
-          "chinese_name": "开盘价",
-          "spec_note": "原始价 OHLC",
-          "spec_source": "get_etf_nav",
-          "capability_authoritative": "原始价 OHLC"
+          "chinese_name": "开盘价"
         },
         {
           "name": "Max",
@@ -4481,10 +4152,7 @@
           "capability": "最高(曾触涨停判定: Max>=ZTPrice*0.999)",
           "verify_type": "live_must",
           "provenance": "verified",
-          "chinese_name": "最高价",
-          "spec_note": "最高价",
-          "spec_source": "获取快照数据 get_market_snapshot",
-          "capability_authoritative": "最高价"
+          "chinese_name": "最高价"
         },
         {
           "name": "Min",
@@ -4499,10 +4167,7 @@
           "capability": "最低",
           "verify_type": "live_must",
           "provenance": "verified",
-          "chinese_name": "最低价",
-          "spec_note": "最低价",
-          "spec_source": "获取快照数据 get_market_snapshot",
-          "capability_authoritative": "最低价"
+          "chinese_name": "最低价"
         },
         {
           "name": "Now",
@@ -4519,10 +4184,7 @@
           "verify_type": "live_must",
           "provenance": "verified",
           "constraint": "C8快照行; 盘后=收盘价非实时",
-          "chinese_name": "现价",
-          "spec_note": "现价",
-          "spec_source": "获取快照数据 get_market_snapshot",
-          "capability_authoritative": "现价"
+          "chinese_name": "现价"
         },
         {
           "name": "Volume",
@@ -4537,10 +4199,7 @@
           "capability": "累计成交量",
           "verify_type": "live_must",
           "provenance": "verified",
-          "chinese_name": "成交量",
-          "spec_note": "成交量",
-          "spec_source": "获取K线行情 get_market_data",
-          "capability_authoritative": "成交量"
+          "chinese_name": "成交量 (股)"
         },
         {
           "name": "NowVol",
@@ -4552,10 +4211,7 @@
           "sample": "153",
           "data_status": "healthy",
           "category": "realtime",
-          "chinese_name": "现手",
-          "spec_note": "现手",
-          "spec_source": "获取快照数据 get_market_snapshot",
-          "capability_authoritative": "现手"
+          "chinese_name": "现手"
         },
         {
           "name": "Amount",
@@ -4570,9 +4226,7 @@
           "capability": "累计成交额(流动性判断)",
           "verify_type": "live_must",
           "provenance": "verified",
-          "chinese_name": "成交额",
-          "spec_note": "",
-          "spec_source": "get_etf_nav"
+          "chinese_name": "成交额"
         },
         {
           "name": "Inside",
@@ -4587,10 +4241,7 @@
           "capability": "内盘(主动卖)",
           "verify_type": "live_must",
           "provenance": "verified",
-          "chinese_name": "内盘（板块指数时为跌停家数）",
-          "spec_note": "内盘（板块指数时为跌停家数）",
-          "spec_source": "获取快照数据 get_market_snapshot",
-          "capability_authoritative": "内盘（板块指数时为跌停家数）"
+          "chinese_name": "内盘（板块指数时为跌停家数）"
         },
         {
           "name": "Outside",
@@ -4605,10 +4256,7 @@
           "capability": "外盘(主动买)",
           "verify_type": "live_must",
           "provenance": "verified",
-          "chinese_name": "外盘（板块指数时为涨停家数）",
-          "spec_note": "外盘（板块指数时为涨停家数）",
-          "spec_source": "获取快照数据 get_market_snapshot",
-          "capability_authoritative": "外盘（板块指数时为涨停家数）"
+          "chinese_name": "外盘（板块指数时为涨停家数）"
         },
         {
           "name": "TickDiff",
@@ -4623,10 +4271,7 @@
           "capability": "笔增减",
           "verify_type": "live_must",
           "provenance": "verified",
-          "chinese_name": "笔涨跌",
-          "spec_note": "笔涨跌",
-          "spec_source": "获取快照数据 get_market_snapshot",
-          "capability_authoritative": "笔涨跌"
+          "chinese_name": "笔涨跌"
         },
         {
           "name": "InOutFlag",
@@ -4638,10 +4283,7 @@
           "sample": "0",
           "data_status": "healthy",
           "category": "realtime",
-          "chinese_name": "内外盘标志：0 Buy 1 Sell 2 Unknown",
-          "spec_note": "内外盘标志：0 Buy 1 Sell 2 Unknown",
-          "spec_source": "获取快照数据 get_market_snapshot",
-          "capability_authoritative": "内外盘标志：0 Buy 1 Sell 2 Unknown"
+          "chinese_name": "内外盘标志：0 Buy 1 Sell 2 Unknown"
         },
         {
           "name": "Jjjz",
@@ -4653,10 +4295,7 @@
           "sample": 0.0,
           "data_status": "healthy",
           "category": "realtime",
-          "chinese_name": "基金净值",
-          "spec_note": "基金净值",
-          "spec_source": "获取快照数据 get_market_snapshot",
-          "capability_authoritative": "基金净值"
+          "chinese_name": "基金净值"
         },
         {
           "name": "Average",
@@ -4671,10 +4310,7 @@
           "capability": "均价",
           "verify_type": "live_must",
           "provenance": "verified",
-          "chinese_name": "均价",
-          "spec_note": "均价",
-          "spec_source": "获取快照数据 get_market_snapshot",
-          "capability_authoritative": "均价"
+          "chinese_name": "均价"
         },
         {
           "name": "XsFlag",
@@ -4686,10 +4322,7 @@
           "sample": "2",
           "data_status": "healthy",
           "category": "realtime",
-          "chinese_name": "数据精度（仅 `formula_process_mul_zb` 支持）",
-          "spec_note": "数据精度（仅 `formula_process_mul_zb` 支持）",
-          "spec_source": "",
-          "capability_authoritative": "数据精度（仅 `formula_process_mul_zb` 支持）"
+          "chinese_name": "数据精度（仅 `formula_process_mul_zb` 支持）"
         },
         {
           "name": "UpHome",
@@ -4701,10 +4334,7 @@
           "sample": "0",
           "data_status": "healthy",
           "category": "realtime",
-          "chinese_name": "上涨家数（对于指数有效）",
-          "spec_note": "上涨家数（对于指数有效）",
-          "spec_source": "获取快照数据 get_market_snapshot",
-          "capability_authoritative": "上涨家数（对于指数有效）"
+          "chinese_name": "上涨家数（对于指数有效）"
         },
         {
           "name": "DownHome",
@@ -4716,10 +4346,7 @@
           "sample": "0",
           "data_status": "healthy",
           "category": "realtime",
-          "chinese_name": "下跌家数（对于指数有效）",
-          "spec_note": "下跌家数（对于指数有效）",
-          "spec_source": "获取快照数据 get_market_snapshot",
-          "capability_authoritative": "下跌家数（对于指数有效）"
+          "chinese_name": "下跌家数（对于指数有效）"
         },
         {
           "name": "Before5MinNow",
@@ -4731,10 +4358,7 @@
           "sample": 10.31,
           "data_status": "healthy",
           "category": "realtime",
-          "chinese_name": "5 分钟前价格",
-          "spec_note": "5 分钟前价格",
-          "spec_source": "获取快照数据 get_market_snapshot",
-          "capability_authoritative": "5 分钟前价格"
+          "chinese_name": "5 分钟前价格"
         },
         {
           "name": "Zangsu",
@@ -4749,10 +4373,7 @@
           "capability": "涨速",
           "verify_type": "live_must",
           "provenance": "verified",
-          "chinese_name": "涨速",
-          "spec_note": "涨速",
-          "spec_source": "获取快照数据 get_market_snapshot",
-          "capability_authoritative": "涨速"
+          "chinese_name": "涨速"
         },
         {
           "name": "ZAFPre3",
@@ -4764,10 +4385,7 @@
           "sample": 2.48,
           "data_status": "healthy",
           "category": "realtime",
-          "chinese_name": "3 日涨幅",
-          "spec_note": "3 日涨幅",
-          "spec_source": "获取快照数据 get_market_snapshot",
-          "capability_authoritative": "3 日涨幅"
+          "chinese_name": "3 日涨幅"
         },
         {
           "name": "Buyp1",
@@ -4783,9 +4401,7 @@
           "verify_type": "live_must",
           "provenance": "verified",
           "constraint": "C8快照行; 5档全在c2行",
-          "chinese_name": "买一价",
-          "spec_note": "",
-          "spec_source": "get_etf_nav"
+          "chinese_name": "买一价"
         },
         {
           "name": "Buyp2",
@@ -4797,9 +4413,7 @@
           "sample": 0.0,
           "data_status": "healthy",
           "category": "realtime",
-          "chinese_name": "买二价",
-          "spec_note": "",
-          "spec_source": "get_etf_nav"
+          "chinese_name": "买二价"
         },
         {
           "name": "Buyp3",
@@ -4811,9 +4425,7 @@
           "sample": 0.0,
           "data_status": "healthy",
           "category": "realtime",
-          "chinese_name": "买三价",
-          "spec_note": "",
-          "spec_source": "get_etf_nav"
+          "chinese_name": "买三价"
         },
         {
           "name": "Buyp4",
@@ -4825,9 +4437,7 @@
           "sample": 0.0,
           "data_status": "healthy",
           "category": "realtime",
-          "chinese_name": "买四价",
-          "spec_note": "",
-          "spec_source": "get_etf_nav"
+          "chinese_name": "买四价"
         },
         {
           "name": "Buyp5",
@@ -4839,9 +4449,7 @@
           "sample": 0.0,
           "data_status": "healthy",
           "category": "realtime",
-          "chinese_name": "买五价",
-          "spec_note": "",
-          "spec_source": "get_etf_nav"
+          "chinese_name": "买五价"
         },
         {
           "name": "Buyv1",
@@ -4856,9 +4464,7 @@
           "capability": "买1档挂单量",
           "verify_type": "live_must",
           "provenance": "verified",
-          "chinese_name": "买一量",
-          "spec_note": "",
-          "spec_source": "get_etf_nav"
+          "chinese_name": "买一量"
         },
         {
           "name": "Buyv2",
@@ -4870,9 +4476,7 @@
           "sample": "0",
           "data_status": "healthy",
           "category": "realtime",
-          "chinese_name": "买二量",
-          "spec_note": "",
-          "spec_source": "get_etf_nav"
+          "chinese_name": "买二量"
         },
         {
           "name": "Buyv3",
@@ -4884,9 +4488,7 @@
           "sample": "0",
           "data_status": "healthy",
           "category": "realtime",
-          "chinese_name": "买三量",
-          "spec_note": "",
-          "spec_source": "get_etf_nav"
+          "chinese_name": "买三量"
         },
         {
           "name": "Buyv4",
@@ -4898,9 +4500,7 @@
           "sample": "0",
           "data_status": "healthy",
           "category": "realtime",
-          "chinese_name": "买四量",
-          "spec_note": "",
-          "spec_source": "get_etf_nav"
+          "chinese_name": "买四量"
         },
         {
           "name": "Buyv5",
@@ -4912,9 +4512,7 @@
           "sample": "0",
           "data_status": "healthy",
           "category": "realtime",
-          "chinese_name": "买五量",
-          "spec_note": "",
-          "spec_source": "get_etf_nav"
+          "chinese_name": "买五量"
         },
         {
           "name": "Sellp1",
@@ -4929,9 +4527,7 @@
           "capability": "卖1档挂单价(5档抛压)",
           "verify_type": "live_must",
           "provenance": "verified",
-          "chinese_name": "卖一价",
-          "spec_note": "",
-          "spec_source": "get_etf_nav"
+          "chinese_name": "卖一价"
         },
         {
           "name": "Sellp2",
@@ -4943,9 +4539,7 @@
           "sample": 0.0,
           "data_status": "healthy",
           "category": "realtime",
-          "chinese_name": "卖二价",
-          "spec_note": "",
-          "spec_source": "get_etf_nav"
+          "chinese_name": "卖二价"
         },
         {
           "name": "Sellp3",
@@ -4957,9 +4551,7 @@
           "sample": 0.0,
           "data_status": "healthy",
           "category": "realtime",
-          "chinese_name": "卖三价",
-          "spec_note": "",
-          "spec_source": "get_etf_nav"
+          "chinese_name": "卖三价"
         },
         {
           "name": "Sellp4",
@@ -4971,9 +4563,7 @@
           "sample": 0.0,
           "data_status": "healthy",
           "category": "realtime",
-          "chinese_name": "卖四价",
-          "spec_note": "",
-          "spec_source": "get_etf_nav"
+          "chinese_name": "卖四价"
         },
         {
           "name": "Sellp5",
@@ -4985,9 +4575,7 @@
           "sample": 0.0,
           "data_status": "healthy",
           "category": "realtime",
-          "chinese_name": "卖五价",
-          "spec_note": "",
-          "spec_source": "get_etf_nav"
+          "chinese_name": "卖五价"
         },
         {
           "name": "Sellv1",
@@ -5002,9 +4590,7 @@
           "capability": "卖1档挂单量",
           "verify_type": "live_must",
           "provenance": "verified",
-          "chinese_name": "卖一量",
-          "spec_note": "",
-          "spec_source": "get_etf_nav"
+          "chinese_name": "卖一量"
         },
         {
           "name": "Sellv2",
@@ -5016,9 +4602,7 @@
           "sample": "0",
           "data_status": "healthy",
           "category": "realtime",
-          "chinese_name": "卖二量",
-          "spec_note": "",
-          "spec_source": "get_etf_nav"
+          "chinese_name": "卖二量"
         },
         {
           "name": "Sellv3",
@@ -5030,9 +4614,7 @@
           "sample": "0",
           "data_status": "healthy",
           "category": "realtime",
-          "chinese_name": "卖三量",
-          "spec_note": "",
-          "spec_source": "get_etf_nav"
+          "chinese_name": "卖三量"
         },
         {
           "name": "Sellv4",
@@ -5044,9 +4626,7 @@
           "sample": "0",
           "data_status": "healthy",
           "category": "realtime",
-          "chinese_name": "卖四量",
-          "spec_note": "",
-          "spec_source": "get_etf_nav"
+          "chinese_name": "卖四量"
         },
         {
           "name": "Sellv5",
@@ -5058,9 +4638,7 @@
           "sample": "0",
           "data_status": "healthy",
           "category": "realtime",
-          "chinese_name": "卖五量",
-          "spec_note": "",
-          "spec_source": "get_etf_nav"
+          "chinese_name": "卖五量"
         },
         {
           "name": "ZTPrice",
@@ -5075,10 +4653,7 @@
           "capability": "涨停价(封板判定 Now>=ZTPrice)",
           "verify_type": "eod_ok",
           "provenance": "verified",
-          "chinese_name": "涨停价",
-          "spec_note": "涨停价",
-          "spec_source": "获取股票更多信息 get_more_info",
-          "capability_authoritative": "涨停价"
+          "chinese_name": "涨停价"
         },
         {
           "name": "DTPrice",
@@ -5093,10 +4668,7 @@
           "capability": "跌停价",
           "verify_type": "eod_ok",
           "provenance": "verified",
-          "chinese_name": "跌停价",
-          "spec_note": "跌停价",
-          "spec_source": "获取股票更多信息 get_more_info",
-          "capability_authoritative": "跌停价"
+          "chinese_name": "跌停价"
         },
         {
           "name": "ZAF",
@@ -5111,10 +4683,7 @@
           "capability": "涨幅%",
           "verify_type": "live_must",
           "provenance": "verified",
-          "chinese_name": "涨幅",
-          "spec_note": "涨幅",
-          "spec_source": "获取股票更多信息 get_more_info",
-          "capability_authoritative": "涨幅"
+          "chinese_name": "涨幅"
         },
         {
           "name": "fHSL",
@@ -5129,10 +4698,7 @@
           "capability": "换手率(筹码交换充分度)",
           "verify_type": "live_must",
           "provenance": "verified",
-          "chinese_name": "换手率",
-          "spec_note": "换手率",
-          "spec_source": "获取股票更多信息 get_more_info",
-          "capability_authoritative": "换手率"
+          "chinese_name": "换手率"
         },
         {
           "name": "Fzhsl",
@@ -5147,10 +4713,7 @@
           "capability": "主力换手",
           "verify_type": "live_must",
           "provenance": "verified",
-          "chinese_name": "分钟换手率",
-          "spec_note": "分钟换手率",
-          "spec_source": "获取股票更多信息 get_more_info",
-          "capability_authoritative": "分钟换手率"
+          "chinese_name": "分钟换手率"
         },
         {
           "name": "FzAmo",
@@ -5165,10 +4728,7 @@
           "capability": "主力金额",
           "verify_type": "live_must",
           "provenance": "verified",
-          "chinese_name": "2 分钟金额（万元）",
-          "spec_note": "2 分钟金额（万元）",
-          "spec_source": "获取股票更多信息 get_more_info",
-          "capability_authoritative": "2 分钟金额（万元）"
+          "chinese_name": "2 分钟金额（万元）"
         },
         {
           "name": "Zjl",
@@ -5185,10 +4745,7 @@
           "verify_type": "live_must",
           "provenance": "verified",
           "constraint": "C8 intraday行; T+1样本采集",
-          "chinese_name": "主买净额（万元）",
-          "spec_note": "主买净额（万元）",
-          "spec_source": "获取股票更多信息 get_more_info",
-          "capability_authoritative": "主买净额（万元）"
+          "chinese_name": "主买净额（万元）"
         },
         {
           "name": "Zjl_HB",
@@ -5203,10 +4760,7 @@
           "capability": "主力净额环比(连续性)",
           "verify_type": "live_must",
           "provenance": "verified",
-          "chinese_name": "主力净流入（万元）",
-          "spec_note": "主力净流入（万元）",
-          "spec_source": "获取股票更多信息 get_more_info",
-          "capability_authoritative": "主力净流入（万元）"
+          "chinese_name": "主力净流入（万元）"
         },
         {
           "name": "FCAmo",
@@ -5222,10 +4776,7 @@
           "verify_type": "live_must",
           "provenance": "verified",
           "constraint": "仅涨停票有值; 盘后为收盘封单",
-          "chinese_name": "封单额（万元）",
-          "spec_note": "封单额（万元）",
-          "spec_source": "获取股票更多信息 get_more_info",
-          "capability_authoritative": "封单额（万元）"
+          "chinese_name": "封单额（万元）"
         },
         {
           "name": "FCb",
@@ -5240,10 +4791,7 @@
           "capability": "封成比(封单/成交)",
           "verify_type": "live_must",
           "provenance": "verified",
-          "chinese_name": "封成比",
-          "spec_note": "封成比",
-          "spec_source": "获取股票更多信息 get_more_info",
-          "capability_authoritative": "封成比"
+          "chinese_name": "封成比"
         },
         {
           "name": "vzangsu",
@@ -5255,10 +4803,7 @@
           "sample": 0.55,
           "data_status": "sparse",
           "category": "realtime",
-          "chinese_name": "量涨速",
-          "spec_note": "量涨速",
-          "spec_source": "获取股票更多信息 get_more_info",
-          "capability_authoritative": "量涨速"
+          "chinese_name": "量涨速"
         },
         {
           "name": "ZTGPNum",
@@ -5274,10 +4819,7 @@
           "verify_type": "live_must",
           "provenance": "suspect",
           "constraint": "样本全0, 可能采集源没填或语义不同",
-          "chinese_name": "板块指数的涨停家数",
-          "spec_note": "板块指数的涨停家数",
-          "spec_source": "获取股票更多信息 get_more_info",
-          "capability_authoritative": "板块指数的涨停家数"
+          "chinese_name": "板块指数的涨停家数"
         },
         {
           "name": "fLianB",
@@ -5289,13 +4831,10 @@
           "sample": 1.09,
           "data_status": "sparse",
           "category": "realtime",
-          "capability": "连板数(打板位置: 1首板/2-3加速/4+高位)",
+          "capability": "量比(成交活跃度, ⚠️非连板数! 说明书权威)",
           "verify_type": "live_must",
           "provenance": "verified",
-          "chinese_name": "量比",
-          "spec_note": "量比",
-          "spec_source": "获取股票更多信息 get_more_info",
-          "capability_authoritative": "量比"
+          "chinese_name": "量比"
         },
         {
           "name": "MA5Value",
@@ -5310,10 +4849,7 @@
           "capability": "5日均线(盘中动态)",
           "verify_type": "eod_ok",
           "provenance": "verified",
-          "chinese_name": "5 日均价",
-          "spec_note": "5 日均价",
-          "spec_source": "获取股票更多信息 get_more_info",
-          "capability_authoritative": "5 日均价"
+          "chinese_name": "5 日均价"
         },
         {
           "name": "Wtb",
@@ -5328,10 +4864,7 @@
           "capability": "委托买卖比(委买/委卖)",
           "verify_type": "live_must",
           "provenance": "verified",
-          "chinese_name": "委比",
-          "spec_note": "委比",
-          "spec_source": "获取股票更多信息 get_more_info",
-          "capability_authoritative": "委比"
+          "chinese_name": "委比"
         },
         {
           "name": "LastStartZT",
@@ -5346,10 +4879,7 @@
           "capability": "最近启动涨停",
           "verify_type": "live_must",
           "provenance": "verified",
-          "chinese_name": "几天",
-          "spec_note": "几天",
-          "spec_source": "获取股票更多信息 get_more_info",
-          "capability_authoritative": "几天"
+          "chinese_name": "几天"
         }
       ],
       "category": "realtime",
@@ -5368,7 +4898,8 @@
           "min": null,
           "max": null,
           "sample": null,
-          "data_status": "empty_table"
+          "data_status": "empty_table",
+          "chinese_name": "评估时间"
         },
         {
           "name": "strategy_name",
@@ -5378,7 +4909,8 @@
           "min": null,
           "max": null,
           "sample": null,
-          "data_status": "empty_table"
+          "data_status": "empty_table",
+          "chinese_name": "策略标识"
         },
         {
           "name": "total_signals",
@@ -5388,7 +4920,8 @@
           "min": null,
           "max": null,
           "sample": null,
-          "data_status": "empty_table"
+          "data_status": "empty_table",
+          "chinese_name": "统计期内总信号数"
         },
         {
           "name": "win_count",
@@ -5398,7 +4931,8 @@
           "min": null,
           "max": null,
           "sample": null,
-          "data_status": "empty_table"
+          "data_status": "empty_table",
+          "chinese_name": "盈利次数"
         },
         {
           "name": "loss_count",
@@ -5408,7 +4942,8 @@
           "min": null,
           "max": null,
           "sample": null,
-          "data_status": "empty_table"
+          "data_status": "empty_table",
+          "chinese_name": "亏损次数"
         },
         {
           "name": "win_rate",
@@ -5418,7 +4953,8 @@
           "min": null,
           "max": null,
           "sample": null,
-          "data_status": "empty_table"
+          "data_status": "empty_table",
+          "chinese_name": "胜率 (%)"
         },
         {
           "name": "total_pnl",
@@ -5428,7 +4964,8 @@
           "min": null,
           "max": null,
           "sample": null,
-          "data_status": "empty_table"
+          "data_status": "empty_table",
+          "chinese_name": "累计盈亏 (元)"
         },
         {
           "name": "profit_factor",
@@ -5438,7 +4975,8 @@
           "min": null,
           "max": null,
           "sample": null,
-          "data_status": "empty_table"
+          "data_status": "empty_table",
+          "chinese_name": "盈亏比 (总盈利/总亏损)"
         },
         {
           "name": "max_drawdown",
@@ -5448,7 +4986,8 @@
           "min": null,
           "max": null,
           "sample": null,
-          "data_status": "empty_table"
+          "data_status": "empty_table",
+          "chinese_name": "最大回撤 (%)"
         }
       ],
       "category": "derived",

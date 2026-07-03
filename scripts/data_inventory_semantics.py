@@ -90,7 +90,7 @@ SEMANTICS = {
         'fHSL': {'category': 'realtime', 'capability': '换手率(筹码交换充分度)', 'verify_type': 'live_must', 'provenance': 'verified'},
         'ZTPrice': {'category': 'realtime', 'capability': '涨停价(封板判定 Now>=ZTPrice)', 'verify_type': 'eod_ok', 'provenance': 'verified'},
         'DTPrice': {'category': 'realtime', 'capability': '跌停价', 'verify_type': 'eod_ok', 'provenance': 'verified'},
-        'fLianB': {'category': 'realtime', 'capability': '连板数(打板位置: 1首板/2-3加速/4+高位)', 'verify_type': 'live_must', 'provenance': 'verified'},
+        'fLianB': {'category': 'realtime', 'capability': '量比(成交活跃度, ⚠️非连板数! 说明书权威)', 'verify_type': 'live_must', 'provenance': 'verified'},
         'ZTGPNum': {'category': 'realtime', 'capability': '涨停价挂单数', 'verify_type': 'live_must', 'provenance': 'suspect', 'constraint': '样本全0, 可能采集源没填或语义不同'},
         'LastStartZT': {'category': 'realtime', 'capability': '最近启动涨停', 'verify_type': 'live_must', 'provenance': 'verified'},
     },
