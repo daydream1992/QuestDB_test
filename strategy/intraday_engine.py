@@ -70,9 +70,12 @@ def detect_surge(now, before5min):
     return None
 
 
-def detect_limit(state: MonitorState, now, zt_price, sellv1):
-    """封板/炸板 (炸板 critical)"""
-    sealed = is_at_limit_up(now, zt_price) and (sellv1 <= LIMIT_SELLV_MAX)
+def detect_limit(state: MonitorState, fcamo):
+    """封板/炸板 (FCAmo 权威判定: >0 真封板有封单, <=0 未封; 炸板 critical)
+
+    替代旧 is_at_limit_up(now,zt_price)+sellv1 逻辑 (Now>=ZTPrice 会误判触价未封的假涨停)。
+    """
+    sealed = fcamo > 0
     if sealed and not state.last_limit_sealed:
         state.last_limit_sealed = True
         return ('limit_seal', '封涨停', False)
@@ -121,8 +124,9 @@ def detect_all(snapshot_df, watchlist=None):
         zt_price = _safe_float(r.get('ZTPrice'))
         sellv1 = _safe_float(r.get('Sellv1'))
         zjl = _safe_float(r.get('Zjl'))
+        fcamo = _safe_float(r.get('FCAmo'))
         for res in (detect_surge(now, before5min),
-                    detect_limit(st, now, zt_price, sellv1),
+                    detect_limit(st, fcamo),
                     detect_capital(zjl)):
             if res:
                 events.append((code, *res))

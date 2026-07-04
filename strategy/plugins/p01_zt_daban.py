@@ -1,15 +1,20 @@
 """p01: 涨停打板
 
 脚本路径: K:\QuestDB_test\\strategy\\plugins\\p01_zt_daban.py
-用途: 检测封板且板块共振的打板机会, 多条件严格筛选
-依赖: 策略上下文 ctx (pricevol_df / more_info_df / snapshot_focus_df / graph)
+用途: 检测真封板 + 板块涨停潮 + 放量 + 换手充分的打板机会
+依赖: ctx.snapshot_focus_df (C8拆表后含快照列 + merge 的 intraday 列 FCAmo/fHSL/fLianB/Amount)
 入库: qd_decisions (由 runner 写入)
-条件:
-  - 封板: Now >= ZTPrice (含 0.1% 容差, 抵触浮动)
-  - 连板: fLianB >= 1
-  - 板块内涨停 >= 3 (板块涨停潮, 用关系图谱统计)
-  - 成交额 >= 50000 万 (5e8 元)
-  - 换手 3%-20% (more_info.fHSL)
+
+判定 (C8拆表 + FCAmo权威判定后重写, 修正历史臆测):
+  - 真封板: FCAmo > 0  (权威涨跌停判定, 替代旧的 Now>=ZTPrice 后者会误选触价未封的假涨停)
+  - 板块涨停潮: 所属板块内 FCAmo>0 的票 >= 3 (资金共识)
+  - 成交额 >= 5亿 (流动性, T+1 要跑得掉)
+  - 换手 fHSL 3%-20% (筹码交换充分, 防一字闷杀)
+  - 量比 fLianB (放量活跃度参考; ⚠️非连板数)
+
+⚠️ 已知缺失: 连板位置(首板/2板/3板加速/高位)是打板核心维度, 但库内无现成字段
+   (fLianB=量比非连板)。待接入 GP40(近1年连板率)/自算跨日涨停连续性后补强。
+   当前 p01 只筛"真封板+板块潮", 不区分连板位置。
 """
 
 from typing import List
@@ -18,10 +23,9 @@ from strategy.base import StrategyBase, Decision
 from strategy.registry import StrategyRegistry
 
 # 阈值
-_AMOUNT_MIN = 5e8               # 成交额 >= 50000 万 (5e8 元)
+_AMOUNT_MIN = 5e8               # 成交额 >= 5亿 (流动性)
 _HSL_MIN, _HSL_MAX = 3.0, 20.0  # 换手 3%-20%
-_ZT_TOL = 0.999                 # 封板容差 (Now >= ZTPrice * 0.999)
-_SECTOR_ZT_MIN = 3              # 板块内涨停 >= 3
+_SECTOR_ZT_MIN = 3              # 板块内涨停 >= 3 (涨停潮)
 
 
 def _safe_float(v, default=0.0) -> float:
@@ -37,46 +41,30 @@ class ZtDabanStrategy(StrategyBase):
     version = '1.0'
 
     def required_fields(self):
-        return ['Now', 'LastClose', 'ZTPrice', 'fLianB', 'fHSL', 'Amount']
+        # 均在 snapshot_focus_df (C8拆表后 intraday 列已 merge 进来)
+        return ['Now', 'FCAmo', 'ZTPrice', 'fLianB', 'fHSL', 'Amount']
 
     def evaluate(self, ctx) -> List[Decision]:
         decisions: List[Decision] = []
-        pv = ctx.pricevol_df
-        mi = ctx.more_info_df
-        if pv is None or pv.empty or mi is None or mi.empty:
-            return []
-
-        # 取每只股票最新一行
-        if 'snapshot_time' in pv.columns:
-            pv = pv.sort_values('snapshot_time').groupby('code', as_index=False).last()
-        else:
-            pv = pv.groupby('code', as_index=False).last()
-        mi_cols = [c for c in ('code', 'ZTPrice', 'fLianB', 'fHSL') if c in mi.columns]
-        if len(mi_cols) < 4:
-            return []
-        mi_l = mi.groupby('code', as_index=False).last()[mi_cols]
-        merged = pv.merge(mi_l, on='code', how='inner')
-
-        # 成交额 (snapshot_focus_df.Amount)
         snap = ctx.snapshot_focus_df
-        if snap is not None and not snap.empty and 'Amount' in snap.columns:
-            snap_l = snap.groupby('code', as_index=False).last()[['code', 'Amount']]
-            merged = merged.merge(snap_l, on='code', how='left')
-        else:
-            merged['Amount'] = 0.0
-
-        # 涨停集合
-        def _is_zt(r):
-            zt = _safe_float(r.get('ZTPrice'))
-            now = _safe_float(r.get('Now'))
-            return zt > 0 and now >= zt * _ZT_TOL
-
-        zt_mask = merged.apply(_is_zt, axis=1)
-        zt_codes = set(merged[zt_mask]['code'].tolist())
-        if not zt_codes:
+        if snap is None or snap.empty:
             return []
+        needed = ['code', 'Now', 'FCAmo', 'ZTPrice', 'fLianB', 'fHSL', 'Amount']
+        if not all(c in snap.columns for c in needed):
+            return []
+        # 每只股票最新一行
+        if 'snapshot_time' in snap.columns:
+            df = snap.sort_values('snapshot_time').groupby('code', as_index=False).last()[needed]
+        else:
+            df = snap.groupby('code', as_index=False).last()[needed]
 
-        # 板块 -> 涨停数 (用关系图谱反向索引)
+        # 真封板: FCAmo > 0 (权威涨跌停判定, 有买单封单)
+        zt_df = df[df['FCAmo'].apply(lambda v: _safe_float(v) > 0)]
+        if zt_df.empty:
+            return []
+        zt_codes = set(zt_df['code'].tolist())
+
+        # 板块涨停潮: 统计每板块内真封板数
         from lib.relation_graph import get_stock_sectors
         sector_zt = {}
         for c in zt_codes:
@@ -85,28 +73,27 @@ class ZtDabanStrategy(StrategyBase):
                 if bc:
                     sector_zt[bc] = sector_zt.get(bc, 0) + 1
 
-        for _, r in merged.iterrows():
+        for _, r in zt_df.iterrows():
             code = r['code']
-            if code not in zt_codes:
-                continue
-            lianb = _safe_float(r.get('fLianB'))
+            lianb = _safe_float(r.get('fLianB'))   # 量比 (⚠️非连板, 放量活跃度)
             hsl = _safe_float(r.get('fHSL'))
             amt = _safe_float(r.get('Amount'))
-            if lianb < 1 or amt < _AMOUNT_MIN:
+            fcamo = _safe_float(r.get('FCAmo'))    # 封单额(万元), 越大封板越结实
+            if amt < _AMOUNT_MIN:
                 continue
             if not (_HSL_MIN <= hsl <= _HSL_MAX):
                 continue
-            # 板块涨停数 (取所属板块中最大值)
             cnt = 0
             for s in get_stock_sectors(code):
                 cnt = max(cnt, sector_zt.get(s.get('block_code'), 0))
             if cnt < _SECTOR_ZT_MIN:
                 continue
-            score = min(100.0, 60.0 + lianb * 5 + cnt * 3)
+            # 评分: 封单额(万)/1万 + 板块潮*3 + 量比*2
+            score = min(100.0, 50.0 + fcamo / 1e4 + cnt * 3 + lianb * 2)
             decisions.append(Decision(
                 action='buy', code=code, strategy=self.name,
-                reason=f'涨停打板: {lianb:.0f}连板 板块涨停{cnt}只 '
-                       f'成交额{amt / 1e8:.2f}亿 换手{hsl:.1f}%',
+                reason=f'涨停打板: 封单{fcamo / 1e4:.0f}万 量比{lianb:.1f} '
+                       f'板块涨停{cnt}只 成交额{amt / 1e8:.2f}亿 换手{hsl:.1f}%',
                 position_pct=10, stop_loss=5, stop_profit=10,
                 price=_safe_float(r.get('Now')), score=score,
             ))
