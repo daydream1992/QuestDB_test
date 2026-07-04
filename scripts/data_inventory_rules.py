@@ -22,7 +22,7 @@ with open(INV, 'r', encoding='utf-8') as f:
 
 # 1. FCAmo 字段 capability 补权威判定
 fixed = 0
-for tbl in ['qd_stock_snapshot', 'qd_stock_daily']:
+for tbl in ['qd_stock_snapshot', 'qd_stock_daily', 'qd_stock_intraday']:
     for fld in inv['tables'][tbl]['fields']:
         if fld['name'] == 'FCAmo':
             fld['capability'] = ('封单额(万元); 权威涨跌停判定: FCAmo>0涨停 / <0跌停 / =0未封'

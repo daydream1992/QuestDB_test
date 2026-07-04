@@ -101,7 +101,8 @@ API_TO_TABLES = {
 TABLE_PRODUCER = {
     'qd_code_registry': 'runner/daily_init.py',
     'qd_pricevol': 'collect/c1_pricevol.py',
-    'qd_stock_snapshot': 'collect/c2_snapshot.py(快照列@T) + collect/c3_more_info.py(intraday列@T+1s) ⚠️C8双形态行',
+    'qd_stock_snapshot': 'collect/c2_snapshot.py (C8拆表ba2bf0f后仅快照列, intraday已拆到qd_stock_intraday)',
+    'qd_stock_intraday': 'collect/c3_more_info.py intraday模式 (C8拆表ba2bf0f独立)',
     'qd_stock_daily': 'collect/c3_more_info.py (daily模式)',
     'qd_sector_snapshot': 'collect/c2_snapshot.py',
     'qd_sector_daily': 'collect/c3_more_info.py',

@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-07-04T02:47:22.938633",
+  "generated_at": "2026-07-04T12:14:14.903323",
   "note": "骨架: 真实数据统计由脚本查, 语义层(来源/能力/边界/验证状态)待补",
   "tables": {
     "qd_auction_snapshot": {
@@ -370,13 +370,13 @@
       "apply_target": "universal (stock+sector+index 注册表)"
     },
     "qd_decisions": {
-      "row_count": 80,
+      "row_count": 84,
       "fields": [
         {
           "name": "decision_time",
           "type": "timestamp without time zone",
           "non_null_pct": 100.0,
-          "distinct": 2,
+          "distinct": 3,
           "min": null,
           "max": null,
           "sample": "2026-07-04T01:30:32.878275",
@@ -388,7 +388,7 @@
           "name": "code",
           "type": "character varying",
           "non_null_pct": 100.0,
-          "distinct": 79,
+          "distinct": 80,
           "min": null,
           "max": null,
           "sample": "000001.SH",
@@ -448,7 +448,7 @@
           "name": "reason",
           "type": "character varying",
           "non_null_pct": 100.0,
-          "distinct": 65,
+          "distinct": 66,
           "min": null,
           "max": null,
           "sample": "大盘情绪低迷(冰点/低迷) 涨停160 涨跌比2.32 buy已门控, 建议观望 [评分1]",
@@ -521,7 +521,7 @@
           "name": "ZAFPre5",
           "type": "double precision",
           "non_null_pct": 100.0,
-          "distinct": 12,
+          "distinct": 13,
           "min": null,
           "max": null,
           "sample": 0.41,
@@ -537,7 +537,7 @@
           "distinct": 13,
           "min": null,
           "max": null,
-          "sample": -1.15,
+          "sample": -1.14,
           "data_status": "healthy",
           "category": "history",
           "chinese_name": "10 日涨幅",
@@ -563,7 +563,7 @@
           "distinct": 14,
           "min": null,
           "max": null,
-          "sample": 4.21,
+          "sample": 4.22,
           "data_status": "healthy",
           "category": "history",
           "chinese_name": "60 日涨幅",
@@ -589,7 +589,7 @@
           "distinct": 13,
           "min": null,
           "max": null,
-          "sample": 674862.05,
+          "sample": 677105.12,
           "data_status": "healthy",
           "category": "history",
           "chinese_name": "总市值（亿）",
@@ -602,7 +602,7 @@
           "distinct": 13,
           "min": null,
           "max": null,
-          "sample": 624864.52,
+          "sample": 627494.64,
           "data_status": "healthy",
           "category": "history",
           "chinese_name": "流通市值（亿）",
@@ -615,7 +615,7 @@
           "distinct": 34,
           "min": null,
           "max": null,
-          "sample": 4070.66,
+          "sample": 4070.54,
           "data_status": "healthy",
           "category": "history",
           "chinese_name": "5 日均价",
@@ -628,7 +628,7 @@
       "apply_target": "index"
     },
     "qd_index_snapshot": {
-      "row_count": 162,
+      "row_count": 210,
       "fields": [
         {
           "name": "code",
@@ -647,7 +647,7 @@
           "name": "snapshot_time",
           "type": "timestamp without time zone",
           "non_null_pct": 100.0,
-          "distinct": 19,
+          "distinct": 21,
           "min": null,
           "max": null,
           "sample": "2026-07-03T10:52:19.380238",
@@ -660,7 +660,7 @@
           "name": "ItemNum",
           "type": "double precision",
           "non_null_pct": 100.0,
-          "distinct": 38,
+          "distinct": 44,
           "min": null,
           "max": null,
           "sample": 1613.0,
@@ -790,7 +790,7 @@
           "name": "ZAFPre3",
           "type": "double precision",
           "non_null_pct": 100.0,
-          "distinct": 50,
+          "distinct": 51,
           "min": null,
           "max": null,
           "sample": -0.96,
@@ -806,7 +806,7 @@
       "apply_target": "index"
     },
     "qd_indicators": {
-      "row_count": 22442,
+      "row_count": 27971,
       "fields": [
         {
           "name": "code",
@@ -824,7 +824,7 @@
           "name": "calc_time",
           "type": "timestamp without time zone",
           "non_null_pct": 100.0,
-          "distinct": 4,
+          "distinct": 5,
           "min": null,
           "max": null,
           "sample": "2026-07-02T15:00:00",
@@ -848,10 +848,10 @@
           "name": "macd_dif",
           "type": "double precision",
           "non_null_pct": 100.0,
-          "distinct": 22309,
+          "distinct": 27838,
           "min": null,
           "max": null,
-          "sample": -10.963206917861498,
+          "sample": -10.3389600260316,
           "data_status": "healthy",
           "category": "derived",
           "capability": "MACD DIF(趋势)",
@@ -864,10 +864,10 @@
           "name": "macd_dea",
           "type": "double precision",
           "non_null_pct": 100.0,
-          "distinct": 22310,
+          "distinct": 27839,
           "min": null,
           "max": null,
-          "sample": -9.140923240647671,
+          "sample": -8.32774945028541,
           "data_status": "healthy",
           "chinese_name": "MACD DEA 线",
           "apply_target": "stock"
@@ -876,10 +876,10 @@
           "name": "macd_hist",
           "type": "double precision",
           "non_null_pct": 100.0,
-          "distinct": 22310,
+          "distinct": 27838,
           "min": null,
           "max": null,
-          "sample": -3.644567354427654,
+          "sample": -4.022421151492381,
           "data_status": "healthy",
           "category": "derived",
           "capability": "MACD柱",
@@ -892,7 +892,7 @@
           "name": "pressure_high",
           "type": "double precision",
           "non_null_pct": 100.0,
-          "distinct": 5775,
+          "distinct": 5875,
           "min": null,
           "max": null,
           "sample": 4066.33,
@@ -908,7 +908,7 @@
           "name": "support_low",
           "type": "double precision",
           "non_null_pct": 100.0,
-          "distinct": 5172,
+          "distinct": 5199,
           "min": null,
           "max": null,
           "sample": 4019.21,
@@ -924,10 +924,10 @@
           "name": "boll_upper",
           "type": "double precision",
           "non_null_pct": 100.0,
-          "distinct": 22335,
+          "distinct": 27808,
           "min": null,
           "max": null,
-          "sample": 4068.7269430252877,
+          "sample": 4068.72694302529,
           "data_status": "healthy",
           "category": "derived",
           "capability": "布林上轨",
@@ -940,10 +940,10 @@
           "name": "boll_mid",
           "type": "double precision",
           "non_null_pct": 100.0,
-          "distinct": 20399,
+          "distinct": 24796,
           "min": null,
           "max": null,
-          "sample": 4046.647,
+          "sample": 4046.6469999999995,
           "data_status": "healthy",
           "chinese_name": "布林带中轨",
           "apply_target": "stock"
@@ -952,10 +952,10 @@
           "name": "boll_lower",
           "type": "double precision",
           "non_null_pct": 100.0,
-          "distinct": 22332,
+          "distinct": 27807,
           "min": null,
           "max": null,
-          "sample": 4024.567056974712,
+          "sample": 4024.567056974709,
           "data_status": "healthy",
           "chinese_name": "布林带下轨",
           "apply_target": "stock"
@@ -964,7 +964,7 @@
           "name": "ma5",
           "type": "double precision",
           "non_null_pct": 100.0,
-          "distinct": 16291,
+          "distinct": 19061,
           "min": null,
           "max": null,
           "sample": 4029.928,
@@ -980,7 +980,7 @@
           "name": "ma10",
           "type": "double precision",
           "non_null_pct": 100.0,
-          "distinct": 18879,
+          "distinct": 22599,
           "min": null,
           "max": null,
           "sample": 4039.022,
@@ -992,10 +992,10 @@
           "name": "ma20",
           "type": "double precision",
           "non_null_pct": 100.0,
-          "distinct": 20399,
+          "distinct": 24796,
           "min": null,
           "max": null,
-          "sample": 4046.647,
+          "sample": 4046.6469999999995,
           "data_status": "healthy",
           "chinese_name": "20日均线",
           "apply_target": "stock"
@@ -1076,7 +1076,7 @@
       "apply_target": "stock"
     },
     "qd_kline_1m": {
-      "row_count": 396319,
+      "row_count": 401852,
       "fields": [
         {
           "name": "code",
@@ -1095,7 +1095,7 @@
           "name": "kline_time",
           "type": "timestamp without time zone",
           "non_null_pct": 100.0,
-          "distinct": 202,
+          "distinct": 203,
           "min": null,
           "max": null,
           "sample": "2026-06-18T14:22:00",
@@ -1189,7 +1189,7 @@
       "apply_target": "stock"
     },
     "qd_kline_5m": {
-      "row_count": 352656,
+      "row_count": 358189,
       "fields": [
         {
           "name": "code",
@@ -1208,7 +1208,7 @@
           "name": "kline_time",
           "type": "timestamp without time zone",
           "non_null_pct": 100.0,
-          "distinct": 193,
+          "distinct": 194,
           "min": null,
           "max": null,
           "sample": "2026-06-18T10:20:00",
@@ -1799,7 +1799,7 @@
       "apply_target": "mapping (stock↔style)"
     },
     "qd_money_flow": {
-      "row_count": 16601,
+      "row_count": 22134,
       "fields": [
         {
           "name": "code",
@@ -1817,7 +1817,7 @@
           "name": "flow_time",
           "type": "timestamp without time zone",
           "non_null_pct": 100.0,
-          "distinct": 5,
+          "distinct": 6,
           "min": null,
           "max": null,
           "sample": "2026-07-03T14:40:23.118312",
@@ -1944,7 +1944,7 @@
           "name": "net_flow",
           "type": "double precision",
           "non_null_pct": 100.0,
-          "distinct": 8570,
+          "distinct": 8571,
           "min": null,
           "max": null,
           "sample": -0.47,
@@ -2117,7 +2117,7 @@
       "apply_target": "stock"
     },
     "qd_pricevol": {
-      "row_count": 44549,
+      "row_count": 50117,
       "fields": [
         {
           "name": "code",
@@ -2136,7 +2136,7 @@
           "name": "snapshot_time",
           "type": "timestamp without time zone",
           "non_null_pct": 100.0,
-          "distinct": 9,
+          "distinct": 10,
           "min": null,
           "max": null,
           "sample": "2026-07-03T14:21:07.343027",
@@ -2191,7 +2191,7 @@
       "apply_target": "stock"
     },
     "qd_resonance": {
-      "row_count": 22245,
+      "row_count": 27813,
       "fields": [
         {
           "name": "code",
@@ -2209,7 +2209,7 @@
           "name": "resonance_time",
           "type": "timestamp without time zone",
           "non_null_pct": 100.0,
-          "distinct": 4,
+          "distinct": 5,
           "min": null,
           "max": null,
           "sample": "2026-07-03T11:00:20.378079",
@@ -2551,7 +2551,7 @@
       "apply_target": "sector"
     },
     "qd_sector_flow": {
-      "row_count": 1738,
+      "row_count": 2317,
       "fields": [
         {
           "name": "code",
@@ -2569,7 +2569,7 @@
           "name": "flow_time",
           "type": "timestamp without time zone",
           "non_null_pct": 100.0,
-          "distinct": 4,
+          "distinct": 5,
           "min": null,
           "max": null,
           "sample": "2026-07-03T14:38:33.863221",
@@ -2580,12 +2580,12 @@
         {
           "name": "main_net",
           "type": "double precision",
-          "non_null_pct": 0.1,
-          "distinct": 1,
+          "non_null_pct": 14.8,
+          "distinct": 344,
           "min": null,
           "max": null,
           "sample": 0.0,
-          "data_status": "near_empty",
+          "data_status": "sparse",
           "category": "derived",
           "capability": "板块主力净流入",
           "verify_type": "live_must",
@@ -2657,8 +2657,8 @@
         {
           "name": "total_flow",
           "type": "double precision",
-          "non_null_pct": 5.1,
-          "distinct": 89,
+          "non_null_pct": 28.8,
+          "distinct": 668,
           "min": null,
           "max": null,
           "sample": 27124172.07999997,
@@ -2673,8 +2673,8 @@
         {
           "name": "net_pct",
           "type": "double precision",
-          "non_null_pct": 94.9,
-          "distinct": 1,
+          "non_null_pct": 86.0,
+          "distinct": 344,
           "min": null,
           "max": null,
           "sample": 0.0,
@@ -3231,13 +3231,13 @@
       "apply_target": "market"
     },
     "qd_sentiment_snapshot_min": {
-      "row_count": 2,
+      "row_count": 3,
       "fields": [
         {
           "name": "snapshot_time",
           "type": "timestamp without time zone",
           "non_null_pct": 100.0,
-          "distinct": 2,
+          "distinct": 3,
           "min": null,
           "max": null,
           "sample": "2026-07-04T01:29:00",
@@ -3381,7 +3381,7 @@
           "name": "top_sectors",
           "type": "character varying",
           "non_null_pct": 100.0,
-          "distinct": 2,
+          "distinct": 3,
           "min": null,
           "max": null,
           "sample": "[{\"code\": \"0\", \"name\": \"深股通标的\", \"score\": 27096.2, ",
@@ -3489,13 +3489,13 @@
       "apply_target": "system"
     },
     "qd_signals": {
-      "row_count": 5377,
+      "row_count": 5592,
       "fields": [
         {
           "name": "code",
           "type": "character varying",
           "non_null_pct": 100.0,
-          "distinct": 4961,
+          "distinct": 5067,
           "min": null,
           "max": null,
           "sample": "000001.SZ",
@@ -3507,7 +3507,7 @@
           "name": "signal_time",
           "type": "timestamp without time zone",
           "non_null_pct": 100.0,
-          "distinct": 3,
+          "distinct": 4,
           "min": null,
           "max": null,
           "sample": "2026-07-03T14:40:00",
@@ -3555,7 +3555,7 @@
           "name": "price",
           "type": "double precision",
           "non_null_pct": 100.0,
-          "distinct": 3296,
+          "distinct": 3367,
           "min": null,
           "max": null,
           "sample": 10.32,
@@ -3591,7 +3591,7 @@
           "name": "metadata",
           "type": "character varying",
           "non_null_pct": 100.0,
-          "distinct": 5377,
+          "distinct": 5592,
           "min": null,
           "max": null,
           "sample": "{\"close\": 10.32, \"dif\": 0.008947608501317816, \"dea",
@@ -4418,8 +4418,254 @@
       "producer_script": "runner/daily_init.py",
       "apply_target": "stock"
     },
+    "qd_stock_intraday": {
+      "row_count": 10991,
+      "fields": [
+        {
+          "name": "code",
+          "type": "character varying",
+          "non_null_pct": 100.0,
+          "distinct": 5515,
+          "min": null,
+          "max": null,
+          "sample": "000001.SZ",
+          "data_status": "healthy",
+          "category": "realtime",
+          "chinese_name": "证券代码",
+          "apply_target": "universal"
+        },
+        {
+          "name": "snapshot_time",
+          "type": "timestamp without time zone",
+          "non_null_pct": 100.0,
+          "distinct": 2,
+          "min": null,
+          "max": null,
+          "sample": "2026-07-04T11:14:20.863628",
+          "data_status": "healthy",
+          "category": "realtime",
+          "chinese_name": "快照时间",
+          "apply_target": "universal"
+        },
+        {
+          "name": "ZAF",
+          "type": "double precision",
+          "non_null_pct": 100.0,
+          "distinct": 1472,
+          "min": null,
+          "max": null,
+          "sample": 0.1,
+          "data_status": "healthy",
+          "category": "realtime",
+          "chinese_name": "涨幅",
+          "apply_target": "stock"
+        },
+        {
+          "name": "ZTPrice",
+          "type": "double precision",
+          "non_null_pct": 100.0,
+          "distinct": 3419,
+          "min": null,
+          "max": null,
+          "sample": 11.31,
+          "data_status": "healthy",
+          "category": "realtime",
+          "chinese_name": "涨停价",
+          "apply_target": "stock"
+        },
+        {
+          "name": "DTPrice",
+          "type": "double precision",
+          "non_null_pct": 100.0,
+          "distinct": 3052,
+          "min": null,
+          "max": null,
+          "sample": 9.25,
+          "data_status": "healthy",
+          "category": "realtime",
+          "chinese_name": "跌停价",
+          "apply_target": "stock"
+        },
+        {
+          "name": "fLianB",
+          "type": "double precision",
+          "non_null_pct": 100.0,
+          "distinct": 293,
+          "min": null,
+          "max": null,
+          "sample": 0.8,
+          "data_status": "healthy",
+          "category": "realtime",
+          "chinese_name": "量比",
+          "apply_target": "stock_sector"
+        },
+        {
+          "name": "ZTGPNum",
+          "type": "double precision",
+          "non_null_pct": 100.0,
+          "distinct": 1,
+          "min": null,
+          "max": null,
+          "sample": 0.0,
+          "data_status": "healthy",
+          "category": "realtime",
+          "chinese_name": "板块指数的涨停家数",
+          "apply_target": "stock_sector",
+          "target_note": "个股=涨停价挂单数, 板块/指数=涨停家数"
+        },
+        {
+          "name": "LastStartZT",
+          "type": "character varying",
+          "non_null_pct": 100.0,
+          "distinct": 14,
+          "min": null,
+          "max": null,
+          "sample": "0",
+          "data_status": "healthy",
+          "category": "realtime",
+          "chinese_name": "几天",
+          "apply_target": "stock_sector"
+        },
+        {
+          "name": "MA5Value",
+          "type": "double precision",
+          "non_null_pct": 100.0,
+          "distinct": 3287,
+          "min": null,
+          "max": null,
+          "sample": 10.2,
+          "data_status": "healthy",
+          "category": "realtime",
+          "chinese_name": "5 日均价",
+          "apply_target": "index/stock"
+        },
+        {
+          "name": "Wtb",
+          "type": "double precision",
+          "non_null_pct": 100.0,
+          "distinct": 4486,
+          "min": null,
+          "max": null,
+          "sample": -47.25,
+          "data_status": "healthy",
+          "category": "realtime",
+          "chinese_name": "委比",
+          "apply_target": "stock"
+        },
+        {
+          "name": "fHSL",
+          "type": "double precision",
+          "non_null_pct": 100.0,
+          "distinct": 1193,
+          "min": null,
+          "max": null,
+          "sample": 0.44,
+          "data_status": "healthy",
+          "category": "realtime",
+          "chinese_name": "换手率",
+          "apply_target": "stock"
+        },
+        {
+          "name": "Fzhsl",
+          "type": "double precision",
+          "non_null_pct": 100.0,
+          "distinct": 119,
+          "min": null,
+          "max": null,
+          "sample": 0.02,
+          "data_status": "healthy",
+          "category": "realtime",
+          "chinese_name": "分钟换手率",
+          "apply_target": "stock"
+        },
+        {
+          "name": "FzAmo",
+          "type": "double precision",
+          "non_null_pct": 100.0,
+          "distinct": 5136,
+          "min": null,
+          "max": null,
+          "sample": 812.4,
+          "data_status": "healthy",
+          "category": "realtime",
+          "chinese_name": "2 分钟金额（万元）",
+          "apply_target": "stock"
+        },
+        {
+          "name": "Zjl",
+          "type": "double precision",
+          "non_null_pct": 100.0,
+          "distinct": 5170,
+          "min": null,
+          "max": null,
+          "sample": -5734.47,
+          "data_status": "healthy",
+          "category": "realtime",
+          "chinese_name": "主买净额（万元）",
+          "apply_target": "stock"
+        },
+        {
+          "name": "Zjl_HB",
+          "type": "double precision",
+          "non_null_pct": 100.0,
+          "distinct": 5147,
+          "min": null,
+          "max": null,
+          "sample": -6393.95,
+          "data_status": "healthy",
+          "category": "realtime",
+          "chinese_name": "主力净流入（万元）",
+          "apply_target": "stock"
+        },
+        {
+          "name": "FCAmo",
+          "type": "double precision",
+          "non_null_pct": 100.0,
+          "distinct": 184,
+          "min": null,
+          "max": null,
+          "sample": 0.0,
+          "data_status": "healthy",
+          "category": "realtime",
+          "chinese_name": "封单额（万元）",
+          "apply_target": "stock",
+          "capability": "封单额(万元); 权威涨跌停判定: FCAmo>0涨停 / <0跌停 / =0未封(可能 Now>=ZTPrice 触价但无封单=炸板风险)",
+          "authoritative_rule": true
+        },
+        {
+          "name": "FCb",
+          "type": "double precision",
+          "non_null_pct": 100.0,
+          "distinct": 72,
+          "min": null,
+          "max": null,
+          "sample": 0.0,
+          "data_status": "healthy",
+          "category": "realtime",
+          "chinese_name": "封成比",
+          "apply_target": "stock"
+        },
+        {
+          "name": "vzangsu",
+          "type": "double precision",
+          "non_null_pct": 100.0,
+          "distinct": 360,
+          "min": null,
+          "max": null,
+          "sample": 0.85,
+          "data_status": "healthy",
+          "category": "realtime",
+          "chinese_name": "量涨速",
+          "apply_target": "stock"
+        }
+      ],
+      "category": "realtime",
+      "source": "collect/c3_more_info.py intraday模式 (C8拆表 ba2bf0f 后从 qd_stock_snapshot 独立)",
+      "note": "✅ C8拆表: 15个intraday字段独立成表, 单行完整不再双形态; 含FCAmo权威涨跌停判定(>0涨停/<0跌停); 字段语义/中文/适用对象复用 spec+target 脚本自动补",
+      "producer_script": "collect/c3_more_info.py intraday模式 (C8拆表ba2bf0f独立)"
+    },
     "qd_stock_snapshot": {
-      "row_count": 119075,
+      "row_count": 130141,
       "fields": [
         {
           "name": "code",
@@ -4438,7 +4684,7 @@
           "name": "snapshot_time",
           "type": "timestamp without time zone",
           "non_null_pct": 100.0,
-          "distinct": 41,
+          "distinct": 43,
           "min": null,
           "max": null,
           "sample": "2026-07-03T10:52:19.380238",
@@ -4450,8 +4696,8 @@
         {
           "name": "ItemNum",
           "type": "double precision",
-          "non_null_pct": 89.2,
-          "distinct": 4567,
+          "non_null_pct": 90.1,
+          "distinct": 4773,
           "min": null,
           "max": null,
           "sample": 1557.0,
@@ -4463,7 +4709,7 @@
         {
           "name": "LastClose",
           "type": "double precision",
-          "non_null_pct": 89.2,
+          "non_null_pct": 90.1,
           "distinct": 3284,
           "min": null,
           "max": null,
@@ -4479,7 +4725,7 @@
         {
           "name": "Open",
           "type": "double precision",
-          "non_null_pct": 89.2,
+          "non_null_pct": 90.1,
           "distinct": 3204,
           "min": null,
           "max": null,
@@ -4495,7 +4741,7 @@
         {
           "name": "Max",
           "type": "double precision",
-          "non_null_pct": 89.2,
+          "non_null_pct": 90.1,
           "distinct": 4350,
           "min": null,
           "max": null,
@@ -4511,7 +4757,7 @@
         {
           "name": "Min",
           "type": "double precision",
-          "non_null_pct": 89.2,
+          "non_null_pct": 90.1,
           "distinct": 3874,
           "min": null,
           "max": null,
@@ -4527,7 +4773,7 @@
         {
           "name": "Now",
           "type": "double precision",
-          "non_null_pct": 89.2,
+          "non_null_pct": 90.1,
           "distinct": 7610,
           "min": null,
           "max": null,
@@ -4545,7 +4791,7 @@
         {
           "name": "Volume",
           "type": "bigint",
-          "non_null_pct": 89.2,
+          "non_null_pct": 90.1,
           "distinct": 26922,
           "min": null,
           "max": null,
@@ -4561,7 +4807,7 @@
         {
           "name": "NowVol",
           "type": "bigint",
-          "non_null_pct": 89.2,
+          "non_null_pct": 90.1,
           "distinct": 3024,
           "min": null,
           "max": null,
@@ -4574,7 +4820,7 @@
         {
           "name": "Amount",
           "type": "double precision",
-          "non_null_pct": 89.2,
+          "non_null_pct": 90.1,
           "distinct": 28510,
           "min": null,
           "max": null,
@@ -4590,8 +4836,8 @@
         {
           "name": "Inside",
           "type": "bigint",
-          "non_null_pct": 89.2,
-          "distinct": 25301,
+          "non_null_pct": 90.1,
+          "distinct": 28378,
           "min": null,
           "max": null,
           "sample": "182881",
@@ -4607,8 +4853,8 @@
         {
           "name": "Outside",
           "type": "bigint",
-          "non_null_pct": 89.2,
-          "distinct": 25008,
+          "non_null_pct": 90.1,
+          "distinct": 28115,
           "min": null,
           "max": null,
           "sample": "226699",
@@ -4624,7 +4870,7 @@
         {
           "name": "TickDiff",
           "type": "double precision",
-          "non_null_pct": 89.2,
+          "non_null_pct": 90.1,
           "distinct": 148,
           "min": null,
           "max": null,
@@ -4640,7 +4886,7 @@
         {
           "name": "InOutFlag",
           "type": "integer",
-          "non_null_pct": 89.2,
+          "non_null_pct": 90.1,
           "distinct": 3,
           "min": null,
           "max": null,
@@ -4653,7 +4899,7 @@
         {
           "name": "Jjjz",
           "type": "double precision",
-          "non_null_pct": 89.2,
+          "non_null_pct": 90.1,
           "distinct": 1,
           "min": null,
           "max": null,
@@ -4666,7 +4912,7 @@
         {
           "name": "Average",
           "type": "double precision",
-          "non_null_pct": 89.2,
+          "non_null_pct": 90.1,
           "distinct": 7499,
           "min": null,
           "max": null,
@@ -4682,7 +4928,7 @@
         {
           "name": "XsFlag",
           "type": "integer",
-          "non_null_pct": 89.2,
+          "non_null_pct": 90.1,
           "distinct": 1,
           "min": null,
           "max": null,
@@ -4695,7 +4941,7 @@
         {
           "name": "UpHome",
           "type": "integer",
-          "non_null_pct": 89.2,
+          "non_null_pct": 90.1,
           "distinct": 1,
           "min": null,
           "max": null,
@@ -4709,7 +4955,7 @@
         {
           "name": "DownHome",
           "type": "integer",
-          "non_null_pct": 89.2,
+          "non_null_pct": 90.1,
           "distinct": 1,
           "min": null,
           "max": null,
@@ -4723,8 +4969,8 @@
         {
           "name": "Before5MinNow",
           "type": "double precision",
-          "non_null_pct": 89.2,
-          "distinct": 7652,
+          "non_null_pct": 90.1,
+          "distinct": 7654,
           "min": null,
           "max": null,
           "sample": 10.31,
@@ -4736,7 +4982,7 @@
         {
           "name": "Zangsu",
           "type": "double precision",
-          "non_null_pct": 89.2,
+          "non_null_pct": 90.1,
           "distinct": 413,
           "min": null,
           "max": null,
@@ -4752,8 +4998,8 @@
         {
           "name": "ZAFPre3",
           "type": "double precision",
-          "non_null_pct": 89.2,
-          "distinct": 3705,
+          "non_null_pct": 90.1,
+          "distinct": 3753,
           "min": null,
           "max": null,
           "sample": 2.48,
@@ -4765,7 +5011,7 @@
         {
           "name": "Buyp1",
           "type": "double precision",
-          "non_null_pct": 89.2,
+          "non_null_pct": 90.1,
           "distinct": 7630,
           "min": null,
           "max": null,
@@ -4782,7 +5028,7 @@
         {
           "name": "Buyp2",
           "type": "double precision",
-          "non_null_pct": 89.2,
+          "non_null_pct": 90.1,
           "distinct": 1,
           "min": null,
           "max": null,
@@ -4795,7 +5041,7 @@
         {
           "name": "Buyp3",
           "type": "double precision",
-          "non_null_pct": 89.2,
+          "non_null_pct": 90.1,
           "distinct": 1,
           "min": null,
           "max": null,
@@ -4808,7 +5054,7 @@
         {
           "name": "Buyp4",
           "type": "double precision",
-          "non_null_pct": 89.2,
+          "non_null_pct": 90.1,
           "distinct": 1,
           "min": null,
           "max": null,
@@ -4821,7 +5067,7 @@
         {
           "name": "Buyp5",
           "type": "double precision",
-          "non_null_pct": 89.2,
+          "non_null_pct": 90.1,
           "distinct": 1,
           "min": null,
           "max": null,
@@ -4834,7 +5080,7 @@
         {
           "name": "Buyv1",
           "type": "bigint",
-          "non_null_pct": 89.2,
+          "non_null_pct": 90.1,
           "distinct": 4688,
           "min": null,
           "max": null,
@@ -4850,7 +5096,7 @@
         {
           "name": "Buyv2",
           "type": "bigint",
-          "non_null_pct": 89.2,
+          "non_null_pct": 90.1,
           "distinct": 1,
           "min": null,
           "max": null,
@@ -4863,7 +5109,7 @@
         {
           "name": "Buyv3",
           "type": "bigint",
-          "non_null_pct": 89.2,
+          "non_null_pct": 90.1,
           "distinct": 1,
           "min": null,
           "max": null,
@@ -4876,7 +5122,7 @@
         {
           "name": "Buyv4",
           "type": "bigint",
-          "non_null_pct": 89.2,
+          "non_null_pct": 90.1,
           "distinct": 1,
           "min": null,
           "max": null,
@@ -4889,7 +5135,7 @@
         {
           "name": "Buyv5",
           "type": "bigint",
-          "non_null_pct": 89.2,
+          "non_null_pct": 90.1,
           "distinct": 1,
           "min": null,
           "max": null,
@@ -4902,7 +5148,7 @@
         {
           "name": "Sellp1",
           "type": "double precision",
-          "non_null_pct": 89.2,
+          "non_null_pct": 90.1,
           "distinct": 7647,
           "min": null,
           "max": null,
@@ -4918,7 +5164,7 @@
         {
           "name": "Sellp2",
           "type": "double precision",
-          "non_null_pct": 89.2,
+          "non_null_pct": 90.1,
           "distinct": 1,
           "min": null,
           "max": null,
@@ -4931,7 +5177,7 @@
         {
           "name": "Sellp3",
           "type": "double precision",
-          "non_null_pct": 89.2,
+          "non_null_pct": 90.1,
           "distinct": 1,
           "min": null,
           "max": null,
@@ -4944,7 +5190,7 @@
         {
           "name": "Sellp4",
           "type": "double precision",
-          "non_null_pct": 89.2,
+          "non_null_pct": 90.1,
           "distinct": 1,
           "min": null,
           "max": null,
@@ -4957,7 +5203,7 @@
         {
           "name": "Sellp5",
           "type": "double precision",
-          "non_null_pct": 89.2,
+          "non_null_pct": 90.1,
           "distinct": 1,
           "min": null,
           "max": null,
@@ -4970,7 +5216,7 @@
         {
           "name": "Sellv1",
           "type": "bigint",
-          "non_null_pct": 89.2,
+          "non_null_pct": 90.1,
           "distinct": 3513,
           "min": null,
           "max": null,
@@ -4986,7 +5232,7 @@
         {
           "name": "Sellv2",
           "type": "bigint",
-          "non_null_pct": 89.2,
+          "non_null_pct": 90.1,
           "distinct": 1,
           "min": null,
           "max": null,
@@ -4999,7 +5245,7 @@
         {
           "name": "Sellv3",
           "type": "bigint",
-          "non_null_pct": 89.2,
+          "non_null_pct": 90.1,
           "distinct": 1,
           "min": null,
           "max": null,
@@ -5012,7 +5258,7 @@
         {
           "name": "Sellv4",
           "type": "bigint",
-          "non_null_pct": 89.2,
+          "non_null_pct": 90.1,
           "distinct": 1,
           "min": null,
           "max": null,
@@ -5025,7 +5271,7 @@
         {
           "name": "Sellv5",
           "type": "bigint",
-          "non_null_pct": 89.2,
+          "non_null_pct": 90.1,
           "distinct": 1,
           "min": null,
           "max": null,
@@ -5038,7 +5284,7 @@
         {
           "name": "ZTPrice",
           "type": "double precision",
-          "non_null_pct": 10.8,
+          "non_null_pct": 9.9,
           "distinct": 3419,
           "min": null,
           "max": null,
@@ -5054,7 +5300,7 @@
         {
           "name": "DTPrice",
           "type": "double precision",
-          "non_null_pct": 10.8,
+          "non_null_pct": 9.9,
           "distinct": 3052,
           "min": null,
           "max": null,
@@ -5070,7 +5316,7 @@
         {
           "name": "ZAF",
           "type": "double precision",
-          "non_null_pct": 10.8,
+          "non_null_pct": 9.9,
           "distinct": 1542,
           "min": null,
           "max": null,
@@ -5086,7 +5332,7 @@
         {
           "name": "fHSL",
           "type": "double precision",
-          "non_null_pct": 10.8,
+          "non_null_pct": 9.9,
           "distinct": 1253,
           "min": null,
           "max": null,
@@ -5102,7 +5348,7 @@
         {
           "name": "Fzhsl",
           "type": "double precision",
-          "non_null_pct": 10.8,
+          "non_null_pct": 9.9,
           "distinct": 120,
           "min": null,
           "max": null,
@@ -5118,7 +5364,7 @@
         {
           "name": "FzAmo",
           "type": "double precision",
-          "non_null_pct": 10.8,
+          "non_null_pct": 9.9,
           "distinct": 5548,
           "min": null,
           "max": null,
@@ -5134,7 +5380,7 @@
         {
           "name": "Zjl",
           "type": "double precision",
-          "non_null_pct": 10.8,
+          "non_null_pct": 9.9,
           "distinct": 5625,
           "min": null,
           "max": null,
@@ -5152,7 +5398,7 @@
         {
           "name": "Zjl_HB",
           "type": "double precision",
-          "non_null_pct": 10.8,
+          "non_null_pct": 9.9,
           "distinct": 5591,
           "min": null,
           "max": null,
@@ -5168,7 +5414,7 @@
         {
           "name": "FCAmo",
           "type": "double precision",
-          "non_null_pct": 10.8,
+          "non_null_pct": 9.9,
           "distinct": 241,
           "min": null,
           "max": null,
@@ -5186,7 +5432,7 @@
         {
           "name": "FCb",
           "type": "double precision",
-          "non_null_pct": 10.8,
+          "non_null_pct": 9.9,
           "distinct": 96,
           "min": null,
           "max": null,
@@ -5202,7 +5448,7 @@
         {
           "name": "vzangsu",
           "type": "double precision",
-          "non_null_pct": 10.8,
+          "non_null_pct": 9.9,
           "distinct": 361,
           "min": null,
           "max": null,
@@ -5215,7 +5461,7 @@
         {
           "name": "ZTGPNum",
           "type": "double precision",
-          "non_null_pct": 10.8,
+          "non_null_pct": 9.9,
           "distinct": 1,
           "min": null,
           "max": null,
@@ -5233,7 +5479,7 @@
         {
           "name": "fLianB",
           "type": "double precision",
-          "non_null_pct": 10.8,
+          "non_null_pct": 9.9,
           "distinct": 371,
           "min": null,
           "max": null,
@@ -5249,7 +5495,7 @@
         {
           "name": "MA5Value",
           "type": "double precision",
-          "non_null_pct": 10.8,
+          "non_null_pct": 9.9,
           "distinct": 3371,
           "min": null,
           "max": null,
@@ -5265,7 +5511,7 @@
         {
           "name": "Wtb",
           "type": "double precision",
-          "non_null_pct": 10.8,
+          "non_null_pct": 9.9,
           "distinct": 4770,
           "min": null,
           "max": null,
@@ -5281,7 +5527,7 @@
         {
           "name": "LastStartZT",
           "type": "character varying",
-          "non_null_pct": 10.8,
+          "non_null_pct": 9.9,
           "distinct": 14,
           "min": null,
           "max": null,
@@ -5297,8 +5543,8 @@
       ],
       "category": "realtime",
       "source": "c2_snapshot (快照列@T) + c3_more_info intraday模式 (资金列@T+1s)",
-      "c8_note": "⚠️ C8双形态行: 快照列(Now/Volume/5档/内外盘/涨速)与intraday列(Zjl/FCAmo/Wtb/封单)分家在不同行, 单行永远不完整, 消费方须合并(groupby code取每列非空)",
-      "producer_script": "collect/c2_snapshot.py(快照列@T) + collect/c3_more_info.py(intraday列@T+1s) ⚠️C8双形态行",
+      "c8_note": "✅ C8已拆表修复(commit ba2bf0f): intraday列(Zjl/FCAmo/Wtb/fHSL/ZTPrice等)已拆到 qd_stock_intraday 独立表; 此处 intraday 列仅历史残留(sparse 9.9%), 不再写入, 消费方应读 qd_stock_intraday",
+      "producer_script": "collect/c2_snapshot.py (C8拆表ba2bf0f后仅快照列, intraday已拆到qd_stock_intraday)",
       "apply_target": "stock"
     },
     "qd_strategy_eval": {
@@ -5420,10 +5666,10 @@
     }
   },
   "summary": {
-    "total_tables": 33,
-    "total_fields": 379,
+    "total_tables": 34,
+    "total_fields": 397,
     "by_category": {
-      "realtime": 108,
+      "realtime": 126,
       "unknown": 100,
       "derived": 12,
       "reference": 45,

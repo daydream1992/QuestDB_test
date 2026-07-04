@@ -57,7 +57,7 @@ SEMANTICS = {
     'qd_stock_snapshot': {
         '__table_category': 'realtime',
         '__table_source': 'c2_snapshot (快照列@T) + c3_more_info intraday模式 (资金列@T+1s)',
-        '__c8_note': '⚠️ C8双形态行: 快照列(Now/Volume/5档/内外盘/涨速)与intraday列(Zjl/FCAmo/Wtb/封单)分家在不同行, 单行永远不完整, 消费方须合并(groupby code取每列非空)',
+        '__c8_note': '✅ C8已拆表修复(commit ba2bf0f): intraday列(Zjl/FCAmo/Wtb/fHSL/ZTPrice等)已拆到 qd_stock_intraday 独立表; 此处 intraday 列仅历史残留(sparse 9.9%), 不再写入, 消费方应读 qd_stock_intraday',
         # 快照列 (c2@T) — 实时, 盘后为收盘值
         'Now': {'category': 'realtime', 'source': 'c2 get_market_snapshot', 'capability': '现价',
                 'verify_type': 'live_must', 'provenance': 'verified', 'constraint': 'C8快照行; 盘后=收盘价非实时'},
@@ -93,6 +93,13 @@ SEMANTICS = {
         'fLianB': {'category': 'realtime', 'capability': '量比(成交活跃度, ⚠️非连板数! 说明书权威)', 'verify_type': 'live_must', 'provenance': 'verified'},
         'ZTGPNum': {'category': 'realtime', 'capability': '涨停价挂单数', 'verify_type': 'live_must', 'provenance': 'suspect', 'constraint': '样本全0, 可能采集源没填或语义不同'},
         'LastStartZT': {'category': 'realtime', 'capability': '最近启动涨停', 'verify_type': 'live_must', 'provenance': 'verified'},
+    },
+
+    # ========== qd_stock_intraday (C8拆表独立, c3 intraday字段, 单行完整) ==========
+    'qd_stock_intraday': {
+        '__table_category': 'realtime',
+        '__table_source': 'collect/c3_more_info.py intraday模式 (C8拆表 ba2bf0f 后从 qd_stock_snapshot 独立)',
+        '__note': '✅ C8拆表: 15个intraday字段独立成表, 单行完整不再双形态; 含FCAmo权威涨跌停判定(>0涨停/<0跌停); 字段语义/中文/适用对象复用 spec+target 脚本自动补',
     },
 
     # ========== qd_stock_daily (日级历史属性, c3 daily模式, tqcenter历史, 盘后可反复拉) ==========
