@@ -58,19 +58,6 @@ def _safe_float(v, default=0.0) -> float:
         return default
 
 
-def _merge_dual_rows(df):
-    """合并 qd_stock_snapshot 双形态行 (c2@T 快照 + c3@T+1s intraday)
-
-    按 code 取每列第一个非空值 (c2 行有 Now/Max/Sellv1, c3 行有 Zjl/ZTPrice 等)。
-    """
-    if df is None or df.empty:
-        return df
-    if 'code' not in df.columns:
-        return df
-    return df.groupby('code', as_index=False).agg(
-        lambda s: s.dropna().iloc[0] if not s.dropna().empty else None)
-
-
 def detect_surge(now, before5min):
     """5 分钟涨速异动"""
     if before5min <= 0:
@@ -115,7 +102,13 @@ def detect_all(snapshot_df, watchlist=None):
         list[(code, event_type, desc, critical)]
     """
     events = []
-    merged = _merge_dual_rows(snapshot_df)
+    # C8 拆表后: snapshot_df 已由调用方 merge 完整 (快照+intraday), 取每 code 最新一行
+    if snapshot_df is None or snapshot_df.empty:
+        return events
+    if 'snapshot_time' in snapshot_df.columns:
+        merged = snapshot_df.sort_values('snapshot_time').groupby('code', as_index=False).last()
+    else:
+        merged = snapshot_df
     if merged is None or merged.empty:
         return events
     for _, r in merged.iterrows():
@@ -177,13 +170,23 @@ def run(con, snapshot_df, watchlist=None):
 
 
 if __name__ == '__main__':
-    # 独立运行: 读最新 snapshot 测试
+    # 独立运行: 读快照+intraday 两表, 按 code merge 测试 (C8 拆表后)
     from lib.qdb import connect
     from lib.qdb import query_df
     con = connect()
     try:
-        df = query_df(con, "SELECT * FROM qd_stock_snapshot "
-                           f"WHERE snapshot_time > '{cutoff(minutes=5)}'")
+        snap = query_df(con, "SELECT * FROM qd_stock_snapshot "
+                            f"WHERE snapshot_time > '{cutoff(minutes=5)}'")
+        intra = query_df(con, "SELECT * FROM qd_stock_intraday "
+                         f"WHERE snapshot_time > '{cutoff(minutes=5)}'")
+        # 按 code 取最新 intraday merge 进快照
+        if intra is not None and not intra.empty:
+            il = intra.sort_values('snapshot_time').groupby('code', as_index=False).tail(1)
+            ic = [c for c in il.columns if c not in ('code', 'snapshot_time')]
+            snap = snap.drop(columns=[c for c in ic if c in snap.columns])
+            df = snap.merge(il[['code'] + ic], on='code', how='left')
+        else:
+            df = snap
         n = run(con, df)
         print(f'检测到 {n} 个事件')
     finally:

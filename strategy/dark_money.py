@@ -17,8 +17,8 @@
 说明:
   - calc 单只计算: cancel_diff 单帧置 0 (calc_batch 跨帧 NowVol.diff 填入)
   - calc_batch 批量计算: 按 code + snapshot_time 排序, 相邻帧差分得 cancel_diff
-  - C8 应对: 调用方 (intraday_loop._run_money_flow) 先 ffill intraday 字段再传 df_more_info=None,
-    避免 _merge_dual_rows 塌缩时间序列导致 cancel_diff 恒 0
+  - C8 拆表后: 调用方 (_run_money_flow) 传的 df 已含 merge 进来的 intraday 字段
+    (Zjl/FCAmo/Wtb 等, 来自 qd_stock_intraday), df_more_info=None; cancel_diff 用 NowVol 跨帧差分
   - order_imbalance = Σ(Buyv1-5) - Σ(Sellv1-5); _safe_float 过滤 NaN (tqcenter 偶返 nan)
 """
 

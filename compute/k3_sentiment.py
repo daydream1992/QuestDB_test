@@ -127,19 +127,6 @@ def rate_emotion(zt_cnt, fbl, max_lb, udr):
     return EMOTION_LABELS[worst], worst
 
 
-def _merge_dual_rows(df):
-    """合并 qd_stock_snapshot 双形态行 (c2@T 快照 + c3@T+1s intraday)
-
-    按 code 取每列第一个非空值 (c2 行有 Now/Max/Volume, c3 行有 FCAmo/ZAF/Zjl 等)。
-    """
-    if df is None or df.empty:
-        return df
-    if 'code' not in df.columns:
-        return df
-    return df.groupby('code', as_index=False).agg(
-        lambda s: s.dropna().iloc[0] if not s.dropna().empty else None)
-
-
 def _calc_market_breadth(pricevol_df):
     """全场涨跌家数 + 涨跌比 (udr) — pricevol 全场口径"""
     if pricevol_df is None or pricevol_df.empty:
@@ -351,8 +338,12 @@ def run(con, ctx):
     # 1. 全场涨跌 (pricevol)
     up_cnt, down_cnt, udr = _calc_market_breadth(ctx.pricevol_df)
 
-    # 2. 涨停/封板/连板 (snapshot_focus, 合并双形态行)
-    merged = _merge_dual_rows(ctx.snapshot_focus_df)
+    # 2. 涨停/封板/连板 (snapshot_focus, C8 拆表后已合并完整, 取每 code 最新一行)
+    _sdf = ctx.snapshot_focus_df
+    if _sdf is not None and not _sdf.empty and 'snapshot_time' in _sdf.columns:
+        merged = _sdf.sort_values('snapshot_time').groupby('code', as_index=False).last()
+    else:
+        merged = _sdf
     zt_cnt, dt_cnt, break_cnt, fbl, max_lb = _calc_seal_stats(merged)
     pools = build_pools(merged)
 

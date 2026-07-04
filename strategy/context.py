@@ -30,7 +30,8 @@ class StrategyContext:
 
     # 个股数据
     pricevol_df: Optional[pd.DataFrame] = None       # 全场价量
-    snapshot_focus_df: Optional[pd.DataFrame] = None # 重点快照
+    snapshot_focus_df: Optional[pd.DataFrame] = None # 重点快照 (c2 快照列 + C8拆表后 merge 进的 intraday 列)
+    intraday_df: Optional[pd.DataFrame] = None       # 个股 intraday (qd_stock_intraday, c3 拆出, 原始保留)
     more_info_df: Optional[pd.DataFrame] = None      # 88 字段
     indicators_df: Optional[pd.DataFrame] = None     # 指标
     signals_df: Optional[pd.DataFrame] = None        # 原子信号

@@ -64,10 +64,10 @@ STOCK_DAILY_COLS = ['code', 'date'] + STOCK_DAILY_FIELDS
 SECTOR_DAILY_COLS = ['code', 'date'] + SECTOR_DAILY_FIELDS
 INDEX_DAILY_COLS = ['code', 'date'] + INDEX_DAILY_FIELDS
 
-# === intraday 写 snapshot 表 (stock 用 snapshot 表含完整字段, sector/index 写 daily 表) ===
-# qd_stock_snapshot 已补 ZAF/fHSL/Zjl 等字段 (见 ddl/02_snapshot.sql)
+# === intraday 写入 (C8 拆表: stock 独立成 qd_stock_intraday, sector/index 写 daily 表) ===
+# 原 c3 写 qd_stock_snapshot 与 c2@T 双形态行冲突, 现拆独立表, 不再 +1s 错开
 _INTRADAY_TABLE = {
-    'stock': 'qd_stock_snapshot',
+    'stock': 'qd_stock_intraday',
     'sector': 'qd_sector_daily',
     'index': 'qd_index_daily',
 }
@@ -242,10 +242,7 @@ def run(codes, mode='daily', con=None):
         buckets = {'stock': [], 'sector': [], 'index': []}
         err = 0
         snapshot_time = datetime.now()
-        # intraday 模式与 c2_snapshot 同时写入 qd_stock_snapshot, 加 1 秒错开时间戳
-        # 以避免 DEDUP UPSERT KEYS(snapshot_time, code) 互相覆盖同一行
-        if mode == 'intraday':
-            snapshot_time = datetime.fromtimestamp(snapshot_time.timestamp() + 1)
+        # C8 拆表后: stock intraday 写独立表 qd_stock_intraday, 不再与 c2 冲突, 无需 +1s 错开
 
         for code in codes:
             ctype = route_type(code)

@@ -141,6 +141,22 @@ def _get_focus_codes(con, all_stocks):
         return all_stocks
 
 
+def _merge_intraday(snap, intra):
+    """C8 拆表后: 把 qd_stock_intraday (每 code 最新) merge 进快照表, 返回完整字段 df
+
+    两表 snapshot_time 差几十秒 (c2/c3 各自时间戳), 按 code 配对同轮, 不按精确 timestamp。
+    """
+    if snap is None or snap.empty or intra is None or intra.empty:
+        return snap
+    if 'code' not in intra.columns:
+        return snap
+    intra_latest = intra.sort_values('snapshot_time') \
+        .groupby('code', as_index=False).tail(1)
+    intra_cols = [c for c in intra_latest.columns if c not in ('code', 'snapshot_time')]
+    snap2 = snap.drop(columns=[c for c in intra_cols if c in snap.columns])
+    return snap2.merge(intra_latest[['code'] + intra_cols], on='code', how='left')
+
+
 def _build_context(con, graph):
     """构建策略上下文 (一次采集全策略共享)"""
     ctx = StrategyContext(timestamp=datetime.now(), is_trading=True)
@@ -157,6 +173,15 @@ def _build_context(con, graph):
                  f"WHERE snapshot_time > '{cutoff(minutes=5)}'")
     except Exception:
         pass
+    # C8 拆表修复: 读 qd_stock_intraday, merge 进 snapshot_focus_df (按 code 取最新)
+    try:
+        intra = query_df(
+            con, f"SELECT * FROM qd_stock_intraday "
+                 f"WHERE snapshot_time > '{cutoff(minutes=5)}'")
+        ctx.intraday_df = intra
+        ctx.snapshot_focus_df = _merge_intraday(ctx.snapshot_focus_df, intra)
+    except Exception as e:
+        logger.warning('intraday merge 失败: {}', e)
     try:
         # c3 daily 写 qd_stock_daily (含 ZTPrice/fLianB/CJJEPre1 等日级字段)
         # c3 intraday 写 qd_stock_snapshot (含 ZAF/fHSL/Zjl 等实时字段, 由 snapshot_focus_df 承载)
@@ -425,17 +450,8 @@ def _run_big_order(con, ctx):
     if snap is None or snap.empty:
         return
     try:
-        df = snap.copy()
-        df = df.sort_values(['code', 'snapshot_time'])
-        # C8: c2@T 与同轮 c3@T+1s 配对 → intraday 字段 bfill+ffill 同轮回填
-        for c in ('Zjl', 'Zjl_HB', 'FCAmo', 'FCb', 'Wtb'):
-            if c in df.columns:
-                df[c] = df.groupby('code')[c].bfill().ffill()
-        # 只留 c2 行 (Amount 必填), 保证 amount_diff 差分有意义
-        if 'Amount' in df.columns:
-            df = df[df['Amount'].notna()]
-        if df.empty:
-            return
+        # C8 拆表后: snapshot_focus_df 已含快照列 + merge 的 intraday 列, 不再 bfill/filter
+        df = snap.copy().sort_values(['code', 'snapshot_time'])
         # 按 code 分组 → 每组按 snapshot_time 排序 → 相邻帧 detect
         events = []
         for code, g in df.groupby('code', sort=False):
@@ -484,19 +500,10 @@ def _run_money_flow(con, ctx):
     if snap is None or snap.empty:
         return
     try:
-        df = snap.copy()
-        df = df.sort_values(['code', 'snapshot_time'])
-        # C8: c2@T 与同轮 c3@T+1s 配对 → 用 bfill 把同轮 c3 的 intraday 字段回填到 c2 行
-        # (ffill 取上一轮会陈旧, 且窗口滑动时边界行 main_net 退化为 0; bfill 同轮最新)
-        for c in ('Zjl', 'Zjl_HB', 'FCAmo', 'FCb', 'Wtb'):
-            if c in df.columns:
-                df[c] = df.groupby('code')[c].bfill().ffill()
-        # 只留 c2 行 (有 NowVol), 保证 cancel_diff 差分连续、不被 c3 None 行污染
-        if 'NowVol' in df.columns:
-            df = df[df['NowVol'].notna()]
-        if df.empty:
-            return
-        mf = dark_money.calc_batch(df, None)  # ffill 已嵌 intraday 字段, 跳过内部 merge
+        # C8 拆表后: snapshot_focus_df 已含快照列 + merge 进的 intraday 列 (Zjl/FCAmo 等)
+        # 不再 bfill / filter NowVol (都是 c2 行, intraday 已真实)
+        df = snap.copy().sort_values(['code', 'snapshot_time'])
+        mf = dark_money.calc_batch(df, None)  # df 已嵌 intraday 字段, 跳过内部 merge
         if mf is None or mf.empty:
             return
         # 构造行 (big_order_diff/light_money 显式 None, 不写 pandas NaN; 仿 _run_sector_flow)
@@ -602,8 +609,12 @@ def run(con=None, max_rounds=None, force=False):
 
             # 实盘异动检测 (10s, c2+c3 后; MonitorState 跨轮, critical 即时飞书)
             try:
+                # C8 拆表: 读快照+intraday 两表, 按 code merge 后传给 intraday_engine
                 snap = query_df(con, f"SELECT * FROM qd_stock_snapshot "
                                     f"WHERE snapshot_time > '{cutoff(seconds=30)}'")
+                intra_snap = query_df(con, f"SELECT * FROM qd_stock_intraday "
+                                     f"WHERE snapshot_time > '{cutoff(seconds=30)}'")
+                snap = _merge_intraday(snap, intra_snap)
                 if snap is not None and not snap.empty:
                     intraday_engine.run(con, snap, watchlist)
             except Exception as e:
