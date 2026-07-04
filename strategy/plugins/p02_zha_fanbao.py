@@ -24,9 +24,12 @@ _ZAF_YESTERDAY_MIN = 9.0   # 昨涨幅 >= 9% 视为昨日触及涨停 (启发式
 
 def _safe_float(v, default=0.0) -> float:
     try:
-        return float(v)
+        r = float(v)
     except (TypeError, ValueError):
         return default
+    if r != r:  # NaN
+        return default
+    return r
 
 
 @StrategyRegistry.register

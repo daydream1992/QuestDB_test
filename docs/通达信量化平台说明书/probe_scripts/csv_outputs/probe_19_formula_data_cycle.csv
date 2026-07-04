@@ -1,0 +1,2 @@
+﻿代码,market_data条数,format条数,format字段,set_ErrorId,get_Code,get条数,get字段,读回Close,设置Close,Close一致性,get_md耗时,format耗时,set耗时,get耗时,探测时间
+688318.SH,5,5,Date|Amount|Volume|Close|Open|High|Low,0,688318.SH,5,Amount|Close|Date|High|Low|Open|Volume,72.31,72.31,一致,20,0,3,7,2026-06-30 03:09:06

@@ -20,11 +20,16 @@
   - 非交易日跳过 (仅补跑 daily_close 后等待次日)。
   - 模块级 import 不引入 tqcenter 依赖, 确保 `from runner.scheduler import run`
     可在无 tqcenter 环境下 import 成功。
+  - H7: 子进程用 CREATE_NEW_PROCESS_GROUP 启动, 切换阶段时发 CTRL_BREAK_EVENT
+    让子进程 main() 的 try/finally 触发, close() 关闭 tqcenter COM (避免泄漏 →
+    通达信账号级互斥锁 "已有同名策略运行" 错误)。原 terminate() 在 Windows 上
+    直接 TerminateProcess 不会运行 finally, tqcenter 句柄泄漏。
 """
 
 import os
 import sys
 import time
+import signal
 import subprocess
 import psutil
 from datetime import datetime, time as dtime
@@ -64,7 +69,10 @@ _IDLE_INTERVAL = 300
 
 
 def _start_proc(script):
-    """非阻塞启动一个 runner 子进程
+    """非阻塞启动一个 runner 子进程 (H7: CREATE_NEW_PROCESS_GROUP)
+
+    必须加 CREATE_NEW_PROCESS_GROUP, 子进程才能作为独立进程组接收 CTRL_BREAK_EVENT
+    (无此 flag 时, Windows CTRL_BREAK 会投到整个控制台, scheduler 自己也跟着死)。
 
     Args:
         script: 脚本绝对路径
@@ -72,13 +80,22 @@ def _start_proc(script):
     Returns:
         subprocess.Popen
     """
-    proc = subprocess.Popen([_PY, script], cwd=_PROJ_ROOT)
+    kwargs = {}
+    if os.name == 'nt':
+        kwargs['creationflags'] = subprocess.CREATE_NEW_PROCESS_GROUP
+    proc = subprocess.Popen([_PY, script], cwd=_PROJ_ROOT, **kwargs)
     logger.info('启动子进程: {} pid={}', os.path.basename(script), proc.pid)
     return proc
 
 
 def _stop_proc(proc, name):
-    """优雅停止子进程 (terminate → wait 10s → kill)
+    """优雅停止子进程 (H7: CTRL_BREAK_EVENT → terminate → kill)
+
+    流程:
+      1. CTRL_BREAK_EVENT (Windows): 子进程 KeyboardInterrupt → main finally →
+         tq.close() → 正常退出 (这是关键, 让 COM 句柄释放)
+      2. 等 5s, 没退 → terminate() (TerminateProcess 兜底, 不走 finally)
+      3. 再等 5s, 还没退 → kill() (Windows 杀进程组)
 
     Args:
         proc: subprocess.Popen, None 时直接返回
@@ -86,18 +103,34 @@ def _stop_proc(proc, name):
     """
     if proc is None:
         return
-    if proc.poll() is None:  # 仍在运行
-        proc.terminate()
+    if proc.poll() is not None:
+        return  # 已退出
+    # H7: 优先发 CTRL_BREAK (Windows), 让子进程 finally 跑
+    if os.name == 'nt':
         try:
-            proc.wait(timeout=10)
-            logger.info('子进程已终止: {} pid={}', name, proc.pid)
-        except subprocess.TimeoutExpired:
-            proc.kill()
-            logger.warning('子进程 terminate 超时, 已 kill: {} pid={}', name, proc.pid)
+            proc.send_signal(signal.CTRL_BREAK_EVENT)
+            logger.info('已发 CTRL_BREAK 给 {} pid={}', name, proc.pid)
+            try:
+                proc.wait(timeout=5)
+                logger.info('子进程优雅退出: {} pid={}', name, proc.pid)
+                return
+            except subprocess.TimeoutExpired:
+                logger.warning('CTRL_BREAK 5s 未退出, 降级 terminate: {} pid={}', name, proc.pid)
+        except (ValueError, OSError) as e:
+            # 进程可能已经退出 / 权限问题 → 忽略走 terminate
+            logger.debug('CTRL_BREAK 失败, 降级 terminate: {} ({})', name, e)
+    # 兜底: terminate (TerminateProcess) → kill
+    proc.terminate()
+    try:
+        proc.wait(timeout=5)
+        logger.info('子进程已 terminate: {} pid={}', name, proc.pid)
+    except subprocess.TimeoutExpired:
+        proc.kill()
+        logger.warning('子进程 terminate 超时, 已 kill: {} pid={}', name, proc.pid)
 
 
 def _attach_if_running(script_name):
-    """杀掉旧的 auction/intraday 子进程, 不杀 scheduler 本身"""
+    """杀掉旧的 auction/intraday 子进程, 不杀 scheduler 本身 (H7: 优先 CTRL_BREAK)"""
     my_pid = os.getpid()
     script_basename = os.path.basename(script_name)
     killed = []
@@ -108,11 +141,21 @@ def _attach_if_running(script_name):
             cmdline = proc.info.get('cmdline') or []
             if any(script_basename in str(c) for c in cmdline):
                 logger.warning('杀掉旧子进程 {} pid={}', script_basename, proc.pid)
-                proc.terminate()
+                # H7: 优先 CTRL_BREAK (Windows), 让子进程 finally 跑 close()
+                if os.name == 'nt':
+                    try:
+                        proc.send_signal(signal.CTRL_BREAK_EVENT)
+                    except (psutil.NoSuchProcess, psutil.AccessDenied, OSError):
+                        pass
                 try:
                     proc.wait(timeout=3)
                 except psutil.TimeoutExpired:
-                    proc.kill()
+                    # 兜底: terminate (TerminateProcess) → kill
+                    try:
+                        proc.terminate()
+                        proc.wait(timeout=2)
+                    except psutil.TimeoutExpired:
+                        proc.kill()
                 killed.append(proc.pid)
         except (psutil.NoSuchProcess, psutil.AccessDenied):
             pass

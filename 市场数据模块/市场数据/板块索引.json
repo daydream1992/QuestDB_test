@@ -1,0 +1,9937 @@
+{
+  "881001.SH": {
+    "name": "煤炭",
+    "categories": [
+      {
+        "type": "行业一级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881002.SH": {
+    "name": "煤炭开采",
+    "categories": [
+      {
+        "type": "行业二级",
+        "category": "行业"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "881003.SH": {
+    "name": "动力煤",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881004.SH": {
+    "name": "炼焦煤",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881005.SH": {
+    "name": "焦炭加工",
+    "categories": [
+      {
+        "type": "行业二级",
+        "category": "行业"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "881006.SH": {
+    "name": "石油",
+    "categories": [
+      {
+        "type": "行业一级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881007.SH": {
+    "name": "油气开采",
+    "categories": [
+      {
+        "type": "行业二级",
+        "category": "行业"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "881008.SH": {
+    "name": "油服工程",
+    "categories": [
+      {
+        "type": "行业二级",
+        "category": "行业"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "881009.SH": {
+    "name": "油田服务",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881010.SH": {
+    "name": "油气工程",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881011.SH": {
+    "name": "石油化工",
+    "categories": [
+      {
+        "type": "行业二级",
+        "category": "行业"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "881012.SH": {
+    "name": "炼油化工",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881013.SH": {
+    "name": "石油贸易",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881014.SH": {
+    "name": "其他石化",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881015.SH": {
+    "name": "化工",
+    "categories": [
+      {
+        "type": "行业一级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881016.SH": {
+    "name": "日用化工",
+    "categories": [
+      {
+        "type": "行业二级",
+        "category": "行业"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "881017.SH": {
+    "name": "洗护用品",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881018.SH": {
+    "name": "化妆品",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881019.SH": {
+    "name": "化纤",
+    "categories": [
+      {
+        "type": "行业二级",
+        "category": "行业"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "881020.SH": {
+    "name": "涤纶",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881021.SH": {
+    "name": "氨纶",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881022.SH": {
+    "name": "粘胶纤维",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881023.SH": {
+    "name": "锦纶",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881024.SH": {
+    "name": "碳纤维",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881025.SH": {
+    "name": "其他化学纤维",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881026.SH": {
+    "name": "化学原料",
+    "categories": [
+      {
+        "type": "行业二级",
+        "category": "行业"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "881027.SH": {
+    "name": "煤化工",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881028.SH": {
+    "name": "钛白粉",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881029.SH": {
+    "name": "氯碱",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881030.SH": {
+    "name": "纯碱",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881031.SH": {
+    "name": "无机盐",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881032.SH": {
+    "name": "有机化工原料",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881033.SH": {
+    "name": "其他化学原料",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881034.SH": {
+    "name": "化学制品",
+    "categories": [
+      {
+        "type": "行业二级",
+        "category": "行业"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "881035.SH": {
+    "name": "聚氨酯",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881036.SH": {
+    "name": "涂料油墨",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881037.SH": {
+    "name": "民爆制品",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881038.SH": {
+    "name": "纺织化学品",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881039.SH": {
+    "name": "氟化工",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881040.SH": {
+    "name": "食品助剂",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881041.SH": {
+    "name": "有机硅",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881042.SH": {
+    "name": "胶黏剂及胶带",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881043.SH": {
+    "name": "其他化学制品",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881044.SH": {
+    "name": "塑料",
+    "categories": [
+      {
+        "type": "行业二级",
+        "category": "行业"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "881045.SH": {
+    "name": "合成树脂",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881046.SH": {
+    "name": "塑料薄膜",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881047.SH": {
+    "name": "改性塑料",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881048.SH": {
+    "name": "合成革",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881049.SH": {
+    "name": "塑料助剂",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881050.SH": {
+    "name": "其他塑料制品",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881051.SH": {
+    "name": "橡胶",
+    "categories": [
+      {
+        "type": "行业二级",
+        "category": "行业"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "881052.SH": {
+    "name": "橡胶助剂",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881053.SH": {
+    "name": "炭黑",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881054.SH": {
+    "name": "橡胶制品",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881055.SH": {
+    "name": "农用化工",
+    "categories": [
+      {
+        "type": "行业二级",
+        "category": "行业"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "881056.SH": {
+    "name": "农药",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881057.SH": {
+    "name": "氮肥",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881058.SH": {
+    "name": "磷肥及磷化工",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881059.SH": {
+    "name": "钾肥",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881060.SH": {
+    "name": "复合肥",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881104.SH": {
+    "name": "非金属材料",
+    "categories": [
+      {
+        "type": "行业二级",
+        "category": "行业"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "881061.SH": {
+    "name": "钢铁",
+    "categories": [
+      {
+        "type": "行业一级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881062.SH": {
+    "name": "冶钢原料",
+    "categories": [
+      {
+        "type": "行业二级",
+        "category": "行业"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "881063.SH": {
+    "name": "铁矿石",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881064.SH": {
+    "name": "冶钢辅料",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881065.SH": {
+    "name": "普钢",
+    "categories": [
+      {
+        "type": "行业二级",
+        "category": "行业"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "881066.SH": {
+    "name": "长材",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881067.SH": {
+    "name": "板材",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881068.SH": {
+    "name": "其他钢材",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881069.SH": {
+    "name": "特钢",
+    "categories": [
+      {
+        "type": "行业二级",
+        "category": "行业"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "881070.SH": {
+    "name": "有色",
+    "categories": [
+      {
+        "type": "行业一级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881071.SH": {
+    "name": "工业金属",
+    "categories": [
+      {
+        "type": "行业二级",
+        "category": "行业"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "881072.SH": {
+    "name": "铜",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881073.SH": {
+    "name": "铝",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881074.SH": {
+    "name": "铅锌",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881075.SH": {
+    "name": "贵金属",
+    "categories": [
+      {
+        "type": "行业二级",
+        "category": "行业"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "881076.SH": {
+    "name": "黄金",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881077.SH": {
+    "name": "白银",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881078.SH": {
+    "name": "能源金属",
+    "categories": [
+      {
+        "type": "行业二级",
+        "category": "行业"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "881079.SH": {
+    "name": "锂",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881081.SH": {
+    "name": "钴",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881082.SH": {
+    "name": "稀有金属",
+    "categories": [
+      {
+        "type": "行业二级",
+        "category": "行业"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "881083.SH": {
+    "name": "稀土",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881084.SH": {
+    "name": "钨钼",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881085.SH": {
+    "name": "钛",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881086.SH": {
+    "name": "其他金属",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881087.SH": {
+    "name": "金属新材料",
+    "categories": [
+      {
+        "type": "行业二级",
+        "category": "行业"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "881088.SH": {
+    "name": "磁性材料",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881089.SH": {
+    "name": "其他金属新材料",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881090.SH": {
+    "name": "建材",
+    "categories": [
+      {
+        "type": "行业一级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881091.SH": {
+    "name": "水泥",
+    "categories": [
+      {
+        "type": "行业二级",
+        "category": "行业"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "881092.SH": {
+    "name": "水泥制造",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881093.SH": {
+    "name": "水泥制品",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881094.SH": {
+    "name": "玻璃玻纤",
+    "categories": [
+      {
+        "type": "行业二级",
+        "category": "行业"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "881095.SH": {
+    "name": "玻璃制造",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881096.SH": {
+    "name": "玻纤制造",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881097.SH": {
+    "name": "装饰建材",
+    "categories": [
+      {
+        "type": "行业二级",
+        "category": "行业"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "881098.SH": {
+    "name": "陶瓷",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881099.SH": {
+    "name": "管材",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881100.SH": {
+    "name": "耐火材料",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881101.SH": {
+    "name": "防水材料",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881102.SH": {
+    "name": "涂料",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881103.SH": {
+    "name": "其他建材",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881105.SH": {
+    "name": "农林牧渔",
+    "categories": [
+      {
+        "type": "行业一级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881106.SH": {
+    "name": "种植业",
+    "categories": [
+      {
+        "type": "行业二级",
+        "category": "行业"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "881107.SH": {
+    "name": "粮食种植",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881108.SH": {
+    "name": "食用菌",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881109.SH": {
+    "name": "种子",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881110.SH": {
+    "name": "其他种植业",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881111.SH": {
+    "name": "养殖业",
+    "categories": [
+      {
+        "type": "行业二级",
+        "category": "行业"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "881112.SH": {
+    "name": "生猪养殖",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881113.SH": {
+    "name": "肉鸡养殖",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881114.SH": {
+    "name": "其他养殖",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881115.SH": {
+    "name": "林业",
+    "categories": [
+      {
+        "type": "行业二级",
+        "category": "行业"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "881116.SH": {
+    "name": "渔业",
+    "categories": [
+      {
+        "type": "行业二级",
+        "category": "行业"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "881117.SH": {
+    "name": "水产养殖",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881118.SH": {
+    "name": "水产捕捞",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881119.SH": {
+    "name": "饲料",
+    "categories": [
+      {
+        "type": "行业二级",
+        "category": "行业"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "881120.SH": {
+    "name": "畜禽饲料",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881121.SH": {
+    "name": "水产饲料",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881122.SH": {
+    "name": "宠物食品",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881123.SH": {
+    "name": "农产品加工",
+    "categories": [
+      {
+        "type": "行业二级",
+        "category": "行业"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "881124.SH": {
+    "name": "粮油加工",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881125.SH": {
+    "name": "果蔬加工",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881126.SH": {
+    "name": "其他农产品加工",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881127.SH": {
+    "name": "动物保健",
+    "categories": [
+      {
+        "type": "行业二级",
+        "category": "行业"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "881129.SH": {
+    "name": "食品饮料",
+    "categories": [
+      {
+        "type": "行业一级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881130.SH": {
+    "name": "酿酒",
+    "categories": [
+      {
+        "type": "行业二级",
+        "category": "行业"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "881131.SH": {
+    "name": "啤酒",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881132.SH": {
+    "name": "葡萄酒",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881133.SH": {
+    "name": "黄酒",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881134.SH": {
+    "name": "其他酒类",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881135.SH": {
+    "name": "白酒",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881136.SH": {
+    "name": "饮料乳品",
+    "categories": [
+      {
+        "type": "行业二级",
+        "category": "行业"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "881137.SH": {
+    "name": "软饮料",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881138.SH": {
+    "name": "乳制品",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881139.SH": {
+    "name": "调味品",
+    "categories": [
+      {
+        "type": "行业二级",
+        "category": "行业"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "881140.SH": {
+    "name": "休闲食品",
+    "categories": [
+      {
+        "type": "行业二级",
+        "category": "行业"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "881141.SH": {
+    "name": "零食",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881142.SH": {
+    "name": "烘焙食品",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881143.SH": {
+    "name": "熟食",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881144.SH": {
+    "name": "食品加工",
+    "categories": [
+      {
+        "type": "行业二级",
+        "category": "行业"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "881145.SH": {
+    "name": "肉制品",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881146.SH": {
+    "name": "制糖业",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881147.SH": {
+    "name": "预加工食品",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881148.SH": {
+    "name": "保健品",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881149.SH": {
+    "name": "其他食品",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881150.SH": {
+    "name": "纺织服饰",
+    "categories": [
+      {
+        "type": "行业一级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881151.SH": {
+    "name": "纺织制造",
+    "categories": [
+      {
+        "type": "行业二级",
+        "category": "行业"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "881152.SH": {
+    "name": "棉纺制品",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881153.SH": {
+    "name": "印染",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881154.SH": {
+    "name": "辅料",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881155.SH": {
+    "name": "其他纺织",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881157.SH": {
+    "name": "服装家纺",
+    "categories": [
+      {
+        "type": "行业二级",
+        "category": "行业"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "881158.SH": {
+    "name": "家纺",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881159.SH": {
+    "name": "鞋帽及其他",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881160.SH": {
+    "name": "运动服装",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881161.SH": {
+    "name": "非运动服装",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881162.SH": {
+    "name": "饰品",
+    "categories": [
+      {
+        "type": "行业二级",
+        "category": "行业"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "881163.SH": {
+    "name": "钟表珠宝",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881165.SH": {
+    "name": "其他饰品",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881166.SH": {
+    "name": "轻工制造",
+    "categories": [
+      {
+        "type": "行业一级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881167.SH": {
+    "name": "造纸",
+    "categories": [
+      {
+        "type": "行业二级",
+        "category": "行业"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "881168.SH": {
+    "name": "大宗用纸",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881169.SH": {
+    "name": "生活用纸",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881170.SH": {
+    "name": "特种纸",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881171.SH": {
+    "name": "包装印刷",
+    "categories": [
+      {
+        "type": "行业二级",
+        "category": "行业"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "881172.SH": {
+    "name": "印刷",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881173.SH": {
+    "name": "金属包装",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881174.SH": {
+    "name": "塑料包装",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881175.SH": {
+    "name": "纸包装",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881176.SH": {
+    "name": "其他包装",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881177.SH": {
+    "name": "家居用品",
+    "categories": [
+      {
+        "type": "行业二级",
+        "category": "行业"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "881178.SH": {
+    "name": "家具",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881179.SH": {
+    "name": "其他家居",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881180.SH": {
+    "name": "文娱用品",
+    "categories": [
+      {
+        "type": "行业二级",
+        "category": "行业"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "881181.SH": {
+    "name": "文化用品",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881182.SH": {
+    "name": "娱乐用品",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881183.SH": {
+    "name": "家电",
+    "categories": [
+      {
+        "type": "行业一级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881184.SH": {
+    "name": "白色家电",
+    "categories": [
+      {
+        "type": "行业二级",
+        "category": "行业"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "881185.SH": {
+    "name": "空调",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881186.SH": {
+    "name": "冰洗",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881187.SH": {
+    "name": "黑色家电",
+    "categories": [
+      {
+        "type": "行业二级",
+        "category": "行业"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "881188.SH": {
+    "name": "电视",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881189.SH": {
+    "name": "其他黑色家电",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881190.SH": {
+    "name": "小家电",
+    "categories": [
+      {
+        "type": "行业二级",
+        "category": "行业"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "881191.SH": {
+    "name": "厨房小家电",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881192.SH": {
+    "name": "清洁小家电",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881193.SH": {
+    "name": "个护小家电",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881194.SH": {
+    "name": "厨卫电器",
+    "categories": [
+      {
+        "type": "行业二级",
+        "category": "行业"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "881195.SH": {
+    "name": "厨房电器",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881196.SH": {
+    "name": "卫浴电器",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881198.SH": {
+    "name": "家电零部件",
+    "categories": [
+      {
+        "type": "行业二级",
+        "category": "行业"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "881199.SH": {
+    "name": "商贸",
+    "categories": [
+      {
+        "type": "行业一级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881200.SH": {
+    "name": "一般零售",
+    "categories": [
+      {
+        "type": "行业二级",
+        "category": "行业"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "881201.SH": {
+    "name": "超市及便利店",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881202.SH": {
+    "name": "百货",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881203.SH": {
+    "name": "多业态零售",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881204.SH": {
+    "name": "商业物业经营",
+    "categories": [
+      {
+        "type": "行业二级",
+        "category": "行业"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "881205.SH": {
+    "name": "专业连锁",
+    "categories": [
+      {
+        "type": "行业二级",
+        "category": "行业"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "881206.SH": {
+    "name": "贸易",
+    "categories": [
+      {
+        "type": "行业二级",
+        "category": "行业"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "881207.SH": {
+    "name": "电子商务",
+    "categories": [
+      {
+        "type": "行业二级",
+        "category": "行业"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "881208.SH": {
+    "name": "综合电商",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881209.SH": {
+    "name": "跨境电商",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881210.SH": {
+    "name": "电商服务",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881211.SH": {
+    "name": "汽车",
+    "categories": [
+      {
+        "type": "行业一级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881212.SH": {
+    "name": "乘用车",
+    "categories": [
+      {
+        "type": "行业二级",
+        "category": "行业"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "881213.SH": {
+    "name": "电动乘用车",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881214.SH": {
+    "name": "综合乘用车",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881215.SH": {
+    "name": "商用车",
+    "categories": [
+      {
+        "type": "行业二级",
+        "category": "行业"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "881216.SH": {
+    "name": "商用载货车",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881217.SH": {
+    "name": "商用载客车",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881218.SH": {
+    "name": "汽车零部件",
+    "categories": [
+      {
+        "type": "行业二级",
+        "category": "行业"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "881219.SH": {
+    "name": "车身附件及饰件",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881220.SH": {
+    "name": "底盘与发动机系统",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881221.SH": {
+    "name": "轮胎轮毂",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881222.SH": {
+    "name": "其他汽车零部件",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881223.SH": {
+    "name": "汽车电子电气系统",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881224.SH": {
+    "name": "汽车服务",
+    "categories": [
+      {
+        "type": "行业二级",
+        "category": "行业"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "881225.SH": {
+    "name": "汽车经销商",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881226.SH": {
+    "name": "汽车综合服务",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881227.SH": {
+    "name": "摩托车及其他",
+    "categories": [
+      {
+        "type": "行业二级",
+        "category": "行业"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "881228.SH": {
+    "name": "摩托车",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881229.SH": {
+    "name": "其他交通设备",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881230.SH": {
+    "name": "医药医疗",
+    "categories": [
+      {
+        "type": "行业一级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881231.SH": {
+    "name": "化学制药",
+    "categories": [
+      {
+        "type": "行业二级",
+        "category": "行业"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "881232.SH": {
+    "name": "化学制剂",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881233.SH": {
+    "name": "原料药",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881234.SH": {
+    "name": "生物制品",
+    "categories": [
+      {
+        "type": "行业二级",
+        "category": "行业"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "881235.SH": {
+    "name": "血液制品",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881236.SH": {
+    "name": "疫苗",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881237.SH": {
+    "name": "抗体",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881238.SH": {
+    "name": "诊断试剂",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881239.SH": {
+    "name": "基因药物",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881240.SH": {
+    "name": "其他生物制药",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881241.SH": {
+    "name": "医疗器械",
+    "categories": [
+      {
+        "type": "行业二级",
+        "category": "行业"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "881242.SH": {
+    "name": "家用器械",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881243.SH": {
+    "name": "医疗设备",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881244.SH": {
+    "name": "医疗耗材",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881245.SH": {
+    "name": "体外诊断",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881246.SH": {
+    "name": "制药装备",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881247.SH": {
+    "name": "医疗服务",
+    "categories": [
+      {
+        "type": "行业二级",
+        "category": "行业"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "881248.SH": {
+    "name": "诊断服务",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881249.SH": {
+    "name": "医疗研发外包",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881250.SH": {
+    "name": "医院",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881251.SH": {
+    "name": "其他医疗服务",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881252.SH": {
+    "name": "医药商业",
+    "categories": [
+      {
+        "type": "行业二级",
+        "category": "行业"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "881253.SH": {
+    "name": "医药流通",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881254.SH": {
+    "name": "线下药店",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881256.SH": {
+    "name": "中药",
+    "categories": [
+      {
+        "type": "行业二级",
+        "category": "行业"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "881257.SH": {
+    "name": "医疗美容",
+    "categories": [
+      {
+        "type": "行业二级",
+        "category": "行业"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "881258.SH": {
+    "name": "医美耗材",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881260.SH": {
+    "name": "电力设备",
+    "categories": [
+      {
+        "type": "行业一级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881261.SH": {
+    "name": "电机制造",
+    "categories": [
+      {
+        "type": "行业二级",
+        "category": "行业"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "881262.SH": {
+    "name": "电池",
+    "categories": [
+      {
+        "type": "行业二级",
+        "category": "行业"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "881263.SH": {
+    "name": "锂电池",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881264.SH": {
+    "name": "电池化学品",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881265.SH": {
+    "name": "锂电设备",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881266.SH": {
+    "name": "燃料电池",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881267.SH": {
+    "name": "其他电池",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881268.SH": {
+    "name": "电网设备",
+    "categories": [
+      {
+        "type": "行业二级",
+        "category": "行业"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "881269.SH": {
+    "name": "电工仪器",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881270.SH": {
+    "name": "电网自动化",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881271.SH": {
+    "name": "输变电设备",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881272.SH": {
+    "name": "配电设备",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881273.SH": {
+    "name": "线缆部件及其他",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881275.SH": {
+    "name": "光伏设备",
+    "categories": [
+      {
+        "type": "行业二级",
+        "category": "行业"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "881276.SH": {
+    "name": "光伏硅料",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881277.SH": {
+    "name": "光伏硅片",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881278.SH": {
+    "name": "光伏电池组件",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881279.SH": {
+    "name": "光伏逆变器",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881280.SH": {
+    "name": "光伏辅材",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881281.SH": {
+    "name": "光伏加工设备",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881282.SH": {
+    "name": "风电设备",
+    "categories": [
+      {
+        "type": "行业二级",
+        "category": "行业"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "881283.SH": {
+    "name": "风电整机",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881284.SH": {
+    "name": "风电零部件",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881285.SH": {
+    "name": "其他发电设备",
+    "categories": [
+      {
+        "type": "行业二级",
+        "category": "行业"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "881286.SH": {
+    "name": "国防军工",
+    "categories": [
+      {
+        "type": "行业一级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881287.SH": {
+    "name": "地面兵装",
+    "categories": [
+      {
+        "type": "行业二级",
+        "category": "行业"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "881288.SH": {
+    "name": "航空装备",
+    "categories": [
+      {
+        "type": "行业二级",
+        "category": "行业"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "881289.SH": {
+    "name": "航天装备",
+    "categories": [
+      {
+        "type": "行业二级",
+        "category": "行业"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "881290.SH": {
+    "name": "航海装备",
+    "categories": [
+      {
+        "type": "行业二级",
+        "category": "行业"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "881291.SH": {
+    "name": "军工电子",
+    "categories": [
+      {
+        "type": "行业二级",
+        "category": "行业"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "881292.SH": {
+    "name": "机械设备",
+    "categories": [
+      {
+        "type": "行业一级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881293.SH": {
+    "name": "轨交设备",
+    "categories": [
+      {
+        "type": "行业二级",
+        "category": "行业"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "881294.SH": {
+    "name": "通用设备",
+    "categories": [
+      {
+        "type": "行业二级",
+        "category": "行业"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "881295.SH": {
+    "name": "仪器仪表",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881296.SH": {
+    "name": "机床制造",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881297.SH": {
+    "name": "机械基础件",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881298.SH": {
+    "name": "金属制品",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881299.SH": {
+    "name": "内燃机",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881300.SH": {
+    "name": "制冷空调设备",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881301.SH": {
+    "name": "磨具磨料",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881302.SH": {
+    "name": "其他通用设备",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881303.SH": {
+    "name": "专用设备",
+    "categories": [
+      {
+        "type": "行业二级",
+        "category": "行业"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "881304.SH": {
+    "name": "能源及重型设备",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881305.SH": {
+    "name": "印刷包装机械",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881306.SH": {
+    "name": "纺织服装设备",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881307.SH": {
+    "name": "农用机械",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881308.SH": {
+    "name": "楼宇设备",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881309.SH": {
+    "name": "其他专用设备",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881310.SH": {
+    "name": "工程机械",
+    "categories": [
+      {
+        "type": "行业二级",
+        "category": "行业"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "881311.SH": {
+    "name": "工程机械整机",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881312.SH": {
+    "name": "工程机械零件",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881313.SH": {
+    "name": "自动化设备",
+    "categories": [
+      {
+        "type": "行业二级",
+        "category": "行业"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "881314.SH": {
+    "name": "机器人",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881315.SH": {
+    "name": "工业控制设备",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881316.SH": {
+    "name": "激光设备",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881317.SH": {
+    "name": "其他自动化设备",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881318.SH": {
+    "name": "电子",
+    "categories": [
+      {
+        "type": "行业一级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881319.SH": {
+    "name": "半导体",
+    "categories": [
+      {
+        "type": "行业二级",
+        "category": "行业"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "881320.SH": {
+    "name": "半导体材料",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881321.SH": {
+    "name": "半导体设备",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881322.SH": {
+    "name": "集成电路设计",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881323.SH": {
+    "name": "功率半导体",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881324.SH": {
+    "name": "半导体制造",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881325.SH": {
+    "name": "半导体封测",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881326.SH": {
+    "name": "消费电子",
+    "categories": [
+      {
+        "type": "行业二级",
+        "category": "行业"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "881327.SH": {
+    "name": "消费电子组件",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881328.SH": {
+    "name": "品牌消费电子",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881329.SH": {
+    "name": "光学光电",
+    "categories": [
+      {
+        "type": "行业二级",
+        "category": "行业"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "881330.SH": {
+    "name": "面板",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881331.SH": {
+    "name": "光学元件",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881332.SH": {
+    "name": "LED",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881333.SH": {
+    "name": "元器件",
+    "categories": [
+      {
+        "type": "行业二级",
+        "category": "行业"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "881334.SH": {
+    "name": "PCB",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881335.SH": {
+    "name": "被动元件",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881336.SH": {
+    "name": "其他电子",
+    "categories": [
+      {
+        "type": "行业二级",
+        "category": "行业"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "881479.SH": {
+    "name": "电子化学品",
+    "categories": [
+      {
+        "type": "行业二级",
+        "category": "行业"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "881337.SH": {
+    "name": "通信",
+    "categories": [
+      {
+        "type": "行业一级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881338.SH": {
+    "name": "通信设备",
+    "categories": [
+      {
+        "type": "行业二级",
+        "category": "行业"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "881339.SH": {
+    "name": "光纤光缆",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881340.SH": {
+    "name": "网络接配及塔设",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881341.SH": {
+    "name": "系统设备",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881342.SH": {
+    "name": "通信终端及配件",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881343.SH": {
+    "name": "其他通信设备",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881344.SH": {
+    "name": "电信服务",
+    "categories": [
+      {
+        "type": "行业二级",
+        "category": "行业"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "881345.SH": {
+    "name": "电信运营服务",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881346.SH": {
+    "name": "电信增值服务",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881347.SH": {
+    "name": "通信工程",
+    "categories": [
+      {
+        "type": "行业二级",
+        "category": "行业"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "881348.SH": {
+    "name": "网络规划设计",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881349.SH": {
+    "name": "网络工程施工",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881350.SH": {
+    "name": "网络优化运维",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881351.SH": {
+    "name": "计算机",
+    "categories": [
+      {
+        "type": "行业一级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881352.SH": {
+    "name": "IT设备",
+    "categories": [
+      {
+        "type": "行业二级",
+        "category": "行业"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "881353.SH": {
+    "name": "安防设备",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881354.SH": {
+    "name": "其他IT设备",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881355.SH": {
+    "name": "软件服务",
+    "categories": [
+      {
+        "type": "行业二级",
+        "category": "行业"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "881356.SH": {
+    "name": "基础软件",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881357.SH": {
+    "name": "行业应用软件",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881358.SH": {
+    "name": "新兴软件",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881359.SH": {
+    "name": "云服务",
+    "categories": [
+      {
+        "type": "行业二级",
+        "category": "行业"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "881360.SH": {
+    "name": "云基础设施服务",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881361.SH": {
+    "name": "云平台服务",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881362.SH": {
+    "name": "云软件服务",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881363.SH": {
+    "name": "其他云服务",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881364.SH": {
+    "name": "产业互联网",
+    "categories": [
+      {
+        "type": "行业二级",
+        "category": "行业"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "881365.SH": {
+    "name": "产联网信息服务",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881366.SH": {
+    "name": "产联网平台服务",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881367.SH": {
+    "name": "产联网综合服务",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881368.SH": {
+    "name": "传媒",
+    "categories": [
+      {
+        "type": "行业一级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881369.SH": {
+    "name": "游戏",
+    "categories": [
+      {
+        "type": "行业二级",
+        "category": "行业"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "881370.SH": {
+    "name": "广告营销",
+    "categories": [
+      {
+        "type": "行业二级",
+        "category": "行业"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "881371.SH": {
+    "name": "互联网广告",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881372.SH": {
+    "name": "其他广告营销",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881373.SH": {
+    "name": "影视院线",
+    "categories": [
+      {
+        "type": "行业二级",
+        "category": "行业"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "881374.SH": {
+    "name": "影视制作",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881375.SH": {
+    "name": "发行院线",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881376.SH": {
+    "name": "数字媒体",
+    "categories": [
+      {
+        "type": "行业二级",
+        "category": "行业"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "881377.SH": {
+    "name": "视频音频媒体",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881378.SH": {
+    "name": "文字图片媒体",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881380.SH": {
+    "name": "出版业",
+    "categories": [
+      {
+        "type": "行业二级",
+        "category": "行业"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "881381.SH": {
+    "name": "教育出版",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881382.SH": {
+    "name": "大众出版",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881383.SH": {
+    "name": "其他出版",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881384.SH": {
+    "name": "广播电视",
+    "categories": [
+      {
+        "type": "行业二级",
+        "category": "行业"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "881385.SH": {
+    "name": "银行",
+    "categories": [
+      {
+        "type": "行业一级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881386.SH": {
+    "name": "全国性银行",
+    "categories": [
+      {
+        "type": "行业二级",
+        "category": "行业"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "881387.SH": {
+    "name": "国有大型银行",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881388.SH": {
+    "name": "股份制银行",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881389.SH": {
+    "name": "地方性银行",
+    "categories": [
+      {
+        "type": "行业二级",
+        "category": "行业"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "881390.SH": {
+    "name": "城商行",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881391.SH": {
+    "name": "农商行",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881393.SH": {
+    "name": "非银金融",
+    "categories": [
+      {
+        "type": "行业一级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881394.SH": {
+    "name": "证券",
+    "categories": [
+      {
+        "type": "行业二级",
+        "category": "行业"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "881395.SH": {
+    "name": "保险",
+    "categories": [
+      {
+        "type": "行业二级",
+        "category": "行业"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "881396.SH": {
+    "name": "多元金融",
+    "categories": [
+      {
+        "type": "行业二级",
+        "category": "行业"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "881397.SH": {
+    "name": "非货币银行",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881398.SH": {
+    "name": "信托",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881399.SH": {
+    "name": "投资管理",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881400.SH": {
+    "name": "期货",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881401.SH": {
+    "name": "租赁",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881402.SH": {
+    "name": "金融控股",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881404.SH": {
+    "name": "其他金融服务",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881405.SH": {
+    "name": "建筑",
+    "categories": [
+      {
+        "type": "行业一级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881406.SH": {
+    "name": "房屋建设",
+    "categories": [
+      {
+        "type": "行业二级",
+        "category": "行业"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "881407.SH": {
+    "name": "基础建设",
+    "categories": [
+      {
+        "type": "行业二级",
+        "category": "行业"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "881408.SH": {
+    "name": "基建工程",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881409.SH": {
+    "name": "园林工程",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881410.SH": {
+    "name": "专业工程",
+    "categories": [
+      {
+        "type": "行业二级",
+        "category": "行业"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "881411.SH": {
+    "name": "化学工程",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881412.SH": {
+    "name": "钢结构",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881413.SH": {
+    "name": "国际工程",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881414.SH": {
+    "name": "其他专业工程",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881415.SH": {
+    "name": "工程咨询服务",
+    "categories": [
+      {
+        "type": "行业二级",
+        "category": "行业"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "881416.SH": {
+    "name": "装修装饰",
+    "categories": [
+      {
+        "type": "行业二级",
+        "category": "行业"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "881417.SH": {
+    "name": "房地产",
+    "categories": [
+      {
+        "type": "行业一级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881418.SH": {
+    "name": "房地产开发",
+    "categories": [
+      {
+        "type": "行业二级",
+        "category": "行业"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "881419.SH": {
+    "name": "住宅开发",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881420.SH": {
+    "name": "商业地产",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881421.SH": {
+    "name": "产业地产",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881422.SH": {
+    "name": "房产服务",
+    "categories": [
+      {
+        "type": "行业二级",
+        "category": "行业"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "881423.SH": {
+    "name": "物业管理",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881424.SH": {
+    "name": "租赁经纪",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881426.SH": {
+    "name": "社会服务",
+    "categories": [
+      {
+        "type": "行业一级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881427.SH": {
+    "name": "体育",
+    "categories": [
+      {
+        "type": "行业二级",
+        "category": "行业"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "881428.SH": {
+    "name": "教育培训",
+    "categories": [
+      {
+        "type": "行业二级",
+        "category": "行业"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "881429.SH": {
+    "name": "酒店餐饮",
+    "categories": [
+      {
+        "type": "行业二级",
+        "category": "行业"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "881430.SH": {
+    "name": "酒店",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881431.SH": {
+    "name": "餐饮",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881432.SH": {
+    "name": "旅游",
+    "categories": [
+      {
+        "type": "行业二级",
+        "category": "行业"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "881433.SH": {
+    "name": "旅游景区",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881434.SH": {
+    "name": "旅游服务",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881435.SH": {
+    "name": "休闲综合",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881436.SH": {
+    "name": "专业服务",
+    "categories": [
+      {
+        "type": "行业二级",
+        "category": "行业"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "881437.SH": {
+    "name": "人力资源服务",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881438.SH": {
+    "name": "检测服务",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881439.SH": {
+    "name": "会展服务",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881440.SH": {
+    "name": "其他专业服务",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881441.SH": {
+    "name": "交通运输",
+    "categories": [
+      {
+        "type": "行业一级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881442.SH": {
+    "name": "公路铁路",
+    "categories": [
+      {
+        "type": "行业二级",
+        "category": "行业"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "881443.SH": {
+    "name": "铁路运输",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881444.SH": {
+    "name": "高速公路",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881445.SH": {
+    "name": "公共交通",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881446.SH": {
+    "name": "航空机场",
+    "categories": [
+      {
+        "type": "行业二级",
+        "category": "行业"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "881447.SH": {
+    "name": "航空运输",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881448.SH": {
+    "name": "机场",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881449.SH": {
+    "name": "航运港口",
+    "categories": [
+      {
+        "type": "行业二级",
+        "category": "行业"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "881450.SH": {
+    "name": "港口",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881451.SH": {
+    "name": "航运",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881452.SH": {
+    "name": "物流",
+    "categories": [
+      {
+        "type": "行业二级",
+        "category": "行业"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "881453.SH": {
+    "name": "供应链服务",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881454.SH": {
+    "name": "快递",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881455.SH": {
+    "name": "跨境物流",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881456.SH": {
+    "name": "仓储物流",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881457.SH": {
+    "name": "公路货运",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881458.SH": {
+    "name": "公用事业",
+    "categories": [
+      {
+        "type": "行业一级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881459.SH": {
+    "name": "电力",
+    "categories": [
+      {
+        "type": "行业二级",
+        "category": "行业"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "881460.SH": {
+    "name": "水力发电",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881461.SH": {
+    "name": "火力发电",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881462.SH": {
+    "name": "热力服务",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881463.SH": {
+    "name": "风力发电",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881464.SH": {
+    "name": "光伏发电",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881465.SH": {
+    "name": "核力发电",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881466.SH": {
+    "name": "电能综合服务",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881467.SH": {
+    "name": "燃气",
+    "categories": [
+      {
+        "type": "行业二级",
+        "category": "行业"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "881468.SH": {
+    "name": "水务",
+    "categories": [
+      {
+        "type": "行业二级",
+        "category": "行业"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "881469.SH": {
+    "name": "环保",
+    "categories": [
+      {
+        "type": "行业一级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881470.SH": {
+    "name": "环保设备",
+    "categories": [
+      {
+        "type": "行业二级",
+        "category": "行业"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "881471.SH": {
+    "name": "环境治理",
+    "categories": [
+      {
+        "type": "行业二级",
+        "category": "行业"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "881472.SH": {
+    "name": "大气治理",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881473.SH": {
+    "name": "水治理",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881474.SH": {
+    "name": "固废治理",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881475.SH": {
+    "name": "生态修复",
+    "categories": [
+      {
+        "type": "行业三级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881476.SH": {
+    "name": "环境监测",
+    "categories": [
+      {
+        "type": "行业二级",
+        "category": "行业"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "881477.SH": {
+    "name": "综合",
+    "categories": [
+      {
+        "type": "行业一级",
+        "category": "行业"
+      }
+    ]
+  },
+  "881478.SH": {
+    "name": "综合类",
+    "categories": [
+      {
+        "type": "行业二级",
+        "category": "行业"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "880501.SH": {
+    "name": "含H股",
+    "categories": [
+      {
+        "type": "概念板块",
+        "category": "概念"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "880502.SH": {
+    "name": "含B股",
+    "categories": [
+      {
+        "type": "概念板块",
+        "category": "概念"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "880505.SH": {
+    "name": "稀缺资源",
+    "categories": [
+      {
+        "type": "概念板块",
+        "category": "概念"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "880506.SH": {
+    "name": "5G概念",
+    "categories": [
+      {
+        "type": "概念板块",
+        "category": "概念"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "880507.SH": {
+    "name": "国防军工",
+    "categories": [
+      {
+        "type": "概念板块",
+        "category": "概念"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "880513.SH": {
+    "name": "海峡西岸",
+    "categories": [
+      {
+        "type": "概念板块",
+        "category": "概念"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "880515.SH": {
+    "name": "通达信88",
+    "categories": [
+      {
+        "type": "概念板块",
+        "category": "概念"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "880516.SH": {
+    "name": "ST板块",
+    "categories": [
+      {
+        "type": "概念板块",
+        "category": "概念"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "880519.SH": {
+    "name": "碳中和",
+    "categories": [
+      {
+        "type": "概念板块",
+        "category": "概念"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "880520.SH": {
+    "name": "智能电网",
+    "categories": [
+      {
+        "type": "概念板块",
+        "category": "概念"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "880521.SH": {
+    "name": "黄金概念",
+    "categories": [
+      {
+        "type": "概念板块",
+        "category": "概念"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "880522.SH": {
+    "name": "低空经济",
+    "categories": [
+      {
+        "type": "概念板块",
+        "category": "概念"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "880523.SH": {
+    "name": "铜缆高速连接",
+    "categories": [
+      {
+        "type": "概念板块",
+        "category": "概念"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "880524.SH": {
+    "name": "含可转债",
+    "categories": [
+      {
+        "type": "概念板块",
+        "category": "概念"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "880525.SH": {
+    "name": "高铁",
+    "categories": [
+      {
+        "type": "概念板块",
+        "category": "概念"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "880528.SH": {
+    "name": "军工信息化",
+    "categories": [
+      {
+        "type": "概念板块",
+        "category": "概念"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "880529.SH": {
+    "name": "次新股",
+    "categories": [
+      {
+        "type": "概念板块",
+        "category": "概念"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "880530.SH": {
+    "name": "合成生物",
+    "categories": [
+      {
+        "type": "概念板块",
+        "category": "概念"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "880533.SH": {
+    "name": "物联网",
+    "categories": [
+      {
+        "type": "概念板块",
+        "category": "概念"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "880534.SH": {
+    "name": "锂电池概念",
+    "categories": [
+      {
+        "type": "概念板块",
+        "category": "概念"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "880535.SH": {
+    "name": "稀土永磁",
+    "categories": [
+      {
+        "type": "概念板块",
+        "category": "概念"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "880537.SH": {
+    "name": "核电核能",
+    "categories": [
+      {
+        "type": "概念板块",
+        "category": "概念"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "880540.SH": {
+    "name": "创投概念",
+    "categories": [
+      {
+        "type": "概念板块",
+        "category": "概念"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "880541.SH": {
+    "name": "AI手机PC",
+    "categories": [
+      {
+        "type": "概念板块",
+        "category": "概念"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "880542.SH": {
+    "name": "水利建设",
+    "categories": [
+      {
+        "type": "概念板块",
+        "category": "概念"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "880544.SH": {
+    "name": "光伏",
+    "categories": [
+      {
+        "type": "概念板块",
+        "category": "概念"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "880545.SH": {
+    "name": "云计算",
+    "categories": [
+      {
+        "type": "概念板块",
+        "category": "概念"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "880546.SH": {
+    "name": "卫星导航",
+    "categories": [
+      {
+        "type": "概念板块",
+        "category": "概念"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "880547.SH": {
+    "name": "玻璃基板",
+    "categories": [
+      {
+        "type": "概念板块",
+        "category": "概念"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "880548.SH": {
+    "name": "商业航天",
+    "categories": [
+      {
+        "type": "概念板块",
+        "category": "概念"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "880549.SH": {
+    "name": "可燃冰",
+    "categories": [
+      {
+        "type": "概念板块",
+        "category": "概念"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "880550.SH": {
+    "name": "PCB概念",
+    "categories": [
+      {
+        "type": "概念板块",
+        "category": "概念"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "880552.SH": {
+    "name": "车联网",
+    "categories": [
+      {
+        "type": "概念板块",
+        "category": "概念"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "880553.SH": {
+    "name": "页岩气",
+    "categories": [
+      {
+        "type": "概念板块",
+        "category": "概念"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "880555.SH": {
+    "name": "财税数字化",
+    "categories": [
+      {
+        "type": "概念板块",
+        "category": "概念"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "880557.SH": {
+    "name": "生物疫苗",
+    "categories": [
+      {
+        "type": "概念板块",
+        "category": "概念"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "880558.SH": {
+    "name": "节能环保",
+    "categories": [
+      {
+        "type": "概念板块",
+        "category": "概念"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "880560.SH": {
+    "name": "高端装备",
+    "categories": [
+      {
+        "type": "概念板块",
+        "category": "概念"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "880561.SH": {
+    "name": "折叠屏",
+    "categories": [
+      {
+        "type": "概念板块",
+        "category": "概念"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "880563.SH": {
+    "name": "食品安全",
+    "categories": [
+      {
+        "type": "概念板块",
+        "category": "概念"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "880564.SH": {
+    "name": "白酒概念",
+    "categories": [
+      {
+        "type": "概念板块",
+        "category": "概念"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "880566.SH": {
+    "name": "AI眼镜",
+    "categories": [
+      {
+        "type": "概念板块",
+        "category": "概念"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "880567.SH": {
+    "name": "海南自贸",
+    "categories": [
+      {
+        "type": "概念板块",
+        "category": "概念"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "880568.SH": {
+    "name": "生物质能",
+    "categories": [
+      {
+        "type": "概念板块",
+        "category": "概念"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "880569.SH": {
+    "name": "3D打印",
+    "categories": [
+      {
+        "type": "概念板块",
+        "category": "概念"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "880571.SH": {
+    "name": "碳纤维",
+    "categories": [
+      {
+        "type": "概念板块",
+        "category": "概念"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "880572.SH": {
+    "name": "新零售",
+    "categories": [
+      {
+        "type": "概念板块",
+        "category": "概念"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "880574.SH": {
+    "name": "苹果概念",
+    "categories": [
+      {
+        "type": "概念板块",
+        "category": "概念"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "880575.SH": {
+    "name": "地热能",
+    "categories": [
+      {
+        "type": "概念板块",
+        "category": "概念"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "880577.SH": {
+    "name": "安防服务",
+    "categories": [
+      {
+        "type": "概念板块",
+        "category": "概念"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "880579.SH": {
+    "name": "智谱AI",
+    "categories": [
+      {
+        "type": "概念板块",
+        "category": "概念"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "880580.SH": {
+    "name": "智能交通",
+    "categories": [
+      {
+        "type": "概念板块",
+        "category": "概念"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "880582.SH": {
+    "name": "风电",
+    "categories": [
+      {
+        "type": "概念板块",
+        "category": "概念"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "880583.SH": {
+    "name": "充电桩",
+    "categories": [
+      {
+        "type": "概念板块",
+        "category": "概念"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "880584.SH": {
+    "name": "石墨烯",
+    "categories": [
+      {
+        "type": "概念板块",
+        "category": "概念"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "880585.SH": {
+    "name": "风沙治理",
+    "categories": [
+      {
+        "type": "概念板块",
+        "category": "概念"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "880586.SH": {
+    "name": "土地流转",
+    "categories": [
+      {
+        "type": "概念板块",
+        "category": "概念"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "880587.SH": {
+    "name": "聚氨酯",
+    "categories": [
+      {
+        "type": "概念板块",
+        "category": "概念"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "880588.SH": {
+    "name": "MLCC概念",
+    "categories": [
+      {
+        "type": "概念板块",
+        "category": "概念"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "880589.SH": {
+    "name": "智能穿戴",
+    "categories": [
+      {
+        "type": "概念板块",
+        "category": "概念"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "880590.SH": {
+    "name": "网络游戏",
+    "categories": [
+      {
+        "type": "概念板块",
+        "category": "概念"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "880591.SH": {
+    "name": "上海自贸",
+    "categories": [
+      {
+        "type": "概念板块",
+        "category": "概念"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "880592.SH": {
+    "name": "互联金融",
+    "categories": [
+      {
+        "type": "概念板块",
+        "category": "概念"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "880593.SH": {
+    "name": "婴童概念",
+    "categories": [
+      {
+        "type": "概念板块",
+        "category": "概念"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "880594.SH": {
+    "name": "一带一路",
+    "categories": [
+      {
+        "type": "概念板块",
+        "category": "概念"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "880595.SH": {
+    "name": "世界杯概念",
+    "categories": [
+      {
+        "type": "概念板块",
+        "category": "概念"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "880596.SH": {
+    "name": "体育概念",
+    "categories": [
+      {
+        "type": "概念板块",
+        "category": "概念"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "880597.SH": {
+    "name": "养老概念",
+    "categories": [
+      {
+        "type": "概念板块",
+        "category": "概念"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "880598.SH": {
+    "name": "博彩概念",
+    "categories": [
+      {
+        "type": "概念板块",
+        "category": "概念"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "880599.SH": {
+    "name": "民营医院",
+    "categories": [
+      {
+        "type": "概念板块",
+        "category": "概念"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "880601.SH": {
+    "name": "智慧政务",
+    "categories": [
+      {
+        "type": "概念板块",
+        "category": "概念"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "880602.SH": {
+    "name": "免税概念",
+    "categories": [
+      {
+        "type": "概念板块",
+        "category": "概念"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "880604.SH": {
+    "name": "PVDF概念",
+    "categories": [
+      {
+        "type": "概念板块",
+        "category": "概念"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "880605.SH": {
+    "name": "装配式建筑",
+    "categories": [
+      {
+        "type": "概念板块",
+        "category": "概念"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "880606.SH": {
+    "name": "辅助生殖",
+    "categories": [
+      {
+        "type": "概念板块",
+        "category": "概念"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "880607.SH": {
+    "name": "东数西算",
+    "categories": [
+      {
+        "type": "概念板块",
+        "category": "概念"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "880608.SH": {
+    "name": "第三代半导体",
+    "categories": [
+      {
+        "type": "概念板块",
+        "category": "概念"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "880609.SH": {
+    "name": "跨境支付CIPS",
+    "categories": [
+      {
+        "type": "概念板块",
+        "category": "概念"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "880610.SH": {
+    "name": "中俄贸易",
+    "categories": [
+      {
+        "type": "概念板块",
+        "category": "概念"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "880611.SH": {
+    "name": "核污染防治",
+    "categories": [
+      {
+        "type": "概念板块",
+        "category": "概念"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "880612.SH": {
+    "name": "镍金属",
+    "categories": [
+      {
+        "type": "概念板块",
+        "category": "概念"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "880613.SH": {
+    "name": "电子身份证",
+    "categories": [
+      {
+        "type": "概念板块",
+        "category": "概念"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "880614.SH": {
+    "name": "绿色建筑",
+    "categories": [
+      {
+        "type": "概念板块",
+        "category": "概念"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "880615.SH": {
+    "name": "家庭医生",
+    "categories": [
+      {
+        "type": "概念板块",
+        "category": "概念"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "880616.SH": {
+    "name": "大飞机",
+    "categories": [
+      {
+        "type": "概念板块",
+        "category": "概念"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "880617.SH": {
+    "name": "IP经济",
+    "categories": [
+      {
+        "type": "概念板块",
+        "category": "概念"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "880618.SH": {
+    "name": "化肥概念",
+    "categories": [
+      {
+        "type": "概念板块",
+        "category": "概念"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "880621.SH": {
+    "name": "NFT概念",
+    "categories": [
+      {
+        "type": "概念板块",
+        "category": "概念"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "880623.SH": {
+    "name": "肝炎概念",
+    "categories": [
+      {
+        "type": "概念板块",
+        "category": "概念"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "880624.SH": {
+    "name": "新型城镇",
+    "categories": [
+      {
+        "type": "概念板块",
+        "category": "概念"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "880626.SH": {
+    "name": "粮食概念",
+    "categories": [
+      {
+        "type": "概念板块",
+        "category": "概念"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "880627.SH": {
+    "name": "超临界发电",
+    "categories": [
+      {
+        "type": "概念板块",
+        "category": "概念"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "880628.SH": {
+    "name": "钒电池",
+    "categories": [
+      {
+        "type": "概念板块",
+        "category": "概念"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "880629.SH": {
+    "name": "MicroLED",
+    "categories": [
+      {
+        "type": "概念板块",
+        "category": "概念"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "880630.SH": {
+    "name": "虚拟电厂",
+    "categories": [
+      {
+        "type": "概念板块",
+        "category": "概念"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "880631.SH": {
+    "name": "一体压铸",
+    "categories": [
+      {
+        "type": "概念板块",
+        "category": "概念"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "880632.SH": {
+    "name": "动力电池回收",
+    "categories": [
+      {
+        "type": "概念板块",
+        "category": "概念"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "880633.SH": {
+    "name": "汽车热管理",
+    "categories": [
+      {
+        "type": "概念板块",
+        "category": "概念"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "880634.SH": {
+    "name": "含GDR",
+    "categories": [
+      {
+        "type": "概念板块",
+        "category": "概念"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "880635.SH": {
+    "name": "先进封装",
+    "categories": [
+      {
+        "type": "概念板块",
+        "category": "概念"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "880636.SH": {
+    "name": "热泵概念",
+    "categories": [
+      {
+        "type": "概念板块",
+        "category": "概念"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "880637.SH": {
+    "name": "EDA概念",
+    "categories": [
+      {
+        "type": "概念板块",
+        "category": "概念"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "880638.SH": {
+    "name": "TOPCon电池",
+    "categories": [
+      {
+        "type": "概念板块",
+        "category": "概念"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "880639.SH": {
+    "name": "光热发电",
+    "categories": [
+      {
+        "type": "概念板块",
+        "category": "概念"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "880642.SH": {
+    "name": "供销社",
+    "categories": [
+      {
+        "type": "概念板块",
+        "category": "概念"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "880643.SH": {
+    "name": "Web3概念",
+    "categories": [
+      {
+        "type": "概念板块",
+        "category": "概念"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "880644.SH": {
+    "name": "DRG-DIP",
+    "categories": [
+      {
+        "type": "概念板块",
+        "category": "概念"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "880645.SH": {
+    "name": "AIGC概念",
+    "categories": [
+      {
+        "type": "概念板块",
+        "category": "概念"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "880646.SH": {
+    "name": "复合铜箔",
+    "categories": [
+      {
+        "type": "概念板块",
+        "category": "概念"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "880647.SH": {
+    "name": "数据确权",
+    "categories": [
+      {
+        "type": "概念板块",
+        "category": "概念"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "880649.SH": {
+    "name": "POE胶膜",
+    "categories": [
+      {
+        "type": "概念板块",
+        "category": "概念"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "880650.SH": {
+    "name": "血氧仪",
+    "categories": [
+      {
+        "type": "概念板块",
+        "category": "概念"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "880651.SH": {
+    "name": "旅游概念",
+    "categories": [
+      {
+        "type": "概念板块",
+        "category": "概念"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "880652.SH": {
+    "name": "创新药",
+    "categories": [
+      {
+        "type": "概念板块",
+        "category": "概念"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "880654.SH": {
+    "name": "ChatGPT概念",
+    "categories": [
+      {
+        "type": "概念板块",
+        "category": "概念"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "880655.SH": {
+    "name": "钙钛矿电池",
+    "categories": [
+      {
+        "type": "概念板块",
+        "category": "概念"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "880656.SH": {
+    "name": "CPO概念",
+    "categories": [
+      {
+        "type": "概念板块",
+        "category": "概念"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "880657.SH": {
+    "name": "数字水印",
+    "categories": [
+      {
+        "type": "概念板块",
+        "category": "概念"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "880658.SH": {
+    "name": "高压快充",
+    "categories": [
+      {
+        "type": "概念板块",
+        "category": "概念"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "880659.SH": {
+    "name": "毫米波雷达",
+    "categories": [
+      {
+        "type": "概念板块",
+        "category": "概念"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "880660.SH": {
+    "name": "工业软件",
+    "categories": [
+      {
+        "type": "概念板块",
+        "category": "概念"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "880661.SH": {
+    "name": "6G概念",
+    "categories": [
+      {
+        "type": "概念板块",
+        "category": "概念"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "880662.SH": {
+    "name": "时空大数据",
+    "categories": [
+      {
+        "type": "概念板块",
+        "category": "概念"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "880664.SH": {
+    "name": "机器视觉",
+    "categories": [
+      {
+        "type": "概念板块",
+        "category": "概念"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "880666.SH": {
+    "name": "可控核聚变",
+    "categories": [
+      {
+        "type": "概念板块",
+        "category": "概念"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "880667.SH": {
+    "name": "数据要素",
+    "categories": [
+      {
+        "type": "概念板块",
+        "category": "概念"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "880668.SH": {
+    "name": "知识付费",
+    "categories": [
+      {
+        "type": "概念板块",
+        "category": "概念"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "880669.SH": {
+    "name": "算力租赁",
+    "categories": [
+      {
+        "type": "概念板块",
+        "category": "概念"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "880670.SH": {
+    "name": "光通信",
+    "categories": [
+      {
+        "type": "概念板块",
+        "category": "概念"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "880671.SH": {
+    "name": "中特估",
+    "categories": [
+      {
+        "type": "概念板块",
+        "category": "概念"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "880672.SH": {
+    "name": "存储芯片",
+    "categories": [
+      {
+        "type": "概念板块",
+        "category": "概念"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "880673.SH": {
+    "name": "混合现实",
+    "categories": [
+      {
+        "type": "概念板块",
+        "category": "概念"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "880674.SH": {
+    "name": "英伟达概念",
+    "categories": [
+      {
+        "type": "概念板块",
+        "category": "概念"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "880675.SH": {
+    "name": "减速器",
+    "categories": [
+      {
+        "type": "概念板块",
+        "category": "概念"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "880681.SH": {
+    "name": "减肥药",
+    "categories": [
+      {
+        "type": "概念板块",
+        "category": "概念"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "880682.SH": {
+    "name": "华为海思",
+    "categories": [
+      {
+        "type": "概念板块",
+        "category": "概念"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "880683.SH": {
+    "name": "星闪概念",
+    "categories": [
+      {
+        "type": "概念板块",
+        "category": "概念"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "880684.SH": {
+    "name": "BC电池",
+    "categories": [
+      {
+        "type": "概念板块",
+        "category": "概念"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "880685.SH": {
+    "name": "液冷服务器",
+    "categories": [
+      {
+        "type": "概念板块",
+        "category": "概念"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "880686.SH": {
+    "name": "华为汽车",
+    "categories": [
+      {
+        "type": "概念板块",
+        "category": "概念"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "880688.SH": {
+    "name": "新型工业化",
+    "categories": [
+      {
+        "type": "概念板块",
+        "category": "概念"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "880689.SH": {
+    "name": "华为算力",
+    "categories": [
+      {
+        "type": "概念板块",
+        "category": "概念"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "880692.SH": {
+    "name": "短剧游戏",
+    "categories": [
+      {
+        "type": "概念板块",
+        "category": "概念"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "880693.SH": {
+    "name": "多模态AI",
+    "categories": [
+      {
+        "type": "概念板块",
+        "category": "概念"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "880695.SH": {
+    "name": "PEEK材料",
+    "categories": [
+      {
+        "type": "概念板块",
+        "category": "概念"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "880696.SH": {
+    "name": "小米汽车概念",
+    "categories": [
+      {
+        "type": "概念板块",
+        "category": "概念"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "880697.SH": {
+    "name": "飞行汽车",
+    "categories": [
+      {
+        "type": "概念板块",
+        "category": "概念"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "880703.SH": {
+    "name": "人形机器人",
+    "categories": [
+      {
+        "type": "概念板块",
+        "category": "概念"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "880704.SH": {
+    "name": "工业大麻",
+    "categories": [
+      {
+        "type": "概念板块",
+        "category": "概念"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "880705.SH": {
+    "name": "氢能源",
+    "categories": [
+      {
+        "type": "概念板块",
+        "category": "概念"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "880706.SH": {
+    "name": "分散染料",
+    "categories": [
+      {
+        "type": "概念板块",
+        "category": "概念"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "880707.SH": {
+    "name": "宠物经济",
+    "categories": [
+      {
+        "type": "概念板块",
+        "category": "概念"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "880709.SH": {
+    "name": "人造肉",
+    "categories": [
+      {
+        "type": "概念板块",
+        "category": "概念"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "880710.SH": {
+    "name": "种业",
+    "categories": [
+      {
+        "type": "概念板块",
+        "category": "概念"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "880711.SH": {
+    "name": "操作系统",
+    "categories": [
+      {
+        "type": "概念板块",
+        "category": "概念"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "880713.SH": {
+    "name": "ETC概念",
+    "categories": [
+      {
+        "type": "概念板块",
+        "category": "概念"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "880714.SH": {
+    "name": "氟概念",
+    "categories": [
+      {
+        "type": "概念板块",
+        "category": "概念"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "880715.SH": {
+    "name": "磷概念",
+    "categories": [
+      {
+        "type": "概念板块",
+        "category": "概念"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "880716.SH": {
+    "name": "光刻机",
+    "categories": [
+      {
+        "type": "概念板块",
+        "category": "概念"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "880717.SH": {
+    "name": "C2M概念",
+    "categories": [
+      {
+        "type": "概念板块",
+        "category": "概念"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "880718.SH": {
+    "name": "小红书概念",
+    "categories": [
+      {
+        "type": "概念板块",
+        "category": "概念"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "880720.SH": {
+    "name": "抖音概念",
+    "categories": [
+      {
+        "type": "概念板块",
+        "category": "概念"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "880722.SH": {
+    "name": "华为鸿蒙",
+    "categories": [
+      {
+        "type": "概念板块",
+        "category": "概念"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "880724.SH": {
+    "name": "地下管网",
+    "categories": [
+      {
+        "type": "概念板块",
+        "category": "概念"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "880725.SH": {
+    "name": "MiniLED",
+    "categories": [
+      {
+        "type": "概念板块",
+        "category": "概念"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "880726.SH": {
+    "name": "MCU芯片",
+    "categories": [
+      {
+        "type": "概念板块",
+        "category": "概念"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "880727.SH": {
+    "name": "盐湖提锂",
+    "categories": [
+      {
+        "type": "概念板块",
+        "category": "概念"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "880728.SH": {
+    "name": "航运概念",
+    "categories": [
+      {
+        "type": "概念板块",
+        "category": "概念"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "880729.SH": {
+    "name": "CXO概念",
+    "categories": [
+      {
+        "type": "概念板块",
+        "category": "概念"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "880730.SH": {
+    "name": "储能",
+    "categories": [
+      {
+        "type": "概念板块",
+        "category": "概念"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "880731.SH": {
+    "name": "新材料",
+    "categories": [
+      {
+        "type": "概念板块",
+        "category": "概念"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "880732.SH": {
+    "name": "AI智能体",
+    "categories": [
+      {
+        "type": "概念板块",
+        "category": "概念"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "880733.SH": {
+    "name": "人脑工程",
+    "categories": [
+      {
+        "type": "概念板块",
+        "category": "概念"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "880734.SH": {
+    "name": "工业气体",
+    "categories": [
+      {
+        "type": "概念板块",
+        "category": "概念"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "880736.SH": {
+    "name": "工业母机",
+    "categories": [
+      {
+        "type": "概念板块",
+        "category": "概念"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "880737.SH": {
+    "name": "HJT电池",
+    "categories": [
+      {
+        "type": "概念板块",
+        "category": "概念"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "880738.SH": {
+    "name": "数字孪生",
+    "categories": [
+      {
+        "type": "概念板块",
+        "category": "概念"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "880739.SH": {
+    "name": "边缘计算",
+    "categories": [
+      {
+        "type": "概念板块",
+        "category": "概念"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "880740.SH": {
+    "name": "新型烟草",
+    "categories": [
+      {
+        "type": "概念板块",
+        "category": "概念"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "880741.SH": {
+    "name": "代糖概念",
+    "categories": [
+      {
+        "type": "概念板块",
+        "category": "概念"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "880742.SH": {
+    "name": "固态电池",
+    "categories": [
+      {
+        "type": "概念板块",
+        "category": "概念"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "880743.SH": {
+    "name": "物业管理概念",
+    "categories": [
+      {
+        "type": "概念板块",
+        "category": "概念"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "880744.SH": {
+    "name": "汽车拆解",
+    "categories": [
+      {
+        "type": "概念板块",
+        "category": "概念"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "880745.SH": {
+    "name": "NMN概念",
+    "categories": [
+      {
+        "type": "概念板块",
+        "category": "概念"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "880746.SH": {
+    "name": "国资云",
+    "categories": [
+      {
+        "type": "概念板块",
+        "category": "概念"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "880747.SH": {
+    "name": "AI医疗概念",
+    "categories": [
+      {
+        "type": "概念板块",
+        "category": "概念"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "880748.SH": {
+    "name": "元宇宙概念",
+    "categories": [
+      {
+        "type": "概念板块",
+        "category": "概念"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "880749.SH": {
+    "name": "云游戏",
+    "categories": [
+      {
+        "type": "概念板块",
+        "category": "概念"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "880750.SH": {
+    "name": "天然气",
+    "categories": [
+      {
+        "type": "概念板块",
+        "category": "概念"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "880753.SH": {
+    "name": "绿色电力",
+    "categories": [
+      {
+        "type": "概念板块",
+        "category": "概念"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "880754.SH": {
+    "name": "培育钻石",
+    "categories": [
+      {
+        "type": "概念板块",
+        "category": "概念"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "880755.SH": {
+    "name": "钠电池",
+    "categories": [
+      {
+        "type": "概念板块",
+        "category": "概念"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "880757.SH": {
+    "name": "冷链物流",
+    "categories": [
+      {
+        "type": "概念板块",
+        "category": "概念"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "880758.SH": {
+    "name": "汽车芯片",
+    "categories": [
+      {
+        "type": "概念板块",
+        "category": "概念"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "880759.SH": {
+    "name": "换电概念",
+    "categories": [
+      {
+        "type": "概念板块",
+        "category": "概念"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "880760.SH": {
+    "name": "预制菜",
+    "categories": [
+      {
+        "type": "概念板块",
+        "category": "概念"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "880761.SH": {
+    "name": "锂矿",
+    "categories": [
+      {
+        "type": "概念板块",
+        "category": "概念"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "880762.SH": {
+    "name": "信创",
+    "categories": [
+      {
+        "type": "概念板块",
+        "category": "概念"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "880764.SH": {
+    "name": "鸡肉",
+    "categories": [
+      {
+        "type": "概念板块",
+        "category": "概念"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "880765.SH": {
+    "name": "海洋经济",
+    "categories": [
+      {
+        "type": "概念板块",
+        "category": "概念"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "880766.SH": {
+    "name": "幽门螺杆菌",
+    "categories": [
+      {
+        "type": "概念板块",
+        "category": "概念"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "880767.SH": {
+    "name": "电子纸",
+    "categories": [
+      {
+        "type": "概念板块",
+        "category": "概念"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "880791.SH": {
+    "name": "网红经济",
+    "categories": [
+      {
+        "type": "概念板块",
+        "category": "概念"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "880794.SH": {
+    "name": "远程办公",
+    "categories": [
+      {
+        "type": "概念板块",
+        "category": "概念"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "880795.SH": {
+    "name": "口罩防护",
+    "categories": [
+      {
+        "type": "概念板块",
+        "category": "概念"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "880796.SH": {
+    "name": "医废处理",
+    "categories": [
+      {
+        "type": "概念板块",
+        "category": "概念"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "880797.SH": {
+    "name": "虫害防治",
+    "categories": [
+      {
+        "type": "概念板块",
+        "category": "概念"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "880798.SH": {
+    "name": "超级电容",
+    "categories": [
+      {
+        "type": "概念板块",
+        "category": "概念"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "880799.SH": {
+    "name": "数据中心",
+    "categories": [
+      {
+        "type": "概念板块",
+        "category": "概念"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "880899.SH": {
+    "name": "钴金属",
+    "categories": [
+      {
+        "type": "概念板块",
+        "category": "概念"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "880901.SH": {
+    "name": "信息安全",
+    "categories": [
+      {
+        "type": "概念板块",
+        "category": "概念"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "880902.SH": {
+    "name": "特斯拉概念",
+    "categories": [
+      {
+        "type": "概念板块",
+        "category": "概念"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "880903.SH": {
+    "name": "水产品",
+    "categories": [
+      {
+        "type": "概念板块",
+        "category": "概念"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "880904.SH": {
+    "name": "机器人概念",
+    "categories": [
+      {
+        "type": "概念板块",
+        "category": "概念"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "880905.SH": {
+    "name": "超导概念",
+    "categories": [
+      {
+        "type": "概念板块",
+        "category": "概念"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "880906.SH": {
+    "name": "智能家居",
+    "categories": [
+      {
+        "type": "概念板块",
+        "category": "概念"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "880908.SH": {
+    "name": "职业教育",
+    "categories": [
+      {
+        "type": "概念板块",
+        "category": "概念"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "880909.SH": {
+    "name": "燃料电池",
+    "categories": [
+      {
+        "type": "概念板块",
+        "category": "概念"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "880910.SH": {
+    "name": "草甘膦",
+    "categories": [
+      {
+        "type": "概念板块",
+        "category": "概念"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "880911.SH": {
+    "name": "雄安新区",
+    "categories": [
+      {
+        "type": "概念板块",
+        "category": "概念"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "880912.SH": {
+    "name": "外骨骼机器人",
+    "categories": [
+      {
+        "type": "概念板块",
+        "category": "概念"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "880913.SH": {
+    "name": "基因概念",
+    "categories": [
+      {
+        "type": "概念板块",
+        "category": "概念"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "880914.SH": {
+    "name": "军贸概念",
+    "categories": [
+      {
+        "type": "概念板块",
+        "category": "概念"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "880916.SH": {
+    "name": "国产软件",
+    "categories": [
+      {
+        "type": "概念板块",
+        "category": "概念"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "880919.SH": {
+    "name": "粤港澳",
+    "categories": [
+      {
+        "type": "概念板块",
+        "category": "概念"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "880920.SH": {
+    "name": "免疫治疗",
+    "categories": [
+      {
+        "type": "概念板块",
+        "category": "概念"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "880921.SH": {
+    "name": "阿里概念",
+    "categories": [
+      {
+        "type": "概念板块",
+        "category": "概念"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "880922.SH": {
+    "name": "钛金属",
+    "categories": [
+      {
+        "type": "概念板块",
+        "category": "概念"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "880923.SH": {
+    "name": "赛马概念",
+    "categories": [
+      {
+        "type": "概念板块",
+        "category": "概念"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "880926.SH": {
+    "name": "垃圾分类",
+    "categories": [
+      {
+        "type": "概念板块",
+        "category": "概念"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "880929.SH": {
+    "name": "维生素",
+    "categories": [
+      {
+        "type": "概念板块",
+        "category": "概念"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "880930.SH": {
+    "name": "汽车电子",
+    "categories": [
+      {
+        "type": "概念板块",
+        "category": "概念"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "880933.SH": {
+    "name": "智能医疗",
+    "categories": [
+      {
+        "type": "概念板块",
+        "category": "概念"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "880936.SH": {
+    "name": "猪肉",
+    "categories": [
+      {
+        "type": "概念板块",
+        "category": "概念"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "880939.SH": {
+    "name": "无人机",
+    "categories": [
+      {
+        "type": "概念板块",
+        "category": "概念"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "880940.SH": {
+    "name": "PPP概念",
+    "categories": [
+      {
+        "type": "概念板块",
+        "category": "概念"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "880941.SH": {
+    "name": "跨境电商",
+    "categories": [
+      {
+        "type": "概念板块",
+        "category": "概念"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "880942.SH": {
+    "name": "虚拟现实",
+    "categories": [
+      {
+        "type": "概念板块",
+        "category": "概念"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "880943.SH": {
+    "name": "量子科技",
+    "categories": [
+      {
+        "type": "概念板块",
+        "category": "概念"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "880944.SH": {
+    "name": "无人驾驶",
+    "categories": [
+      {
+        "type": "概念板块",
+        "category": "概念"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "880945.SH": {
+    "name": "OLED概念",
+    "categories": [
+      {
+        "type": "概念板块",
+        "category": "概念"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "880946.SH": {
+    "name": "区块链",
+    "categories": [
+      {
+        "type": "概念板块",
+        "category": "概念"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "880948.SH": {
+    "name": "人工智能",
+    "categories": [
+      {
+        "type": "概念板块",
+        "category": "概念"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "880949.SH": {
+    "name": "智慧城市",
+    "categories": [
+      {
+        "type": "概念板块",
+        "category": "概念"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "880950.SH": {
+    "name": "军民融合",
+    "categories": [
+      {
+        "type": "概念板块",
+        "category": "概念"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "880951.SH": {
+    "name": "新能源车",
+    "categories": [
+      {
+        "type": "概念板块",
+        "category": "概念"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "880952.SH": {
+    "name": "芯片",
+    "categories": [
+      {
+        "type": "概念板块",
+        "category": "概念"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "880953.SH": {
+    "name": "租购同权",
+    "categories": [
+      {
+        "type": "概念板块",
+        "category": "概念"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "880954.SH": {
+    "name": "大数据",
+    "categories": [
+      {
+        "type": "概念板块",
+        "category": "概念"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "880955.SH": {
+    "name": "乡村振兴",
+    "categories": [
+      {
+        "type": "概念板块",
+        "category": "概念"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "880956.SH": {
+    "name": "腾讯概念",
+    "categories": [
+      {
+        "type": "概念板块",
+        "category": "概念"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "880957.SH": {
+    "name": "工业互联",
+    "categories": [
+      {
+        "type": "概念板块",
+        "category": "概念"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "880958.SH": {
+    "name": "AI营销",
+    "categories": [
+      {
+        "type": "概念板块",
+        "category": "概念"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "880959.SH": {
+    "name": "知识产权",
+    "categories": [
+      {
+        "type": "概念板块",
+        "category": "概念"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "880960.SH": {
+    "name": "仿制药",
+    "categories": [
+      {
+        "type": "概念板块",
+        "category": "概念"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "880961.SH": {
+    "name": "小米概念",
+    "categories": [
+      {
+        "type": "概念板块",
+        "category": "概念"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "880962.SH": {
+    "name": "百度概念",
+    "categories": [
+      {
+        "type": "概念板块",
+        "category": "概念"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "880964.SH": {
+    "name": "特高压",
+    "categories": [
+      {
+        "type": "概念板块",
+        "category": "概念"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "880965.SH": {
+    "name": "超清视频",
+    "categories": [
+      {
+        "type": "概念板块",
+        "category": "概念"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "880966.SH": {
+    "name": "消费电子概念",
+    "categories": [
+      {
+        "type": "概念板块",
+        "category": "概念"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "880967.SH": {
+    "name": "数字货币",
+    "categories": [
+      {
+        "type": "概念板块",
+        "category": "概念"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "880968.SH": {
+    "name": "胎压监测",
+    "categories": [
+      {
+        "type": "概念板块",
+        "category": "概念"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "880969.SH": {
+    "name": "无线耳机",
+    "categories": [
+      {
+        "type": "概念板块",
+        "category": "概念"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "880971.SH": {
+    "name": "降解塑料",
+    "categories": [
+      {
+        "type": "概念板块",
+        "category": "概念"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "880972.SH": {
+    "name": "雅江水电概念",
+    "categories": [
+      {
+        "type": "概念板块",
+        "category": "概念"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "880973.SH": {
+    "name": "医美概念",
+    "categories": [
+      {
+        "type": "概念板块",
+        "category": "概念"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "880974.SH": {
+    "name": "烟草概念",
+    "categories": [
+      {
+        "type": "概念板块",
+        "category": "概念"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "880975.SH": {
+    "name": "有机硅概念",
+    "categories": [
+      {
+        "type": "概念板块",
+        "category": "概念"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "880977.SH": {
+    "name": "BIPV概念",
+    "categories": [
+      {
+        "type": "概念板块",
+        "category": "概念"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "880978.SH": {
+    "name": "DeepSeek概念",
+    "categories": [
+      {
+        "type": "概念板块",
+        "category": "概念"
+      },
+      {
+        "type": "指数",
+        "category": "指数"
+      }
+    ]
+  },
+  "880081.SH": {
+    "name": "轮动趋势",
+    "categories": [
+      {
+        "type": "风格板块",
+        "category": "风格"
+      }
+    ]
+  },
+  "880082.SH": {
+    "name": "板块趋势",
+    "categories": [
+      {
+        "type": "风格板块",
+        "category": "风格"
+      }
+    ]
+  },
+  "880526.SH": {
+    "name": "高分红股",
+    "categories": [
+      {
+        "type": "风格板块",
+        "category": "风格"
+      }
+    ]
+  },
+  "880527.SH": {
+    "name": "承诺不减",
+    "categories": [
+      {
+        "type": "风格板块",
+        "category": "风格"
+      }
+    ]
+  },
+  "880531.SH": {
+    "name": "低安全分",
+    "categories": [
+      {
+        "type": "风格板块",
+        "category": "风格"
+      }
+    ]
+  },
+  "880532.SH": {
+    "name": "整体上市",
+    "categories": [
+      {
+        "type": "风格板块",
+        "category": "风格"
+      }
+    ]
+  },
+  "880536.SH": {
+    "name": "微盘精选",
+    "categories": [
+      {
+        "type": "风格板块",
+        "category": "风格"
+      }
+    ]
+  },
+  "880538.SH": {
+    "name": "参股金融",
+    "categories": [
+      {
+        "type": "风格板块",
+        "category": "风格"
+      }
+    ]
+  },
+  "880539.SH": {
+    "name": "股权激励",
+    "categories": [
+      {
+        "type": "风格板块",
+        "category": "风格"
+      }
+    ]
+  },
+  "880543.SH": {
+    "name": "外资背景",
+    "categories": [
+      {
+        "type": "风格板块",
+        "category": "风格"
+      }
+    ]
+  },
+  "880551.SH": {
+    "name": "大基金持股",
+    "categories": [
+      {
+        "type": "风格板块",
+        "category": "风格"
+      }
+    ]
+  },
+  "880554.SH": {
+    "name": "科创板次新",
+    "categories": [
+      {
+        "type": "风格板块",
+        "category": "风格"
+      }
+    ]
+  },
+  "880556.SH": {
+    "name": "昨ST连板",
+    "categories": [
+      {
+        "type": "风格板块",
+        "category": "风格"
+      }
+    ]
+  },
+  "880559.SH": {
+    "name": "要约收购",
+    "categories": [
+      {
+        "type": "风格板块",
+        "category": "风格"
+      }
+    ]
+  },
+  "880562.SH": {
+    "name": "高校背景",
+    "categories": [
+      {
+        "type": "风格板块",
+        "category": "风格"
+      }
+    ]
+  },
+  "880565.SH": {
+    "name": "送转潜力",
+    "categories": [
+      {
+        "type": "风格板块",
+        "category": "风格"
+      }
+    ]
+  },
+  "880570.SH": {
+    "name": "高应收款",
+    "categories": [
+      {
+        "type": "风格板块",
+        "category": "风格"
+      }
+    ]
+  },
+  "880573.SH": {
+    "name": "摘帽",
+    "categories": [
+      {
+        "type": "风格板块",
+        "category": "风格"
+      }
+    ]
+  },
+  "880576.SH": {
+    "name": "并购重组股",
+    "categories": [
+      {
+        "type": "风格板块",
+        "category": "风格"
+      }
+    ]
+  },
+  "880578.SH": {
+    "name": "专项贷款",
+    "categories": [
+      {
+        "type": "风格板块",
+        "category": "风格"
+      }
+    ]
+  },
+  "880581.SH": {
+    "name": "控制权变更",
+    "categories": [
+      {
+        "type": "风格板块",
+        "category": "风格"
+      }
+    ]
+  },
+  "880603.SH": {
+    "name": "新进指标股",
+    "categories": [
+      {
+        "type": "风格板块",
+        "category": "风格"
+      }
+    ]
+  },
+  "880619.SH": {
+    "name": "业绩预增",
+    "categories": [
+      {
+        "type": "风格板块",
+        "category": "风格"
+      }
+    ]
+  },
+  "880620.SH": {
+    "name": "券商金股",
+    "categories": [
+      {
+        "type": "风格板块",
+        "category": "风格"
+      }
+    ]
+  },
+  "880622.SH": {
+    "name": "破增发价",
+    "categories": [
+      {
+        "type": "风格板块",
+        "category": "风格"
+      }
+    ]
+  },
+  "880625.SH": {
+    "name": "主营变更",
+    "categories": [
+      {
+        "type": "风格板块",
+        "category": "风格"
+      }
+    ]
+  },
+  "880640.SH": {
+    "name": "历史新高",
+    "categories": [
+      {
+        "type": "风格板块",
+        "category": "风格"
+      }
+    ]
+  },
+  "880641.SH": {
+    "name": "历史新低",
+    "categories": [
+      {
+        "type": "风格板块",
+        "category": "风格"
+      }
+    ]
+  },
+  "880648.SH": {
+    "name": "私募新进",
+    "categories": [
+      {
+        "type": "风格板块",
+        "category": "风格"
+      }
+    ]
+  },
+  "880653.SH": {
+    "name": "私募重仓",
+    "categories": [
+      {
+        "type": "风格板块",
+        "category": "风格"
+      }
+    ]
+  },
+  "880665.SH": {
+    "name": "昨ST首板",
+    "categories": [
+      {
+        "type": "风格板块",
+        "category": "风格"
+      }
+    ]
+  },
+  "880676.SH": {
+    "name": "活跃ETF",
+    "categories": [
+      {
+        "type": "风格板块",
+        "category": "风格"
+      }
+    ]
+  },
+  "880677.SH": {
+    "name": "活跃可转债",
+    "categories": [
+      {
+        "type": "风格板块",
+        "category": "风格"
+      }
+    ]
+  },
+  "880678.SH": {
+    "name": "陆股通重仓",
+    "categories": [
+      {
+        "type": "风格板块",
+        "category": "风格"
+      }
+    ]
+  },
+  "880679.SH": {
+    "name": "周期股",
+    "categories": [
+      {
+        "type": "风格板块",
+        "category": "风格"
+      }
+    ]
+  },
+  "880680.SH": {
+    "name": "非周期股",
+    "categories": [
+      {
+        "type": "风格板块",
+        "category": "风格"
+      }
+    ]
+  },
+  "880687.SH": {
+    "name": "活跃小盘非融",
+    "categories": [
+      {
+        "type": "风格板块",
+        "category": "风格"
+      }
+    ]
+  },
+  "880690.SH": {
+    "name": "昨日强势",
+    "categories": [
+      {
+        "type": "风格板块",
+        "category": "风格"
+      }
+    ]
+  },
+  "880691.SH": {
+    "name": "昨日弱势",
+    "categories": [
+      {
+        "type": "风格板块",
+        "category": "风格"
+      }
+    ]
+  },
+  "880694.SH": {
+    "name": "活跃小盘国企",
+    "categories": [
+      {
+        "type": "风格板块",
+        "category": "风格"
+      }
+    ]
+  },
+  "880698.SH": {
+    "name": "宽基ETF",
+    "categories": [
+      {
+        "type": "风格板块",
+        "category": "风格"
+      }
+    ]
+  },
+  "880699.SH": {
+    "name": "最近情绪指数",
+    "categories": [
+      {
+        "type": "风格板块",
+        "category": "风格"
+      }
+    ]
+  },
+  "880702.SH": {
+    "name": "壳资源",
+    "categories": [
+      {
+        "type": "风格板块",
+        "category": "风格"
+      }
+    ]
+  },
+  "880708.SH": {
+    "name": "台资背景",
+    "categories": [
+      {
+        "type": "风格板块",
+        "category": "风格"
+      }
+    ]
+  },
+  "880712.SH": {
+    "name": "微小盘股",
+    "categories": [
+      {
+        "type": "风格板块",
+        "category": "风格"
+      }
+    ]
+  },
+  "880721.SH": {
+    "name": "北上重仓",
+    "categories": [
+      {
+        "type": "风格板块",
+        "category": "风格"
+      }
+    ]
+  },
+  "880723.SH": {
+    "name": "发可转债",
+    "categories": [
+      {
+        "type": "风格板块",
+        "category": "风格"
+      }
+    ]
+  },
+  "880735.SH": {
+    "name": "专精特新",
+    "categories": [
+      {
+        "type": "风格板块",
+        "category": "风格"
+      }
+    ]
+  },
+  "880751.SH": {
+    "name": "昨日跌停",
+    "categories": [
+      {
+        "type": "风格板块",
+        "category": "风格"
+      }
+    ]
+  },
+  "880752.SH": {
+    "name": "昨曾跌停",
+    "categories": [
+      {
+        "type": "风格板块",
+        "category": "风格"
+      }
+    ]
+  },
+  "880756.SH": {
+    "name": "机构吸筹",
+    "categories": [
+      {
+        "type": "风格板块",
+        "category": "风格"
+      }
+    ]
+  },
+  "880763.SH": {
+    "name": "自由现金流",
+    "categories": [
+      {
+        "type": "风格板块",
+        "category": "风格"
+      }
+    ]
+  },
+  "880769.SH": {
+    "name": "股权集中",
+    "categories": [
+      {
+        "type": "风格板块",
+        "category": "风格"
+      }
+    ]
+  },
+  "880770.SH": {
+    "name": "昨日上榜",
+    "categories": [
+      {
+        "type": "风格板块",
+        "category": "风格"
+      }
+    ]
+  },
+  "880771.SH": {
+    "name": "MSCI中盘",
+    "categories": [
+      {
+        "type": "风格板块",
+        "category": "风格"
+      }
+    ]
+  },
+  "880774.SH": {
+    "name": "昨日首板",
+    "categories": [
+      {
+        "type": "风格板块",
+        "category": "风格"
+      }
+    ]
+  },
+  "880778.SH": {
+    "name": "次新预增",
+    "categories": [
+      {
+        "type": "风格板块",
+        "category": "风格"
+      }
+    ]
+  },
+  "880779.SH": {
+    "name": "高融资盘",
+    "categories": [
+      {
+        "type": "风格板块",
+        "category": "风格"
+      }
+    ]
+  },
+  "880780.SH": {
+    "name": "融资增加",
+    "categories": [
+      {
+        "type": "风格板块",
+        "category": "风格"
+      }
+    ]
+  },
+  "880781.SH": {
+    "name": "QFII新进",
+    "categories": [
+      {
+        "type": "风格板块",
+        "category": "风格"
+      }
+    ]
+  },
+  "880782.SH": {
+    "name": "保险新进",
+    "categories": [
+      {
+        "type": "风格板块",
+        "category": "风格"
+      }
+    ]
+  },
+  "880783.SH": {
+    "name": "社保新进",
+    "categories": [
+      {
+        "type": "风格板块",
+        "category": "风格"
+      }
+    ]
+  },
+  "880784.SH": {
+    "name": "昨日较弱",
+    "categories": [
+      {
+        "type": "风格板块",
+        "category": "风格"
+      }
+    ]
+  },
+  "880785.SH": {
+    "name": "最近多板",
+    "categories": [
+      {
+        "type": "风格板块",
+        "category": "风格"
+      }
+    ]
+  },
+  "880786.SH": {
+    "name": "海外业务",
+    "categories": [
+      {
+        "type": "风格板块",
+        "category": "风格"
+      }
+    ]
+  },
+  "880787.SH": {
+    "name": "高商誉",
+    "categories": [
+      {
+        "type": "风格板块",
+        "category": "风格"
+      }
+    ]
+  },
+  "880789.SH": {
+    "name": "昨成交20",
+    "categories": [
+      {
+        "type": "风格板块",
+        "category": "风格"
+      }
+    ]
+  },
+  "880790.SH": {
+    "name": "高负债率",
+    "categories": [
+      {
+        "type": "风格板块",
+        "category": "风格"
+      }
+    ]
+  },
+  "880792.SH": {
+    "name": "基金增仓",
+    "categories": [
+      {
+        "type": "风格板块",
+        "category": "风格"
+      }
+    ]
+  },
+  "880793.SH": {
+    "name": "基金减仓",
+    "categories": [
+      {
+        "type": "风格板块",
+        "category": "风格"
+      }
+    ]
+  },
+  "880801.SH": {
+    "name": "基金重仓",
+    "categories": [
+      {
+        "type": "风格板块",
+        "category": "风格"
+      }
+    ]
+  },
+  "880802.SH": {
+    "name": "QFII重仓",
+    "categories": [
+      {
+        "type": "风格板块",
+        "category": "风格"
+      }
+    ]
+  },
+  "880803.SH": {
+    "name": "券商重仓",
+    "categories": [
+      {
+        "type": "风格板块",
+        "category": "风格"
+      }
+    ]
+  },
+  "880804.SH": {
+    "name": "信托重仓",
+    "categories": [
+      {
+        "type": "风格板块",
+        "category": "风格"
+      }
+    ]
+  },
+  "880805.SH": {
+    "name": "保险重仓",
+    "categories": [
+      {
+        "type": "风格板块",
+        "category": "风格"
+      }
+    ]
+  },
+  "880806.SH": {
+    "name": "社保重仓",
+    "categories": [
+      {
+        "type": "风格板块",
+        "category": "风格"
+      }
+    ]
+  },
+  "880807.SH": {
+    "name": "股东增持",
+    "categories": [
+      {
+        "type": "风格板块",
+        "category": "风格"
+      }
+    ]
+  },
+  "880808.SH": {
+    "name": "股东减持",
+    "categories": [
+      {
+        "type": "风格板块",
+        "category": "风格"
+      }
+    ]
+  },
+  "880809.SH": {
+    "name": "基金独门",
+    "categories": [
+      {
+        "type": "风格板块",
+        "category": "风格"
+      }
+    ]
+  },
+  "880812.SH": {
+    "name": "昨日连板",
+    "categories": [
+      {
+        "type": "风格板块",
+        "category": "风格"
+      }
+    ]
+  },
+  "880813.SH": {
+    "name": "并购重组预案",
+    "categories": [
+      {
+        "type": "风格板块",
+        "category": "风格"
+      }
+    ]
+  },
+  "880814.SH": {
+    "name": "拟增持",
+    "categories": [
+      {
+        "type": "风格板块",
+        "category": "风格"
+      }
+    ]
+  },
+  "880815.SH": {
+    "name": "拟减持",
+    "categories": [
+      {
+        "type": "风格板块",
+        "category": "风格"
+      }
+    ]
+  },
+  "880816.SH": {
+    "name": "密集调研",
+    "categories": [
+      {
+        "type": "风格板块",
+        "category": "风格"
+      }
+    ]
+  },
+  "880817.SH": {
+    "name": "商誉减值",
+    "categories": [
+      {
+        "type": "风格板块",
+        "category": "风格"
+      }
+    ]
+  },
+  "880818.SH": {
+    "name": "通达信热股",
+    "categories": [
+      {
+        "type": "风格板块",
+        "category": "风格"
+      }
+    ]
+  },
+  "880821.SH": {
+    "name": "大盘股",
+    "categories": [
+      {
+        "type": "风格板块",
+        "category": "风格"
+      }
+    ]
+  },
+  "880822.SH": {
+    "name": "昨收活跃",
+    "categories": [
+      {
+        "type": "风格板块",
+        "category": "风格"
+      }
+    ]
+  },
+  "880823.SH": {
+    "name": "微盘股",
+    "categories": [
+      {
+        "type": "风格板块",
+        "category": "风格"
+      }
+    ]
+  },
+  "880824.SH": {
+    "name": "高市盈率",
+    "categories": [
+      {
+        "type": "风格板块",
+        "category": "风格"
+      }
+    ]
+  },
+  "880825.SH": {
+    "name": "预计转亏",
+    "categories": [
+      {
+        "type": "风格板块",
+        "category": "风格"
+      }
+    ]
+  },
+  "880826.SH": {
+    "name": "低市盈率",
+    "categories": [
+      {
+        "type": "风格板块",
+        "category": "风格"
+      }
+    ]
+  },
+  "880827.SH": {
+    "name": "高市净率",
+    "categories": [
+      {
+        "type": "风格板块",
+        "category": "风格"
+      }
+    ]
+  },
+  "880829.SH": {
+    "name": "低市净率",
+    "categories": [
+      {
+        "type": "风格板块",
+        "category": "风格"
+      }
+    ]
+  },
+  "880833.SH": {
+    "name": "亏损股",
+    "categories": [
+      {
+        "type": "风格板块",
+        "category": "风格"
+      }
+    ]
+  },
+  "880834.SH": {
+    "name": "微利股",
+    "categories": [
+      {
+        "type": "风格板块",
+        "category": "风格"
+      }
+    ]
+  },
+  "880835.SH": {
+    "name": "绩优股",
+    "categories": [
+      {
+        "type": "风格板块",
+        "category": "风格"
+      }
+    ]
+  },
+  "880836.SH": {
+    "name": "配股股",
+    "categories": [
+      {
+        "type": "风格板块",
+        "category": "风格"
+      }
+    ]
+  },
+  "880837.SH": {
+    "name": "活跃股",
+    "categories": [
+      {
+        "type": "风格板块",
+        "category": "风格"
+      }
+    ]
+  },
+  "880842.SH": {
+    "name": "业绩预升",
+    "categories": [
+      {
+        "type": "风格板块",
+        "category": "风格"
+      }
+    ]
+  },
+  "880843.SH": {
+    "name": "业绩预降",
+    "categories": [
+      {
+        "type": "风格板块",
+        "category": "风格"
+      }
+    ]
+  },
+  "880844.SH": {
+    "name": "预计扭亏",
+    "categories": [
+      {
+        "type": "风格板块",
+        "category": "风格"
+      }
+    ]
+  },
+  "880845.SH": {
+    "name": "高股息股",
+    "categories": [
+      {
+        "type": "风格板块",
+        "category": "风格"
+      }
+    ]
+  },
+  "880846.SH": {
+    "name": "破净资产",
+    "categories": [
+      {
+        "type": "风格板块",
+        "category": "风格"
+      }
+    ]
+  },
+  "880847.SH": {
+    "name": "行业龙头",
+    "categories": [
+      {
+        "type": "风格板块",
+        "category": "风格"
+      }
+    ]
+  },
+  "880848.SH": {
+    "name": "被举牌",
+    "categories": [
+      {
+        "type": "风格板块",
+        "category": "风格"
+      }
+    ]
+  },
+  "880849.SH": {
+    "name": "回购计划",
+    "categories": [
+      {
+        "type": "风格板块",
+        "category": "风格"
+      }
+    ]
+  },
+  "880850.SH": {
+    "name": "定增预案",
+    "categories": [
+      {
+        "type": "风格板块",
+        "category": "风格"
+      }
+    ]
+  },
+  "880851.SH": {
+    "name": "已高送转",
+    "categories": [
+      {
+        "type": "风格板块",
+        "category": "风格"
+      }
+    ]
+  },
+  "880852.SH": {
+    "name": "参股新股",
+    "categories": [
+      {
+        "type": "风格板块",
+        "category": "风格"
+      }
+    ]
+  },
+  "880853.SH": {
+    "name": "中字头",
+    "categories": [
+      {
+        "type": "风格板块",
+        "category": "风格"
+      }
+    ]
+  },
+  "880854.SH": {
+    "name": "预高送转",
+    "categories": [
+      {
+        "type": "风格板块",
+        "category": "风格"
+      }
+    ]
+  },
+  "880856.SH": {
+    "name": "定增股",
+    "categories": [
+      {
+        "type": "风格板块",
+        "category": "风格"
+      }
+    ]
+  },
+  "880857.SH": {
+    "name": "证金汇金持股",
+    "categories": [
+      {
+        "type": "风格板块",
+        "category": "风格"
+      }
+    ]
+  },
+  "880858.SH": {
+    "name": "国开持股",
+    "categories": [
+      {
+        "type": "风格板块",
+        "category": "风格"
+      }
+    ]
+  },
+  "880859.SH": {
+    "name": "员工持股",
+    "categories": [
+      {
+        "type": "风格板块",
+        "category": "风格"
+      }
+    ]
+  },
+  "880860.SH": {
+    "name": "扣非亏损",
+    "categories": [
+      {
+        "type": "风格板块",
+        "category": "风格"
+      }
+    ]
+  },
+  "880861.SH": {
+    "name": "连续亏损",
+    "categories": [
+      {
+        "type": "风格板块",
+        "category": "风格"
+      }
+    ]
+  },
+  "880863.SH": {
+    "name": "昨日涨停",
+    "categories": [
+      {
+        "type": "风格板块",
+        "category": "风格"
+      }
+    ]
+  },
+  "880864.SH": {
+    "name": "昨日振荡",
+    "categories": [
+      {
+        "type": "风格板块",
+        "category": "风格"
+      }
+    ]
+  },
+  "880865.SH": {
+    "name": "近期新高",
+    "categories": [
+      {
+        "type": "风格板块",
+        "category": "风格"
+      }
+    ]
+  },
+  "880866.SH": {
+    "name": "近期新低",
+    "categories": [
+      {
+        "type": "风格板块",
+        "category": "风格"
+      }
+    ]
+  },
+  "880867.SH": {
+    "name": "昨高换手",
+    "categories": [
+      {
+        "type": "风格板块",
+        "category": "风格"
+      }
+    ]
+  },
+  "880868.SH": {
+    "name": "高贝塔值",
+    "categories": [
+      {
+        "type": "风格板块",
+        "category": "风格"
+      }
+    ]
+  },
+  "880869.SH": {
+    "name": "股权转让",
+    "categories": [
+      {
+        "type": "风格板块",
+        "category": "风格"
+      }
+    ]
+  },
+  "880870.SH": {
+    "name": "两年新股",
+    "categories": [
+      {
+        "type": "风格板块",
+        "category": "风格"
+      }
+    ]
+  },
+  "880871.SH": {
+    "name": "股权分散",
+    "categories": [
+      {
+        "type": "风格板块",
+        "category": "风格"
+      }
+    ]
+  },
+  "880872.SH": {
+    "name": "近期复牌",
+    "categories": [
+      {
+        "type": "风格板块",
+        "category": "风格"
+      }
+    ]
+  },
+  "880873.SH": {
+    "name": "个人持股",
+    "categories": [
+      {
+        "type": "风格板块",
+        "category": "风格"
+      }
+    ]
+  },
+  "880874.SH": {
+    "name": "昨曾涨停",
+    "categories": [
+      {
+        "type": "风格板块",
+        "category": "风格"
+      }
+    ]
+  },
+  "880875.SH": {
+    "name": "中小银行",
+    "categories": [
+      {
+        "type": "风格板块",
+        "category": "风格"
+      }
+    ]
+  },
+  "880876.SH": {
+    "name": "户数增加",
+    "categories": [
+      {
+        "type": "风格板块",
+        "category": "风格"
+      }
+    ]
+  },
+  "880877.SH": {
+    "name": "户数减少",
+    "categories": [
+      {
+        "type": "风格板块",
+        "category": "风格"
+      }
+    ]
+  },
+  "880878.SH": {
+    "name": "百元股",
+    "categories": [
+      {
+        "type": "风格板块",
+        "category": "风格"
+      }
+    ]
+  },
+  "880879.SH": {
+    "name": "低价股",
+    "categories": [
+      {
+        "type": "风格板块",
+        "category": "风格"
+      }
+    ]
+  },
+  "880880.SH": {
+    "name": "近期强势",
+    "categories": [
+      {
+        "type": "风格板块",
+        "category": "风格"
+      }
+    ]
+  },
+  "880881.SH": {
+    "name": "近期弱势",
+    "categories": [
+      {
+        "type": "风格板块",
+        "category": "风格"
+      }
+    ]
+  },
+  "880882.SH": {
+    "name": "久不分红",
+    "categories": [
+      {
+        "type": "风格板块",
+        "category": "风格"
+      }
+    ]
+  },
+  "880883.SH": {
+    "name": "MSCI成份",
+    "categories": [
+      {
+        "type": "风格板块",
+        "category": "风格"
+      }
+    ]
+  },
+  "880884.SH": {
+    "name": "最近异动",
+    "categories": [
+      {
+        "type": "风格板块",
+        "category": "风格"
+      }
+    ]
+  },
+  "880885.SH": {
+    "name": "近端次新",
+    "categories": [
+      {
+        "type": "风格板块",
+        "category": "风格"
+      }
+    ]
+  },
+  "880886.SH": {
+    "name": "昨日较强",
+    "categories": [
+      {
+        "type": "风格板块",
+        "category": "风格"
+      }
+    ]
+  },
+  "880887.SH": {
+    "name": "次新超跌",
+    "categories": [
+      {
+        "type": "风格板块",
+        "category": "风格"
+      }
+    ]
+  },
+  "880889.SH": {
+    "name": "不活跃股",
+    "categories": [
+      {
+        "type": "风格板块",
+        "category": "风格"
+      }
+    ]
+  },
+  "880890.SH": {
+    "name": "配股预案",
+    "categories": [
+      {
+        "type": "风格板块",
+        "category": "风格"
+      }
+    ]
+  },
+  "880891.SH": {
+    "name": "破发行价",
+    "categories": [
+      {
+        "type": "风格板块",
+        "category": "风格"
+      }
+    ]
+  },
+  "880892.SH": {
+    "name": "高质押股",
+    "categories": [
+      {
+        "type": "风格板块",
+        "category": "风格"
+      }
+    ]
+  },
+  "880893.SH": {
+    "name": "送转超跌",
+    "categories": [
+      {
+        "type": "风格板块",
+        "category": "风格"
+      }
+    ]
+  },
+  "880894.SH": {
+    "name": "养老金持股",
+    "categories": [
+      {
+        "type": "风格板块",
+        "category": "风格"
+      }
+    ]
+  },
+  "880895.SH": {
+    "name": "持续增长",
+    "categories": [
+      {
+        "type": "风格板块",
+        "category": "风格"
+      }
+    ]
+  },
+  "880896.SH": {
+    "name": "风险提示",
+    "categories": [
+      {
+        "type": "风格板块",
+        "category": "风格"
+      }
+    ]
+  },
+  "880897.SH": {
+    "name": "即将解禁",
+    "categories": [
+      {
+        "type": "风格板块",
+        "category": "风格"
+      }
+    ]
+  },
+  "880898.SH": {
+    "name": "近已解禁",
+    "categories": [
+      {
+        "type": "风格板块",
+        "category": "风格"
+      }
+    ]
+  },
+  "880915.SH": {
+    "name": "昨日突涨",
+    "categories": [
+      {
+        "type": "风格板块",
+        "category": "风格"
+      }
+    ]
+  },
+  "880947.SH": {
+    "name": "化债AMC",
+    "categories": [
+      {
+        "type": "风格板块",
+        "category": "风格"
+      }
+    ]
+  },
+  "880963.SH": {
+    "name": "昨日断板",
+    "categories": [
+      {
+        "type": "风格板块",
+        "category": "风格"
+      }
+    ]
+  },
+  "880970.SH": {
+    "name": "分拆上市预期",
+    "categories": [
+      {
+        "type": "风格板块",
+        "category": "风格"
+      }
+    ]
+  },
+  "880979.SH": {
+    "name": "科创成长层",
+    "categories": [
+      {
+        "type": "风格板块",
+        "category": "风格"
+      }
+    ]
+  },
+  "880201.SH": {
+    "name": "黑龙江",
+    "categories": [
+      {
+        "type": "地区板块",
+        "category": "地区"
+      }
+    ]
+  },
+  "880202.SH": {
+    "name": "新疆板块",
+    "categories": [
+      {
+        "type": "地区板块",
+        "category": "地区"
+      }
+    ]
+  },
+  "880203.SH": {
+    "name": "吉林板块",
+    "categories": [
+      {
+        "type": "地区板块",
+        "category": "地区"
+      }
+    ]
+  },
+  "880204.SH": {
+    "name": "甘肃板块",
+    "categories": [
+      {
+        "type": "地区板块",
+        "category": "地区"
+      }
+    ]
+  },
+  "880205.SH": {
+    "name": "辽宁板块",
+    "categories": [
+      {
+        "type": "地区板块",
+        "category": "地区"
+      }
+    ]
+  },
+  "880206.SH": {
+    "name": "青海板块",
+    "categories": [
+      {
+        "type": "地区板块",
+        "category": "地区"
+      }
+    ]
+  },
+  "880207.SH": {
+    "name": "北京板块",
+    "categories": [
+      {
+        "type": "地区板块",
+        "category": "地区"
+      }
+    ]
+  },
+  "880208.SH": {
+    "name": "陕西板块",
+    "categories": [
+      {
+        "type": "地区板块",
+        "category": "地区"
+      }
+    ]
+  },
+  "880209.SH": {
+    "name": "天津板块",
+    "categories": [
+      {
+        "type": "地区板块",
+        "category": "地区"
+      }
+    ]
+  },
+  "880210.SH": {
+    "name": "广西板块",
+    "categories": [
+      {
+        "type": "地区板块",
+        "category": "地区"
+      }
+    ]
+  },
+  "880211.SH": {
+    "name": "河北板块",
+    "categories": [
+      {
+        "type": "地区板块",
+        "category": "地区"
+      }
+    ]
+  },
+  "880212.SH": {
+    "name": "广东板块",
+    "categories": [
+      {
+        "type": "地区板块",
+        "category": "地区"
+      }
+    ]
+  },
+  "880213.SH": {
+    "name": "河南板块",
+    "categories": [
+      {
+        "type": "地区板块",
+        "category": "地区"
+      }
+    ]
+  },
+  "880214.SH": {
+    "name": "宁夏板块",
+    "categories": [
+      {
+        "type": "地区板块",
+        "category": "地区"
+      }
+    ]
+  },
+  "880215.SH": {
+    "name": "山东板块",
+    "categories": [
+      {
+        "type": "地区板块",
+        "category": "地区"
+      }
+    ]
+  },
+  "880216.SH": {
+    "name": "上海板块",
+    "categories": [
+      {
+        "type": "地区板块",
+        "category": "地区"
+      }
+    ]
+  },
+  "880217.SH": {
+    "name": "山西板块",
+    "categories": [
+      {
+        "type": "地区板块",
+        "category": "地区"
+      }
+    ]
+  },
+  "880218.SH": {
+    "name": "深圳板块",
+    "categories": [
+      {
+        "type": "地区板块",
+        "category": "地区"
+      }
+    ]
+  },
+  "880219.SH": {
+    "name": "湖北板块",
+    "categories": [
+      {
+        "type": "地区板块",
+        "category": "地区"
+      }
+    ]
+  },
+  "880220.SH": {
+    "name": "福建板块",
+    "categories": [
+      {
+        "type": "地区板块",
+        "category": "地区"
+      }
+    ]
+  },
+  "880221.SH": {
+    "name": "湖南板块",
+    "categories": [
+      {
+        "type": "地区板块",
+        "category": "地区"
+      }
+    ]
+  },
+  "880222.SH": {
+    "name": "江西板块",
+    "categories": [
+      {
+        "type": "地区板块",
+        "category": "地区"
+      }
+    ]
+  },
+  "880223.SH": {
+    "name": "四川板块",
+    "categories": [
+      {
+        "type": "地区板块",
+        "category": "地区"
+      }
+    ]
+  },
+  "880224.SH": {
+    "name": "安徽板块",
+    "categories": [
+      {
+        "type": "地区板块",
+        "category": "地区"
+      }
+    ]
+  },
+  "880225.SH": {
+    "name": "重庆板块",
+    "categories": [
+      {
+        "type": "地区板块",
+        "category": "地区"
+      }
+    ]
+  },
+  "880226.SH": {
+    "name": "江苏板块",
+    "categories": [
+      {
+        "type": "地区板块",
+        "category": "地区"
+      }
+    ]
+  },
+  "880227.SH": {
+    "name": "云南板块",
+    "categories": [
+      {
+        "type": "地区板块",
+        "category": "地区"
+      }
+    ]
+  },
+  "880228.SH": {
+    "name": "浙江板块",
+    "categories": [
+      {
+        "type": "地区板块",
+        "category": "地区"
+      }
+    ]
+  },
+  "880229.SH": {
+    "name": "贵州板块",
+    "categories": [
+      {
+        "type": "地区板块",
+        "category": "地区"
+      }
+    ]
+  },
+  "880230.SH": {
+    "name": "海南板块",
+    "categories": [
+      {
+        "type": "地区板块",
+        "category": "地区"
+      }
+    ]
+  },
+  "880231.SH": {
+    "name": "西藏板块",
+    "categories": [
+      {
+        "type": "地区板块",
+        "category": "地区"
+      }
+    ]
+  },
+  "880232.SH": {
+    "name": "内蒙板块",
+    "categories": [
+      {
+        "type": "地区板块",
+        "category": "地区"
+      }
+    ]
+  }
+}

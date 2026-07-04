@@ -388,9 +388,9 @@ def run(con, ctx):
         except Exception as e:
             logger.warning('写 qd_sentiment_event_log 失败: {}', e)
         try:
-            from lib import lark
-            msg = f"【变盘预警】{emotion}档\n" + "\n".join(e['description'] for e in events)
-            lark.push_text(msg)
+            import importlib as _il
+            _feishu = _il.import_module('4_feishu')
+            _feishu.push_text(msg)
         except Exception as e:
             logger.warning('情绪变盘飞书推送失败: {}', e)
 

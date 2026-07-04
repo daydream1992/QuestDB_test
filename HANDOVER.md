@@ -267,7 +267,7 @@ python -m py_compile collect/c4_kline.py
 python collect/c4_kline.py --period 5m --count 5
 
 # 3. 端到端验收（全链路）
-python _e2e.py
+python e2e.py
 
 # 4. 观察 scheduler 日志
 # logs/runner_intraday_loop_YYYYMMDD.log

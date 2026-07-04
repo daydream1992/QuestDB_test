@@ -1,0 +1,4 @@
+﻿类型代码,类型名,公式数,前5采样,错误,耗时ms,探测时间
+0,技术指标,225,"[{'acCode': 'MA', 'acName': '均线', 'isSys': 1}, {'acCode': 'MA2', 'acName': '均线', 'isSys': 1}, {'acCode': 'ABI', 'acName': '绝对广量指标', 'isSys': 1}, {'acCode': 'ADL', 'acName': '腾落指标', 'isSys': 1}, {'acCo",,14,2026-06-30 02:45:15
+1,条件选股,107,"[{'acCode': 'UPN', 'acName': '连涨数天', 'isSys': 1}, {'acCode': 'DOWNN', 'acName': '连跌数天', 'isSys': 1}, {'acCode': 'BIAS买入', 'acName': '乖离率买入条件选股', 'isSys': 1}, {'acCode': 'BIAS卖出', 'acName': '乖离率卖出条件选股'",,10,2026-06-30 02:45:15
+2,专家系统,15,"[{'acCode': 'MACD', 'acName': 'MACD专家系统', 'isSys': 1}, {'acCode': 'KDJ', 'acName': 'KDJ专家系统', 'isSys': 1}, {'acCode': 'BOLL', 'acName': '布林带专家系统', 'isSys': 1}, {'acCode': 'MA', 'acName': '均线专家系统', 'is",,8,2026-06-30 02:45:15

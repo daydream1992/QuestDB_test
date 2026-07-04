@@ -34,7 +34,8 @@ from loguru import logger  # noqa: E402
 
 from lib.qdb import connect, query_df, executemany_batch, cutoff  # noqa: E402
 from lib.tq_client import init, close  # noqa: E402
-from lib import lark  # noqa: E402
+import importlib as _il
+_feishu = _il.import_module('4_feishu')  # noqa: E402
 from lib.market_clock import is_trading_time, is_trading_day  # noqa: E402
 
 import collect.c1_pricevol as c1  # noqa: E402
@@ -182,6 +183,12 @@ def _build_context(con, graph):
         ctx.snapshot_focus_df = _merge_intraday(ctx.snapshot_focus_df, intra)
     except Exception as e:
         logger.warning('intraday merge 失败: {}', e)
+    # GP 日级数据 (连板率/次日红盘率/机构等, 盘前/盘后用): 每 code 最新 date
+    try:
+        ctx.gp_df = query_df(con, f"SELECT * FROM qd_stock_gpjy "
+                              f"WHERE date > '{cutoff(days=30)}'")
+    except Exception as e:
+        logger.warning('GP 加载失败: {}', e)
     try:
         # c3 daily 写 qd_stock_daily (含 ZTPrice/fLianB/CJJEPre1 等日级字段)
         # c3 intraday 写 qd_stock_snapshot (含 ZAF/fHSL/Zjl 等实时字段, 由 snapshot_focus_df 承载)
@@ -266,6 +273,8 @@ def _process_decisions(con, decisions, risk, ctx=None):
         return
     now = datetime.now()
     rows = []
+    # 构造信号列表供 log_signals 批量写入飞书
+    feishu_signals = []
     for d in decisions:
         # buy: 仓位风控 (情绪不再拦截 — 系统定位是"呈现事实", 不是替用户决策;
         #   情绪作为 p17 的建议呈现, 不阻断策略。see SESSION_HANDOVER 定位修正)
@@ -279,29 +288,28 @@ def _process_decisions(con, decisions, risk, ctx=None):
             reason = '{} [评分{:.0f}]'.format(reason, d.score)
         rows.append((now, d.code, d.strategy, d.action,
                      d.position_pct, d.price, reason))
-        # 飞书推送:
-        # - buy/sell: 关键决策, 必推 (不频控, 每条都到)
-        # - watch/warn: 高频噪声, 接 Deduper 180s 频控 (避免 60s 一轮刷屏)
-        # H3 修复 (ARCHITECTURE_REVIEW): 之前 watch/warn 只入库不推, 看不到 p17/p18 提示
+        # 信号收集: buy/sell 必推, watch/warn 走频控
         if d.action in ('buy', 'sell', 'watch', 'warn'):
             from lib.notify_dedup import allow_push
             if d.action in ('watch', 'warn'):
-                # 高频动作走 Deduper, critical=False (频控生效)
                 if not allow_push(d.code, d.action):
                     logger.debug('飞书频控拦截 {} {} (180s TTL 内已推过)', d.code, d.action)
                     continue
-            try:
-                lark.push_decision({
-                    'decision_time': now,
-                    'code': d.code,
-                    'strategy_name': d.strategy,
-                    'action': d.action,
-                    'position_size': d.position_pct,
-                    'price': d.price,
-                    'reason': reason,
-                })
-            except Exception as e:
-                logger.warning('飞书推送失败 {} {}: {}', d.code, d.action, e)
+            feishu_signals.append({
+                'decision_time': now,
+                'code': d.code,
+                'strategy_name': d.strategy,
+                'action': d.action,
+                'position_size': d.position_pct,
+                'price': d.price,
+                'reason': reason,
+            })
+    # 批量写入飞书 (推送+Sheet+Bitable)
+    if feishu_signals:
+        try:
+            _feishu.log_signals(feishu_signals)
+        except Exception as e:
+            logger.warning('飞书写入失败: {}', e)
     if rows:
         n = executemany_batch(con, 'qd_decisions', _DECISION_COLS, rows)
         logger.info('写入 qd_decisions: {} 行', n)

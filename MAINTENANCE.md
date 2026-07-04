@@ -106,7 +106,7 @@ K:\QuestDB_test\
 │   ├── auction_monitor.py  # 竞价监控 (09:15-09:30 / 14:57-15:00)
 │   └── daily_close.py      # 盘后更新 (15:05)
 ├── logs/                   # 日志目录 (按模块+日期分文件, 保留 30 天)
-├── _e2e.py                 # 端到端验证脚本
+├── e2e.py                   # 端到端验证脚本
 ├── requirements.txt        # Python 依赖
 └── MAINTENANCE.md          # 本文件
 ```
@@ -541,7 +541,7 @@ GROUP BY strategy_name;
 
 ---
 
-## 12. 端到端验收 (`_e2e.py`)
+## 12. 端到端验收 (`e2e.py`)
 
 ### 12.1 用途
 
@@ -552,7 +552,7 @@ GROUP BY strategy_name;
 
 ```powershell
 cd K:\QuestDB_test
-python _e2e.py
+python e2e.py
 ```
 
 ### 12.3 流程 (13 步)
@@ -608,7 +608,7 @@ pip install -r requirements.txt
 python ddl/_reset_all.py
 
 # 6. 端到端验收 (5 只样本, 全链路 + 飞书推送)
-python _e2e.py
+python e2e.py
 
 # 7. 全天自动调度 (交易日 09:15 前启动)
 python runner/scheduler.py
@@ -619,7 +619,7 @@ python runner/scheduler.py
 | 场景 | 命令 | 时机 |
 |------|------|------|
 | 全天自动运行 | `python runner/scheduler.py` | 交易日 09:15 前 |
-| 端到端验收 | `python _e2e.py` | 改动后回归 |
+| 端到端验收 | `python e2e.py` | 改动后回归 |
 | 重置表 | `python ddl/_reset_all.py` | DDL 变更后 |
 | 手动跑某模块 | `python collect/c1_pricevol.py --limit 10` | 调试 |
 | 查 Web Console | 浏览器 `http://localhost:9000` | 查数据/跑 SQL |

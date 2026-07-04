@@ -28,7 +28,8 @@ from loguru import logger  # noqa: E402
 
 from lib.qdb import connect, query_df, executemany_batch, cutoff  # noqa: E402
 from lib.tq_client import safe_call, init, close  # noqa: E402
-from lib import lark  # noqa: E402
+import importlib as _il
+_feishu = _il.import_module('4_feishu')  # noqa: E402
 from lib.market_clock import is_auction_time, is_trading_day, get_auction_phase  # noqa: E402
 
 from tqcenter import tq  # noqa: E402
@@ -132,25 +133,28 @@ def _process_decisions(con, decisions):
         return
     now = datetime.now()
     rows = []
+    feishu_signals = []
     for d in decisions:
         reason = d.reason
         if d.score:
             reason = '{} [评分{:.0f}]'.format(reason, d.score)
         rows.append((now, d.code, d.strategy, d.action,
                      d.position_pct, d.price, reason))
-        if d.action in ('buy', 'sell'):
-            try:
-                lark.push_decision({
-                    'decision_time': now,
-                    'code': d.code,
-                    'strategy_name': d.strategy,
-                    'action': d.action,
-                    'position_size': d.position_pct,
-                    'price': d.price,
-                    'reason': reason,
-                })
-            except Exception as e:
-                logger.warning('飞书推送失败 {} {}: {}', d.code, d.action, e)
+        if d.action in ('buy', 'sell', 'watch', 'warn'):
+            feishu_signals.append({
+                'decision_time': now,
+                'code': d.code,
+                'strategy_name': d.strategy,
+                'action': d.action,
+                'position_size': d.position_pct,
+                'price': d.price,
+                'reason': reason,
+            })
+    if feishu_signals:
+        try:
+            _feishu.log_signals(feishu_signals)
+        except Exception as e:
+            logger.warning('飞书写入失败: {}', e)
     if rows:
         n = executemany_batch(con, 'qd_decisions', _DECISION_COLS, rows)
         logger.info('写入 qd_decisions: {} 行', n)

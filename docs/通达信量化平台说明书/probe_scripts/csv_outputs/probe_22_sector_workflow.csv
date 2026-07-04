@@ -1,0 +1,7 @@
+﻿步骤,模式,结果,时间
+create_sector,WRITE,"{""ErrorId"":""0"",""Msg"":""创建PROBE_T板块成功"",""run_id"":""14""}
+",2026-06-30 03:23:58
+send_user_block,WRITE,"{'ErrorId': '0', 'Msg': 'Add User Block Completed', 'run_id': '14'}",2026-06-30 03:23:58
+get_stock_list_in_sector,READ,[],2026-06-30 03:23:58
+delete_sector,WRITE(清理),"{""ErrorId"":""0"",""Msg"":""删除PROBE_T板块成功"",""run_id"":""14""}
+",2026-06-30 03:23:58

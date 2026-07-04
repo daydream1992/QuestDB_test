@@ -26,13 +26,19 @@ from strategy.registry import StrategyRegistry
 _AMOUNT_MIN = 5e8               # 成交额 >= 5亿 (流动性)
 _HSL_MIN, _HSL_MAX = 3.0, 20.0  # 换手 3%-20%
 _SECTOR_ZT_MIN = 3              # 板块内涨停 >= 3 (涨停潮)
+# GP 股性筛选 (B1+B2: 连板率+次日红盘率, 数据来自 qd_stock_gpjy 近1年统计)
+_GP40_LB_RATE_MIN = 20.0        # 近1年连板率 >= 20% (p80分位, 筛能连板的活跃股)
+_GP39_NEXT_RED_MIN = 70.0       # 近1年次日红盘率 >= 70% (p70, T+1命门: 选次日大概率溢价的)
 
 
 def _safe_float(v, default=0.0) -> float:
     try:
-        return float(v)
+        r = float(v)
     except (TypeError, ValueError):
         return default
+    if r != r:  # NaN (pandas merge 产生, 不过滤会让筛选条件 nan<x 失效误通过)
+        return default
+    return r
 
 
 @StrategyRegistry.register
@@ -57,6 +63,19 @@ class ZtDabanStrategy(StrategyBase):
             df = snap.sort_values('snapshot_time').groupby('code', as_index=False).last()[needed]
         else:
             df = snap.groupby('code', as_index=False).last()[needed]
+
+        # GP 股性 merge (B1+B2: 连板率/次日红盘率, 从 ctx.gp_df 每code最新)
+        gp = ctx.gp_df
+        if gp is not None and not gp.empty and 'code' in gp.columns:
+            gp_need = [c for c in ('code', 'gp40_lb_rate', 'gp39_next_red_rate', 'gp38_zt_cnt') if c in gp.columns]
+            if 'snapshot_time' in gp.columns:
+                gp_l = gp.sort_values('date').groupby('code', as_index=False).last()[gp_need]
+            else:
+                gp_l = gp.groupby('code', as_index=False).last()[gp_need]
+            df = df.merge(gp_l, on='code', how='left')
+        else:
+            df['gp40_lb_rate'] = None
+            df['gp39_next_red_rate'] = None
 
         # 真封板: FCAmo > 0 (权威涨跌停判定, 有买单封单)
         zt_df = df[df['FCAmo'].apply(lambda v: _safe_float(v) > 0)]
@@ -88,12 +107,21 @@ class ZtDabanStrategy(StrategyBase):
                 cnt = max(cnt, sector_zt.get(s.get('block_code'), 0))
             if cnt < _SECTOR_ZT_MIN:
                 continue
-            # 评分: 封单额(万)/1万 + 板块潮*3 + 量比*2
-            score = min(100.0, 50.0 + fcamo / 1e4 + cnt * 3 + lianb * 2)
+            # B1+B2 GP 股性筛选: 连板率 + 次日红盘率 (T+1打板核心)
+            lb_rate = _safe_float(r.get('gp40_lb_rate'))
+            red_rate = _safe_float(r.get('gp39_next_red_rate'))
+            if lb_rate < _GP40_LB_RATE_MIN:
+                continue
+            if red_rate < _GP39_NEXT_RED_MIN:
+                continue
+            # 评分: 封单额 + 板块潮 + 量比 + 连板率 + 次日红盘率
+            score = min(100.0, 50.0 + fcamo / 1e4 + cnt * 3 + lianb * 2
+                        + lb_rate * 0.3 + (red_rate - 70) * 0.5)
             decisions.append(Decision(
                 action='buy', code=code, strategy=self.name,
                 reason=f'涨停打板: 封单{fcamo / 1e4:.0f}万 量比{lianb:.1f} '
-                       f'板块涨停{cnt}只 成交额{amt / 1e8:.2f}亿 换手{hsl:.1f}%',
+                       f'板块涨停{cnt}只 成交额{amt / 1e8:.2f}亿 换手{hsl:.1f}% '
+                       f'连板率{lb_rate:.0f}% 次日红盘{red_rate:.0f}%',
                 position_pct=10, stop_loss=5, stop_profit=10,
                 price=_safe_float(r.get('Now')), score=score,
             ))

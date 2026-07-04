@@ -24,7 +24,8 @@ from loguru import logger  # noqa: E402
 from lib.qdb import connect, query_df, executemany_batch, cutoff  # noqa: E402
 from lib.tq_client import init, close  # noqa: E402
 from lib.tq_utils import fetch_all_codes  # noqa: E402
-from lib import lark  # noqa: E402
+import importlib as _il
+_feishu = _il.import_module('4_feishu')  # noqa: E402
 
 import collect.c3_more_info as c3  # noqa: E402
 import collect.c6_lhb as c6  # noqa: E402
@@ -93,13 +94,31 @@ def run(con=None):
         # 3. 策略评估
         n3 = _eval_strategies(con)
 
-        # 4. 飞书汇报当日总结
+        # 4. 飞书汇报当日总结 + 生成日终报告文档
         msg = ('[daily_close] 当日总结\n'
                '  日级采集: {}\n'
                '  龙虎榜: {}\n'
                '  策略评估: {} 条\n'
                '  时间: {}').format(n1, n2, n3, datetime.now())
-        lark.push_text(msg)
+        _feishu.push_text(msg)
+        # 日终策略报告文档
+        try:
+            from lib.qdb import query_df as _qdf
+            decisions_df = _qdf(
+                con, f"SELECT * FROM qd_decisions "
+                     f"WHERE decision_time > '{cutoff(days=1)}' ORDER BY decision_time DESC")
+            report_lines = ['## 当日决策\n']
+            if decisions_df is not None and not decisions_df.empty:
+                for _, r in decisions_df.head(50).iterrows():
+                    report_lines.append(
+                        f"- {r.get('decision_time','')} {r.get('code','')} "
+                        f"{r.get('strategy_name','')} {r.get('action','')} "
+                        f"{r.get('reason','')}")
+            else:
+                report_lines.append('当日无决策')
+            _feishu.create_daily_report('策略日报', '\n'.join(report_lines))
+        except Exception as e:
+            logger.warning('日终报告生成失败: {}', e)
         logger.info('===== daily_close 完成 =====')
     finally:
         if own_con:

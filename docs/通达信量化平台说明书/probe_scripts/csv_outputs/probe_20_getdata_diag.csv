@@ -1,0 +1,4 @@
+﻿场景,Data条数,get顶层keys,探测时间
+set_data_info→get,5,"['Code', 'ErrorId', 'Value']",2026-06-30 03:09:08
+set_info→计算→get,5,,2026-06-30 03:09:08
+set_data→get,5,,2026-06-30 03:09:08

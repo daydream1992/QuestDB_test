@@ -87,10 +87,10 @@ class BreakPressureStrategy(StrategyBase):
             if vol_ratio < _VOL_RATIO_MIN:
                 continue
             score = min(100.0, 60.0 + chg * 5 + vol_ratio * 5)
+            # A3 降权: buy → watch (突破是结果非因, T+1追突破常被埋; 改呈现不诱导)
             decisions.append(Decision(
-                action='buy', code=code, strategy=self.name,
-                reason=f'突破压力位: 涨幅{chg:.2f}% 量比{vol_ratio:.2f}',
-                position_pct=10, stop_loss=5, stop_profit=15,
+                action='watch', code=code, strategy=self.name,
+                reason=f'突破压力位(参考): 涨幅{chg:.2f}% 量比{vol_ratio:.2f}',
                 price=_safe_float(r.get('Now')), score=score,
             ))
         return decisions

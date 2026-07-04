@@ -1,0 +1,8 @@
+﻿探测项,代码/参数,结果,样本,时间
+get_relation,600519.SH,45,"[{'BlockCode': '881130.SH', 'BlockName': '酿酒', 'BlockType': '行业', 'GPNume': '36'}, {'BlockCode': '88",2026-06-30 03:43:42
+get_relation,000001.SZ,36,"[{'BlockCode': '881386.SH', 'BlockName': '全国性银行', 'BlockType': '行业', 'GPNume': '15'}, {'BlockCode': ",2026-06-30 03:43:42
+get_relation,300750.SZ,70,"[{'BlockCode': '881262.SH', 'BlockName': '电池', 'BlockType': '行业', 'GPNume': '99'}, {'BlockCode': '88",2026-06-30 03:43:42
+exec_to_tdx,,"{'ErrorId': '0', 'Msg': '', 'run_id': '15'}",2026-06-30 03:43:42
+exec_to_tdx,about:blank,"{'ErrorId': '0', 'Msg': 'about:blank', 'run_id': '15'}",2026-06-30 03:43:42
+formula_mul_exp,600519.SH,0,"['ENTERLONG', 'EXITLONG']",2026-06-30 03:43:42
+formula_mul_exp,000001.SZ,0,"['ENTERLONG', 'EXITLONG']",2026-06-30 03:43:42

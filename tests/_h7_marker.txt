@@ -1,0 +1,8 @@
+# _h7_marker.txt 已迁移到这里
+
+此占位符文件已不再活跃。原位置 `tests/_h7_marker.txt` 仅作历史保留。
+
+内容：单行 `RUNNING_PID=21156`。H7 任务（scheduler 子进程 Job Object）目前处于未完成状态，
+该 PID 仅作为占位记录。
+
+业务代码无任何引用。

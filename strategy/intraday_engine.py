@@ -28,7 +28,8 @@ if _PROJ_ROOT not in sys.path:
 from loguru import logger  # noqa: E402
 
 from lib.qdb import executemany_batch, cutoff  # noqa: E402
-from lib import lark  # noqa: E402
+import importlib as _il
+_feishu = _il.import_module('4_feishu')  # noqa: E402
 from lib.limit_rule import is_at_limit_up  # noqa: E402
 from lib.notify_dedup import allow_push  # noqa: E402
 
@@ -162,13 +163,21 @@ def run(con, snapshot_df, watchlist=None):
             logger.warning('写 qd_intraday_event 失败: {}', e)
     if pushed:
         try:
-            lines = []
+            feishu_signals = []
             for code, etype, desc, critical in pushed:
-                tag = '🔴' if critical else '·'
-                lines.append(f'{tag} {code} {etype} {desc}')
-            lark.push_text('【盘中异动】\n' + '\n'.join(lines))
+                feishu_signals.append({
+                    'code': code,
+                    'strategy_name': 'intraday_engine',
+                    'action': etype,
+                    'reason': desc,
+                    'decision_time': now,
+                    'price': None,
+                    'position_size': 0,
+                })
+            # 异动只推+写表格, 不再单独 push_text (log_signals 内含推送)
+            _feishu.log_signals(feishu_signals, sheet=True, bitable=True)
         except Exception as e:
-            logger.warning('异动飞书推送失败: {}', e)
+            logger.warning('异动飞书写入失败: {}', e)
     logger.info('intraday_engine: 检测 {} 事件, 推送 {}', len(events), len(pushed))
     return len(events)
 

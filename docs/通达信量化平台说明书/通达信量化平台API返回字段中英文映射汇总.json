@@ -1,0 +1,4434 @@
+{
+  "meta": {
+    "title": "通达信量化平台 API 返回字段中英文映射汇总",
+    "source_file": "通达信量化平台API返回字段中英文映射汇总.md",
+    "generated_at": "2026-06-21 23:53:38",
+    "section_count": 9,
+    "interface_count": 27,
+    "unique_field_count": 405,
+    "constant_count": 24
+  },
+  "sections": {
+    "一、行情类接口返回字段映射": {
+      "get_market_data": {
+        "description": "获取K线行情",
+        "fields": {
+          "Date": {
+            "cn": "日期",
+            "desc": "交易日期"
+          },
+          "Time": {
+            "cn": "时间",
+            "desc": "交易时间"
+          },
+          "Open": {
+            "cn": "开盘价",
+            "desc": "开盘价"
+          },
+          "High": {
+            "cn": "最高价",
+            "desc": "最高价"
+          },
+          "Low": {
+            "cn": "最低价",
+            "desc": "最低价"
+          },
+          "Close": {
+            "cn": "收盘价",
+            "desc": "收盘价"
+          },
+          "Volume": {
+            "cn": "成交量",
+            "desc": "成交量（股）"
+          },
+          "Amount": {
+            "cn": "成交额",
+            "desc": "成交金额（元）"
+          },
+          "ForwardFactor": {
+            "cn": "前复权因子",
+            "desc": "dividend_type=none 时有效"
+          },
+          "VolInStock": {
+            "cn": "持仓量",
+            "desc": "期货数据时有值"
+          }
+        }
+      },
+      "get_market_snapshot": {
+        "description": "获取快照数据",
+        "fields": {
+          "ItemNum": {
+            "cn": "快照笔数",
+            "desc": ""
+          },
+          "LastClose": {
+            "cn": "前收盘价",
+            "desc": ""
+          },
+          "Open": {
+            "cn": "开盘价",
+            "desc": ""
+          },
+          "Max": {
+            "cn": "最高价",
+            "desc": ""
+          },
+          "Min": {
+            "cn": "最低价",
+            "desc": ""
+          },
+          "Now": {
+            "cn": "现价",
+            "desc": ""
+          },
+          "Volume": {
+            "cn": "总手",
+            "desc": ""
+          },
+          "NowVol": {
+            "cn": "现手",
+            "desc": ""
+          },
+          "Amount": {
+            "cn": "总成交金额",
+            "desc": ""
+          },
+          "Inside": {
+            "cn": "内盘/跌停家数",
+            "desc": ""
+          },
+          "Outside": {
+            "cn": "外盘/涨停家数",
+            "desc": ""
+          },
+          "TickDiff": {
+            "cn": "笔涨跌",
+            "desc": ""
+          },
+          "InOutFlag": {
+            "cn": "内外盘标志",
+            "desc": ""
+          },
+          "Jjjz": {
+            "cn": "基金净值",
+            "desc": ""
+          },
+          "Buyp": {
+            "cn": "买价（5档）",
+            "desc": ""
+          },
+          "Buyv": {
+            "cn": "买量（5档）",
+            "desc": ""
+          },
+          "Sellp": {
+            "cn": "卖价（5档）",
+            "desc": ""
+          },
+          "Sellv": {
+            "cn": "卖量（5档）",
+            "desc": ""
+          },
+          "UpHome": {
+            "cn": "上涨家数",
+            "desc": ""
+          },
+          "DownHome": {
+            "cn": "下跌家数",
+            "desc": ""
+          },
+          "Before5MinNow": {
+            "cn": "5分钟前价格",
+            "desc": ""
+          },
+          "Average": {
+            "cn": "均价",
+            "desc": ""
+          },
+          "XsFlag": {
+            "cn": "价格小数位数",
+            "desc": ""
+          },
+          "Zangsu": {
+            "cn": "涨速",
+            "desc": ""
+          },
+          "ZAFPre3": {
+            "cn": "3日涨幅",
+            "desc": ""
+          }
+        }
+      },
+      "get_stock_info": {
+        "description": "获取证券基本信息",
+        "fields": {
+          "Name": {
+            "cn": "证券名称",
+            "desc": ""
+          },
+          "Unit": {
+            "cn": "交易单位",
+            "desc": ""
+          },
+          "VolBase": {
+            "cn": "量比的基量",
+            "desc": ""
+          },
+          "MinPrice": {
+            "cn": "最小价格变动",
+            "desc": ""
+          },
+          "XsFlag": {
+            "cn": "价格小数位数",
+            "desc": ""
+          },
+          "Fz": {
+            "cn": "开收市时间（4段）",
+            "desc": ""
+          },
+          "DelayMin": {
+            "cn": "延时分钟数",
+            "desc": ""
+          },
+          "QHVolBaseRate": {
+            "cn": "期货期权的每手乘数",
+            "desc": ""
+          },
+          "HKVolBaseRate": {
+            "cn": "港股/日股/新加坡股每手股数",
+            "desc": ""
+          },
+          "BelongHS300": {
+            "cn": "是否属于沪深300",
+            "desc": ""
+          },
+          "BelongHasKQZ": {
+            "cn": "是否含可转债",
+            "desc": ""
+          },
+          "BelongRZRQ": {
+            "cn": "是否融资融券标的",
+            "desc": ""
+          },
+          "BelongHSGT": {
+            "cn": "是否属于沪深股通",
+            "desc": ""
+          },
+          "IsHKGP": {
+            "cn": "是否是港股",
+            "desc": ""
+          },
+          "IsQH": {
+            "cn": "是否是期货",
+            "desc": ""
+          },
+          "IsQQ": {
+            "cn": "是否是期权",
+            "desc": ""
+          },
+          "IsSTGP": {
+            "cn": "是否是ST股票",
+            "desc": ""
+          },
+          "IsQuitGP": {
+            "cn": "是否退市整理板股票",
+            "desc": ""
+          },
+          "TodayDRFlag": {
+            "cn": "当天是否除权除息",
+            "desc": ""
+          },
+          "HSStockKind": {
+            "cn": "沪深京品种类型（0指数/1主板/2北证/3创业板/4科创板/5B股/6债券/7基金/8权证/9其它/10非沪深京）",
+            "desc": ""
+          },
+          "ActiveCapital": {
+            "cn": "流通股本（万股）",
+            "desc": ""
+          },
+          "J_zgb": {
+            "cn": "总股本（万股）",
+            "desc": ""
+          },
+          "J_bg": {
+            "cn": "B股（万股）",
+            "desc": ""
+          },
+          "J_hg": {
+            "cn": "H股（万股）",
+            "desc": ""
+          },
+          "J_ldzc": {
+            "cn": "流动资产（万元）",
+            "desc": ""
+          },
+          "J_gdzc": {
+            "cn": "固定资产（万元）",
+            "desc": ""
+          },
+          "J_wxzc": {
+            "cn": "无形资产（万元）",
+            "desc": ""
+          },
+          "J_ldfz": {
+            "cn": "流动负债（万元）",
+            "desc": ""
+          },
+          "J_cqfz": {
+            "cn": "少数股东权益（万元）",
+            "desc": ""
+          },
+          "J_zbgjj": {
+            "cn": "资本公积金（万元）",
+            "desc": ""
+          },
+          "J_jzc": {
+            "cn": "股东权益/净资产（万元）",
+            "desc": ""
+          },
+          "J_yysy": {
+            "cn": "营业收入",
+            "desc": ""
+          },
+          "J_yycb": {
+            "cn": "营业成本",
+            "desc": ""
+          },
+          "J_yszk": {
+            "cn": "应收账款",
+            "desc": ""
+          },
+          "J_yyly": {
+            "cn": "营业利润",
+            "desc": ""
+          },
+          "J_tzsy": {
+            "cn": "投资收益",
+            "desc": ""
+          },
+          "J_jyxjl": {
+            "cn": "经营现金净流量",
+            "desc": ""
+          },
+          "J_zxjl": {
+            "cn": "总现金净流量",
+            "desc": ""
+          },
+          "J_ch": {
+            "cn": "存货",
+            "desc": ""
+          },
+          "J_lyze": {
+            "cn": "利润总额",
+            "desc": ""
+          },
+          "J_shly": {
+            "cn": "税后利润",
+            "desc": ""
+          },
+          "J_jly": {
+            "cn": "净利润",
+            "desc": ""
+          },
+          "J_wfply": {
+            "cn": "未分配利润",
+            "desc": ""
+          },
+          "J_jyl": {
+            "cn": "净资产收益率",
+            "desc": ""
+          },
+          "J_mgwfp": {
+            "cn": "每股未分配",
+            "desc": ""
+          },
+          "J_mgsy": {
+            "cn": "每股收益（折算为全年）",
+            "desc": ""
+          },
+          "J_mgsy2": {
+            "cn": "季报每股收益",
+            "desc": ""
+          },
+          "J_mggjj": {
+            "cn": "每股公积金",
+            "desc": ""
+          },
+          "J_mgjzc": {
+            "cn": "每股净资产",
+            "desc": ""
+          },
+          "J_mgjzc2": {
+            "cn": "季报每股净资产",
+            "desc": ""
+          },
+          "J_gdqyb": {
+            "cn": "股东权益比",
+            "desc": ""
+          },
+          "J_gdrs": {
+            "cn": "股东人数",
+            "desc": ""
+          },
+          "J_HalfYearFlag": {
+            "cn": "报告期月份（3,6,9,12）",
+            "desc": ""
+          },
+          "J_start": {
+            "cn": "上市日期",
+            "desc": ""
+          },
+          "tdx_dycode": {
+            "cn": "通达信地域代码",
+            "desc": ""
+          },
+          "tdx_dyname": {
+            "cn": "通达信地域",
+            "desc": ""
+          },
+          "rs_hycode_sim": {
+            "cn": "通达信行业代码",
+            "desc": ""
+          },
+          "rs_hyname": {
+            "cn": "通达信行业",
+            "desc": ""
+          },
+          "blockzscode": {
+            "cn": "所属行业板块指数代码",
+            "desc": ""
+          },
+          "underly_setcode": {
+            "cn": "标的市场代码（如ETF跟踪的指数）",
+            "desc": ""
+          },
+          "underly_code": {
+            "cn": "标的代码（如ETF跟踪的指数代码）",
+            "desc": ""
+          }
+        }
+      },
+      "get_more_info": {
+        "description": "获取股票更多信息",
+        "fields": {
+          "MainBusiness": {
+            "cn": "主营构成",
+            "desc": ""
+          },
+          "SafeValue": {
+            "cn": "安全分",
+            "desc": ""
+          },
+          "ShineValue": {
+            "cn": "亮点数",
+            "desc": ""
+          },
+          "ShapeValue": {
+            "cn": "短期形态+中期形态+长期形态编号",
+            "desc": ""
+          },
+          "TPFlag": {
+            "cn": "停牌标识",
+            "desc": ""
+          },
+          "ZTPrice": {
+            "cn": "涨停价",
+            "desc": ""
+          },
+          "DTPrice": {
+            "cn": "跌停价",
+            "desc": ""
+          },
+          "HqDate": {
+            "cn": "行情日期",
+            "desc": ""
+          },
+          "fHSL": {
+            "cn": "换手率",
+            "desc": ""
+          },
+          "fLianB": {
+            "cn": "量比",
+            "desc": ""
+          },
+          "Wtb": {
+            "cn": "委比",
+            "desc": ""
+          },
+          "Zsz": {
+            "cn": "总市值（亿）",
+            "desc": ""
+          },
+          "Ltsz": {
+            "cn": "流通市值（亿）",
+            "desc": ""
+          },
+          "vzangsu": {
+            "cn": "量涨速",
+            "desc": ""
+          },
+          "Fzhsl": {
+            "cn": "分钟换手率",
+            "desc": ""
+          },
+          "FzAmo": {
+            "cn": "2分钟金额（万元）",
+            "desc": ""
+          },
+          "FreeLtgb": {
+            "cn": "自由流通股本（万）",
+            "desc": ""
+          },
+          "VOpenZAF": {
+            "cn": "抢筹涨幅",
+            "desc": ""
+          },
+          "ZAF": {
+            "cn": "涨幅",
+            "desc": ""
+          },
+          "ZAFYesterday": {
+            "cn": "昨日涨幅",
+            "desc": ""
+          },
+          "ZAFPre2D": {
+            "cn": "前天涨幅",
+            "desc": ""
+          },
+          "ZAFPre5": {
+            "cn": "5日涨幅",
+            "desc": ""
+          },
+          "ZAFPre10": {
+            "cn": "10日涨幅",
+            "desc": ""
+          },
+          "ZAFPre20": {
+            "cn": "20日涨幅",
+            "desc": ""
+          },
+          "ZAFPre30": {
+            "cn": "30日涨幅",
+            "desc": ""
+          },
+          "ZAFPre60": {
+            "cn": "60日涨幅",
+            "desc": ""
+          },
+          "ZAFYear": {
+            "cn": "年初至今涨幅",
+            "desc": ""
+          },
+          "ZAFPreMyMonth": {
+            "cn": "本月来涨幅",
+            "desc": ""
+          },
+          "ZAFPreOneYear": {
+            "cn": "一年来涨幅",
+            "desc": ""
+          },
+          "ConZAFDateNum": {
+            "cn": "连涨天数",
+            "desc": ""
+          },
+          "Zjl": {
+            "cn": "主买净额（万元）",
+            "desc": ""
+          },
+          "Zjl_HB": {
+            "cn": "主力净流入（万元）",
+            "desc": ""
+          },
+          "TotalBVol": {
+            "cn": "总买量",
+            "desc": ""
+          },
+          "TotalSVol": {
+            "cn": "总卖量",
+            "desc": ""
+          },
+          "BCancel": {
+            "cn": "总撤买量",
+            "desc": ""
+          },
+          "SCancel": {
+            "cn": "总撤卖量",
+            "desc": ""
+          },
+          "L2TicNum": {
+            "cn": "L2逐笔成交数",
+            "desc": ""
+          },
+          "L2OrderNum": {
+            "cn": "L2逐笔委托数",
+            "desc": ""
+          },
+          "FCAmo": {
+            "cn": "封单额（万元）",
+            "desc": ""
+          },
+          "FCb": {
+            "cn": "封成比",
+            "desc": ""
+          },
+          "OpenAmo": {
+            "cn": "开盘金额（万元）（A股和板块指数有效）",
+            "desc": ""
+          },
+          "OpenZTBuy": {
+            "cn": "竞价涨停买入金额（万元）",
+            "desc": ""
+          },
+          "OpenAmoPre1": {
+            "cn": "昨开盘金额（万元）",
+            "desc": ""
+          },
+          "OpenVolPre1": {
+            "cn": "昨开盘量",
+            "desc": ""
+          },
+          "CJJEPre1": {
+            "cn": "昨成交额（万元）",
+            "desc": ""
+          },
+          "CJJEPre3": {
+            "cn": "3日成交额（万元）",
+            "desc": ""
+          },
+          "FDEPre1": {
+            "cn": "昨封单额（万元）",
+            "desc": ""
+          },
+          "FDEPre2": {
+            "cn": "前封单额（万元）",
+            "desc": ""
+          },
+          "ZTGPNum": {
+            "cn": "板块指数的涨停家数",
+            "desc": ""
+          },
+          "LastStartZT": {
+            "cn": "几天",
+            "desc": ""
+          },
+          "LastZTHzNum": {
+            "cn": "几板",
+            "desc": ""
+          },
+          "EverZTCount": {
+            "cn": "连板天数",
+            "desc": ""
+          },
+          "YearZTDay": {
+            "cn": "年涨停天数",
+            "desc": ""
+          },
+          "MA5Value": {
+            "cn": "5日均价",
+            "desc": ""
+          },
+          "HisHigh": {
+            "cn": "52周最高",
+            "desc": ""
+          },
+          "HisLow": {
+            "cn": "52周最低",
+            "desc": ""
+          },
+          "IPO_Price": {
+            "cn": "发行价",
+            "desc": ""
+          },
+          "More_YJL": {
+            "cn": "ETF/LOF溢价率",
+            "desc": ""
+          },
+          "BetaValue": {
+            "cn": "贝塔系数",
+            "desc": ""
+          },
+          "DynaPE": {
+            "cn": "动态市盈率",
+            "desc": ""
+          },
+          "MorePE": {
+            "cn": "市盈率",
+            "desc": ""
+          },
+          "StaticPE_TTM": {
+            "cn": "市盈率（TTM）",
+            "desc": ""
+          },
+          "DYRatio": {
+            "cn": "股息率",
+            "desc": ""
+          },
+          "PB_MRQ": {
+            "cn": "市净率（MRQ）",
+            "desc": ""
+          },
+          "IsT0Fund": {
+            "cn": "是否是T+0基金",
+            "desc": ""
+          },
+          "IsZCZGP": {
+            "cn": "是否是注册制A股",
+            "desc": ""
+          },
+          "IsKzz": {
+            "cn": "是否是可转债",
+            "desc": ""
+          },
+          "Kzz_HSCode": {
+            "cn": "可转债对应的正股代码",
+            "desc": ""
+          },
+          "QHMainYYMM": {
+            "cn": "主力合约关联的月份（期货）",
+            "desc": ""
+          },
+          "Yield": {
+            "cn": "应计利息（债券）/占款天数（回购）",
+            "desc": ""
+          },
+          "KfEarnMoney": {
+            "cn": "扣非净利润（万元）",
+            "desc": ""
+          },
+          "RDInputFee": {
+            "cn": "研发费用（万元）",
+            "desc": ""
+          },
+          "CashZJ": {
+            "cn": "货币资金（万元）",
+            "desc": ""
+          },
+          "PreReceiveZJ": {
+            "cn": "合同负债（万元）",
+            "desc": ""
+          },
+          "OtherQYJzc": {
+            "cn": "其它权益工具（万元）",
+            "desc": ""
+          },
+          "StaffNum": {
+            "cn": "员工人数",
+            "desc": ""
+          },
+          "RecentGGJYDate": {
+            "cn": "最近北上大额交易日",
+            "desc": ""
+          },
+          "RecentHGDate": {
+            "cn": "最近回购预案日",
+            "desc": ""
+          },
+          "RecentIncentDate": {
+            "cn": "最近股权激励预案日",
+            "desc": ""
+          },
+          "NoticeDate_Recent": {
+            "cn": "最近业绩预告日",
+            "desc": ""
+          },
+          "RecentReleaseDate": {
+            "cn": "最近解禁日",
+            "desc": ""
+          },
+          "RecentDZDate": {
+            "cn": "最近定增日",
+            "desc": ""
+          },
+          "ReportDate": {
+            "cn": "最近财报公告日期",
+            "desc": ""
+          },
+          "ZTDate_Recent": {
+            "cn": "近2年最近涨停板日期",
+            "desc": ""
+          },
+          "DTDate_Recent": {
+            "cn": "近2年最近跌停板日期",
+            "desc": ""
+          },
+          "TopDate_Recent": {
+            "cn": "近2年最近龙虎榜日期",
+            "desc": ""
+          },
+          "StopJYDate_Recent": {
+            "cn": "最近停牌日期",
+            "desc": ""
+          }
+        }
+      }
+    },
+    "二、财务类接口返回字段映射": {
+      "get_finance_data": {
+        "description": "获取财务数据",
+        "fields": {
+          "RDate": {
+            "cn": "报告期",
+            "desc": ""
+          },
+          "RType": {
+            "cn": "报告类型（1中报/2三季报/3年报/4一季报/5半年/6三季度/7全年）",
+            "desc": ""
+          },
+          "TotalCapitalStock": {
+            "cn": "总股本（股）",
+            "desc": ""
+          },
+          "CirculateA": {
+            "cn": "A股流通股本",
+            "desc": ""
+          },
+          "CirculateB": {
+            "cn": "B股流通股本",
+            "desc": ""
+          },
+          "CirculateH": {
+            "cn": "H股流通股本",
+            "desc": ""
+          },
+          "TotalAssets": {
+            "cn": "总资产",
+            "desc": ""
+          },
+          "CurrentAssets": {
+            "cn": "流动资产",
+            "desc": ""
+          },
+          "FixedAssets": {
+            "cn": "固定资产",
+            "desc": ""
+          },
+          "IntangibleAssets": {
+            "cn": "无形资产",
+            "desc": ""
+          },
+          "Liability": {
+            "cn": "总负债",
+            "desc": ""
+          },
+          "CurrentLiability": {
+            "cn": "流动负债",
+            "desc": ""
+          },
+          "LongTermLiability": {
+            "cn": "长期负债",
+            "desc": ""
+          },
+          "MinorityInterests": {
+            "cn": "少数股东权益",
+            "desc": ""
+          },
+          "ShareholdersEquity": {
+            "cn": "股东权益",
+            "desc": ""
+          },
+          "CapitalReserve": {
+            "cn": "资本公积金",
+            "desc": ""
+          },
+          "UndistributedProfit": {
+            "cn": "未分配利润",
+            "desc": ""
+          },
+          "OperatingRevenue": {
+            "cn": "营业收入",
+            "desc": ""
+          },
+          "OperatingCost": {
+            "cn": "营业成本",
+            "desc": ""
+          },
+          "OperatingProfit": {
+            "cn": "营业利润",
+            "desc": ""
+          },
+          "InvestmentIncome": {
+            "cn": "投资收益",
+            "desc": ""
+          },
+          "NetCashFlowFromOperating": {
+            "cn": "经营现金净流量",
+            "desc": ""
+          },
+          "NetIncreaseInCashAndCashEquivalents": {
+            "cn": "总现金净流量",
+            "desc": ""
+          },
+          "Inventory": {
+            "cn": "存货",
+            "desc": ""
+          },
+          "TotalProfit": {
+            "cn": "利润总额",
+            "desc": ""
+          },
+          "ProfitAfterTax": {
+            "cn": "税后利润",
+            "desc": ""
+          },
+          "NetProfit": {
+            "cn": "净利润",
+            "desc": ""
+          },
+          "Roe": {
+            "cn": "净资产收益率",
+            "desc": ""
+          },
+          "NetProfitPerShare": {
+            "cn": "每股收益（折算为全年）",
+            "desc": ""
+          },
+          "ReportNetProfitPerShare": {
+            "cn": "季报每股收益",
+            "desc": ""
+          },
+          "CapitalReservePerShare": {
+            "cn": "每股公积金",
+            "desc": ""
+          },
+          "NetAssetValuePerShare": {
+            "cn": "每股净资产",
+            "desc": ""
+          },
+          "ReportNavPerShare": {
+            "cn": "季报每股净资产",
+            "desc": ""
+          },
+          "EquityRatio": {
+            "cn": "股东权益比",
+            "desc": ""
+          },
+          "TotalShareholders": {
+            "cn": "股东人数",
+            "desc": ""
+          },
+          "ListingDate": {
+            "cn": "上市日期",
+            "desc": ""
+          }
+        }
+      },
+      "get_express_data": {
+        "description": "业绩快报",
+        "fields": {
+          "Date": {
+            "cn": "日期",
+            "desc": ""
+          },
+          "Revenue": {
+            "cn": "营业收入",
+            "desc": ""
+          },
+          "NetProfit": {
+            "cn": "净利润",
+            "desc": ""
+          },
+          "EPS": {
+            "cn": "每股收益",
+            "desc": ""
+          },
+          "NAPS": {
+            "cn": "每股净资产",
+            "desc": ""
+          },
+          "ROE": {
+            "cn": "净资产收益率",
+            "desc": ""
+          }
+        }
+      },
+      "get_gross_yield": {
+        "description": "分红数据",
+        "fields": {
+          "Date": {
+            "cn": "除权除息日期",
+            "desc": ""
+          },
+          "Plan": {
+            "cn": "分红方案",
+            "desc": ""
+          },
+          "BonusRatio": {
+            "cn": "送股比例",
+            "desc": ""
+          },
+          "TransferRatio": {
+            "cn": "转股比例",
+            "desc": ""
+          },
+          "DividendRatio": {
+            "cn": "派现比例",
+            "desc": ""
+          },
+          "PlanDate": {
+            "cn": "预案公告日",
+            "desc": ""
+          },
+          "GDRDate": {
+            "cn": "股东大会公告日",
+            "desc": ""
+          },
+          "ExecuteDate": {
+            "cn": "实施方案公告日",
+            "desc": ""
+          }
+        }
+      },
+      "get_right_issue": {
+        "description": "配股数据",
+        "fields": {
+          "Date": {
+            "cn": "缴款起始日期",
+            "desc": ""
+          },
+          "R1Date": {
+            "cn": "缴款截止日期",
+            "desc": ""
+          },
+          "R2Date": {
+            "cn": "配股上市日期",
+            "desc": ""
+          },
+          "R3Date": {
+            "cn": "股权登记日",
+            "desc": ""
+          },
+          "RightIssueRatio": {
+            "cn": "配股比例",
+            "desc": ""
+          },
+          "RightIssuePrice": {
+            "cn": "配股价格",
+            "desc": ""
+          },
+          "RightIssueAmount": {
+            "cn": "配股数量（万股）",
+            "desc": ""
+          },
+          "RightIssueCode": {
+            "cn": "配股代码",
+            "desc": ""
+          },
+          "RightIssueName": {
+            "cn": "配股简称",
+            "desc": ""
+          }
+        }
+      },
+      "get_capital": {
+        "description": "分红派息（除权",
+        "fields": {
+          "Date": {
+            "cn": "除权除息日期",
+            "desc": ""
+          },
+          "DRDate": {
+            "cn": "股权登记日",
+            "desc": ""
+          },
+          "DRPlan": {
+            "cn": "分红方案",
+            "desc": ""
+          },
+          "BonusRatio": {
+            "cn": "送股比例",
+            "desc": ""
+          },
+          "TransferRatio": {
+            "cn": "转股比例",
+            "desc": ""
+          },
+          "DividendRatio": {
+            "cn": "派现比例",
+            "desc": ""
+          },
+          "DRType": {
+            "cn": "分红类型",
+            "desc": ""
+          }
+        }
+      }
+    },
+    "三、板块管理接口返回字段映射": {
+      "get_board_list": {
+        "description": "获取板块列表",
+        "fields": {
+          "BoardCode": {
+            "cn": "板块代码",
+            "desc": ""
+          },
+          "BoardName": {
+            "cn": "板块名称",
+            "desc": ""
+          },
+          "BoardType": {
+            "cn": "板块类型",
+            "desc": ""
+          },
+          "GPNume": {
+            "cn": "成份股数量",
+            "desc": ""
+          }
+        }
+      },
+      "get_board_stock_list": {
+        "description": "获取板块成份股",
+        "fields": {
+          "Code": {
+            "cn": "股票代码",
+            "desc": ""
+          },
+          "Name": {
+            "cn": "股票名称",
+            "desc": ""
+          }
+        }
+      },
+      "get_board_history": {
+        "description": "获取板块历史行情",
+        "fields": {
+          "Date": {
+            "cn": "日期",
+            "desc": ""
+          },
+          "Time": {
+            "cn": "时间",
+            "desc": ""
+          },
+          "Open": {
+            "cn": "开盘价",
+            "desc": ""
+          },
+          "High": {
+            "cn": "最高价",
+            "desc": ""
+          },
+          "Low": {
+            "cn": "最低价",
+            "desc": ""
+          },
+          "Close": {
+            "cn": "收盘价",
+            "desc": ""
+          },
+          "Volume": {
+            "cn": "成交量",
+            "desc": ""
+          },
+          "Amount": {
+            "cn": "成交额",
+            "desc": ""
+          },
+          "ConstituentCount": {
+            "cn": "成分股数量",
+            "desc": ""
+          },
+          "UpCount": {
+            "cn": "上涨家数",
+            "desc": ""
+          },
+          "DownCount": {
+            "cn": "下跌家数",
+            "desc": ""
+          },
+          "EqualCount": {
+            "cn": "平盘家数",
+            "desc": ""
+          },
+          "LeadCode": {
+            "cn": "领涨股代码",
+            "desc": ""
+          },
+          "LeadName": {
+            "cn": "领涨股名称",
+            "desc": ""
+          },
+          "LeadZAF": {
+            "cn": "领涨股涨幅",
+            "desc": ""
+          }
+        }
+      }
+    },
+    "四、可转债 / ETF 类接口返回字段映射": {
+      "get_kzz_data": {
+        "description": "可转债数据",
+        "fields": {
+          "Code": {
+            "cn": "可转债代码",
+            "desc": ""
+          },
+          "Name": {
+            "cn": "可转债名称",
+            "desc": ""
+          },
+          "HSCode": {
+            "cn": "正股代码",
+            "desc": ""
+          },
+          "HSName": {
+            "cn": "正股名称",
+            "desc": ""
+          },
+          "ZQDate": {
+            "cn": "转股起始日",
+            "desc": ""
+          },
+          "ZQEndDate": {
+            "cn": "转股截止日",
+            "desc": ""
+          },
+          "HS_Price": {
+            "cn": "正股现价",
+            "desc": ""
+          },
+          "HG_Price": {
+            "cn": "转股价",
+            "desc": ""
+          },
+          "ZZG": {
+            "cn": "纯债价值",
+            "desc": ""
+          },
+          "ZZB": {
+            "cn": "转股价值",
+            "desc": ""
+          },
+          "PremRate": {
+            "cn": "溢价率",
+            "desc": ""
+          },
+          "StockConvergenceRate": {
+            "cn": "股性活跃度",
+            "desc": ""
+          },
+          "DuraTime": {
+            "cn": "剩余年限（年）",
+            "desc": ""
+          },
+          "ConvRate": {
+            "cn": "转股比例/每张可转债转股数量",
+            "desc": ""
+          },
+          "PayRate": {
+            "cn": "票面利率（%）",
+            "desc": ""
+          },
+          "LeftYear": {
+            "cn": "剩余期限",
+            "desc": ""
+          },
+          "KzzScale": {
+            "cn": "发行规模（亿）",
+            "desc": ""
+          },
+          "CurrScale": {
+            "cn": "余额规模（亿）",
+            "desc": ""
+          },
+          "ChangePriceDate": {
+            "cn": "已调整转股价次数",
+            "desc": ""
+          },
+          "StockRedeemDate": {
+            "cn": "强赎最后交易日",
+            "desc": ""
+          },
+          "PutBackPrice": {
+            "cn": "回售价格",
+            "desc": ""
+          },
+          "PutBackDate": {
+            "cn": "回售起始日",
+            "desc": ""
+          },
+          "CreditRating": {
+            "cn": "信用评级",
+            "desc": ""
+          },
+          "ConvertibleBondType": {
+            "cn": "可转债类型",
+            "desc": ""
+          }
+        }
+      },
+      "get_etf_info": {
+        "description": "ETF基金信息",
+        "fields": {
+          "Code": {
+            "cn": "ETF代码",
+            "desc": ""
+          },
+          "Name": {
+            "cn": "ETF名称",
+            "desc": ""
+          },
+          "FundName": {
+            "cn": "基金全称",
+            "desc": ""
+          },
+          "Manager": {
+            "cn": "管理人",
+            "desc": ""
+          },
+          "Trustee": {
+            "cn": "托管人",
+            "desc": ""
+          },
+          "IssueDate": {
+            "cn": "发行日期",
+            "desc": ""
+          },
+          "ListDate": {
+            "cn": "上市日期",
+            "desc": ""
+          },
+          "EstablishDate": {
+            "cn": "成立日期",
+            "desc": ""
+          },
+          "EndDate": {
+            "cn": "到期日期",
+            "desc": ""
+          },
+          "IndexCode": {
+            "cn": "跟踪指数代码",
+            "desc": ""
+          },
+          "IndexName": {
+            "cn": "跟踪指数名称",
+            "desc": ""
+          },
+          "InvestStyle": {
+            "cn": "投资风格",
+            "desc": ""
+          },
+          "FundType": {
+            "cn": "基金类型",
+            "desc": ""
+          },
+          "Unit": {
+            "cn": "交易单位",
+            "desc": ""
+          },
+          "MinPrice": {
+            "cn": "最小价格变动",
+            "desc": ""
+          },
+          "ManagementFee": {
+            "cn": "管理费率（%）",
+            "desc": ""
+          },
+          "CustodyFee": {
+            "cn": "托管费率（%）",
+            "desc": ""
+          },
+          "SubscriptionFee": {
+            "cn": "申购费率（%）",
+            "desc": ""
+          },
+          "RedemptionFee": {
+            "cn": "赎回费率（%）",
+            "desc": ""
+          }
+        }
+      },
+      "get_etf_nav": {
+        "description": "ETF净值",
+        "fields": {
+          "Date": {
+            "cn": "日期",
+            "desc": ""
+          },
+          "UnitNav": {
+            "cn": "单位净值",
+            "desc": ""
+          },
+          "AccNav": {
+            "cn": "累计净值",
+            "desc": ""
+          },
+          "ReturnRatio": {
+            "cn": "日增长率（%）",
+            "desc": ""
+          },
+          "PremRate": {
+            "cn": "折溢率（%）",
+            "desc": ""
+          }
+        }
+      }
+    },
+    "五、公式调用接口返回字段映射": {
+      "evaluate_formula": {
+        "description": "执行公式",
+        "fields": {
+          "Code": {
+            "cn": "股票代码",
+            "desc": ""
+          },
+          "Date": {
+            "cn": "日期",
+            "desc": ""
+          },
+          "OPEN": {
+            "cn": "开盘价",
+            "desc": "原始价 OHLC"
+          },
+          "HIGH": {
+            "cn": "最高价",
+            "desc": "原始价 OHLC"
+          },
+          "LOW": {
+            "cn": "最低价",
+            "desc": "原始价 OHLC"
+          },
+          "CLOSE": {
+            "cn": "收盘价",
+            "desc": "原始价 OHLC"
+          },
+          "VOL": {
+            "cn": "成交量",
+            "desc": ""
+          },
+          "AMOUNT": {
+            "cn": "成交额",
+            "desc": ""
+          },
+          "MA5": {
+            "cn": "5日均线",
+            "desc": "MA(CLOSE,5)"
+          },
+          "MA10": {
+            "cn": "10日均线",
+            "desc": "MA(CLOSE,10)"
+          },
+          "MA20": {
+            "cn": "20日均线",
+            "desc": "MA(CLOSE,20)"
+          },
+          "MA60": {
+            "cn": "60日均线",
+            "desc": "MA(CLOSE,60)"
+          },
+          "EMA12": {
+            "cn": "12日指数均线",
+            "desc": "EMA(CLOSE,12)"
+          },
+          "EMA26": {
+            "cn": "26日指数均线",
+            "desc": "EMA(CLOSE,26)"
+          },
+          "DIFF": {
+            "cn": "DIF（MACD）",
+            "desc": "EMA12-EMA26"
+          },
+          "DEA": {
+            "cn": "DEA（MACD）",
+            "desc": "EMA(DIFF,9)"
+          },
+          "MACD": {
+            "cn": "MACD柱",
+            "desc": "2*(DIFF-DEA)"
+          },
+          "K": {
+            "cn": "KDJ K值",
+            "desc": ""
+          },
+          "D": {
+            "cn": "KDJ D值",
+            "desc": ""
+          },
+          "J": {
+            "cn": "KDJ J值",
+            "desc": ""
+          },
+          "RSV": {
+            "cn": "未成熟随机值",
+            "desc": ""
+          },
+          "RSI6": {
+            "cn": "6日RSI",
+            "desc": ""
+          },
+          "RSI12": {
+            "cn": "12日RSI",
+            "desc": ""
+          },
+          "BOLL": {
+            "cn": "布林中轨",
+            "desc": ""
+          },
+          "UPPER": {
+            "cn": "布林上轨",
+            "desc": ""
+          },
+          "LOWER": {
+            "cn": "布林下轨",
+            "desc": ""
+          },
+          "SAR": {
+            "cn": "抛物转向",
+            "desc": ""
+          },
+          "OBV": {
+            "cn": "能量潮",
+            "desc": ""
+          },
+          "CCI": {
+            "cn": "顺势指标",
+            "desc": ""
+          },
+          "ATR": {
+            "cn": "真实波幅",
+            "desc": ""
+          },
+          "BBI": {
+            "cn": "多空指数",
+            "desc": ""
+          },
+          "WR": {
+            "cn": "威廉指标",
+            "desc": ""
+          },
+          "MTM": {
+            "cn": "动力指标",
+            "desc": ""
+          },
+          "DMA": {
+            "cn": "平均线差",
+            "desc": ""
+          },
+          "ASI": {
+            "cn": "振动升降指标",
+            "desc": ""
+          },
+          "BIAS6": {
+            "cn": "6日乖离率",
+            "desc": ""
+          },
+          "PSY": {
+            "cn": "心理线",
+            "desc": ""
+          },
+          "CR": {
+            "cn": "中间意愿指标",
+            "desc": ""
+          },
+          "VR": {
+            "cn": "成交量变异率",
+            "desc": ""
+          },
+          "BRAR": {
+            "cn": "情绪指标BRAR",
+            "desc": ""
+          }
+        }
+      }
+    },
+    "六、订阅 / 消息接口返回字段映射": {
+      "subscribe_tick": {
+        "description": "订阅/取消订阅实时行情",
+        "fields": {
+          "Code": {
+            "cn": "股票代码",
+            "desc": ""
+          },
+          "Name": {
+            "cn": "股票名称",
+            "desc": ""
+          },
+          "Time": {
+            "cn": "时间",
+            "desc": ""
+          },
+          "Now": {
+            "cn": "现价",
+            "desc": ""
+          },
+          "LastClose": {
+            "cn": "昨收",
+            "desc": ""
+          },
+          "Open": {
+            "cn": "今开",
+            "desc": ""
+          },
+          "High": {
+            "cn": "最高",
+            "desc": ""
+          },
+          "Low": {
+            "cn": "最低",
+            "desc": ""
+          },
+          "Volume": {
+            "cn": "成交量",
+            "desc": ""
+          },
+          "Amount": {
+            "cn": "成交额",
+            "desc": ""
+          },
+          "ZFA": {
+            "cn": "涨幅",
+            "desc": ""
+          },
+          "AvgPrice": {
+            "cn": "均价",
+            "desc": ""
+          },
+          "Buyp1": {
+            "cn": "买一价",
+            "desc": ""
+          },
+          "Buyv1": {
+            "cn": "买一量",
+            "desc": ""
+          },
+          "Buyp2": {
+            "cn": "买二价",
+            "desc": ""
+          },
+          "Buyv2": {
+            "cn": "买二量",
+            "desc": ""
+          },
+          "Buyp3": {
+            "cn": "买三价",
+            "desc": ""
+          },
+          "Buyv3": {
+            "cn": "买三量",
+            "desc": ""
+          },
+          "Buyp4": {
+            "cn": "买四价",
+            "desc": ""
+          },
+          "Buyv4": {
+            "cn": "买四量",
+            "desc": ""
+          },
+          "Buyp5": {
+            "cn": "买五价",
+            "desc": ""
+          },
+          "Buyv5": {
+            "cn": "买五量",
+            "desc": ""
+          },
+          "Sellp1": {
+            "cn": "卖一价",
+            "desc": ""
+          },
+          "Sellv1": {
+            "cn": "卖一量",
+            "desc": ""
+          },
+          "Sellp2": {
+            "cn": "卖二价",
+            "desc": ""
+          },
+          "Sellv2": {
+            "cn": "卖二量",
+            "desc": ""
+          },
+          "Sellp3": {
+            "cn": "卖三价",
+            "desc": ""
+          },
+          "Sellv3": {
+            "cn": "卖三量",
+            "desc": ""
+          },
+          "Sellp4": {
+            "cn": "卖四价",
+            "desc": ""
+          },
+          "Sellv4": {
+            "cn": "卖四量",
+            "desc": ""
+          },
+          "Sellp5": {
+            "cn": "卖五价",
+            "desc": ""
+          },
+          "Sellv5": {
+            "cn": "卖五量",
+            "desc": ""
+          }
+        }
+      },
+      "get_message": {
+        "description": "获取消息",
+        "fields": {
+          "MsgID": {
+            "cn": "消息唯一标识",
+            "desc": ""
+          },
+          "MsgType": {
+            "cn": "消息类型",
+            "desc": ""
+          },
+          "MsgTime": {
+            "cn": "消息时间",
+            "desc": ""
+          },
+          "Title": {
+            "cn": "消息标题",
+            "desc": ""
+          },
+          "Content": {
+            "cn": "消息内容",
+            "desc": ""
+          },
+          "Priority": {
+            "cn": "优先级",
+            "desc": ""
+          },
+          "From": {
+            "cn": "消息来源",
+            "desc": ""
+          },
+          "ReadFlag": {
+            "cn": "是否已读",
+            "desc": ""
+          }
+        }
+      }
+    },
+    "七、客户端操作接口返回字段映射": {
+      "login": {
+        "description": "登录 / 登出",
+        "fields": {
+          "Status": {
+            "cn": "状态码（0成功）",
+            "desc": ""
+          },
+          "Message": {
+            "cn": "状态信息",
+            "desc": ""
+          },
+          "SessionID": {
+            "cn": "会话ID",
+            "desc": ""
+          },
+          "UserID": {
+            "cn": "用户ID",
+            "desc": ""
+          },
+          "LoginTime": {
+            "cn": "登录时间",
+            "desc": ""
+          }
+        }
+      },
+      "get_account_info": {
+        "description": "账户信息",
+        "fields": {
+          "Account": {
+            "cn": "资金账号",
+            "desc": ""
+          },
+          "CustomerName": {
+            "cn": "客户姓名",
+            "desc": ""
+          },
+          "TotalAssets": {
+            "cn": "总资产",
+            "desc": ""
+          },
+          "AvailableCash": {
+            "cn": "可用资金",
+            "desc": ""
+          },
+          "FrozenCash": {
+            "cn": "冻结资金",
+            "desc": ""
+          },
+          "MarketValue": {
+            "cn": "持仓市值",
+            "desc": ""
+          },
+          "ProfitLoss": {
+            "cn": "盈亏",
+            "desc": ""
+          },
+          "ProfitRate": {
+            "cn": "盈亏比例",
+            "desc": ""
+          },
+          "HoldCount": {
+            "cn": "持仓数量",
+            "desc": ""
+          }
+        }
+      },
+      "get_position_list": {
+        "description": "持仓列表",
+        "fields": {
+          "Code": {
+            "cn": "证券代码",
+            "desc": ""
+          },
+          "Name": {
+            "cn": "证券名称",
+            "desc": ""
+          },
+          "HoldVolume": {
+            "cn": "持仓数量",
+            "desc": ""
+          },
+          "AvailableVolume": {
+            "cn": "可用数量",
+            "desc": ""
+          },
+          "CostPrice": {
+            "cn": "成本价",
+            "desc": ""
+          },
+          "CurrentPrice": {
+            "cn": "现价",
+            "desc": ""
+          },
+          "MarketValue": {
+            "cn": "市值",
+            "desc": ""
+          },
+          "ProfitLoss": {
+            "cn": "盈亏金额",
+            "desc": ""
+          },
+          "ProfitRate": {
+            "cn": "盈亏比例",
+            "desc": ""
+          },
+          "FrozenVolume": {
+            "cn": "冻结数量",
+            "desc": ""
+          }
+        }
+      },
+      "get_order_list": {
+        "description": "委托 / 成交",
+        "fields": {
+          "OrderID": {
+            "cn": "委托编号",
+            "desc": ""
+          },
+          "Code": {
+            "cn": "证券代码",
+            "desc": ""
+          },
+          "Name": {
+            "cn": "证券名称",
+            "desc": ""
+          },
+          "OrderTime": {
+            "cn": "委托时间",
+            "desc": ""
+          },
+          "OrderVolume": {
+            "cn": "委托数量",
+            "desc": ""
+          },
+          "OrderPrice": {
+            "cn": "委托价格",
+            "desc": ""
+          },
+          "OrderType": {
+            "cn": "委托类型（买入/卖出）",
+            "desc": ""
+          },
+          "DealVolume": {
+            "cn": "成交数量",
+            "desc": ""
+          },
+          "DealPrice": {
+            "cn": "成交均价",
+            "desc": ""
+          },
+          "DealAmount": {
+            "cn": "成交金额",
+            "desc": ""
+          },
+          "Status": {
+            "cn": "委托状态",
+            "desc": ""
+          },
+          "StatusText": {
+            "cn": "状态描述",
+            "desc": ""
+          },
+          "CancelFlag": {
+            "cn": "撤单标记",
+            "desc": ""
+          }
+        }
+      }
+    },
+    "八、通用 / 初始化接口返回字段映射": {
+      "init": {
+        "description": "初始化 / 反初始化",
+        "fields": {
+          "Status": {
+            "cn": "状态码（0成功）",
+            "desc": ""
+          },
+          "Message": {
+            "cn": "状态信息",
+            "desc": ""
+          },
+          "Version": {
+            "cn": "版本号",
+            "desc": ""
+          },
+          "APILevel": {
+            "cn": "API等级",
+            "desc": ""
+          }
+        }
+      },
+      "get_security_list": {
+        "description": "获取证券列表",
+        "fields": {
+          "Code": {
+            "cn": "证券代码",
+            "desc": ""
+          },
+          "Name": {
+            "cn": "证券名称",
+            "desc": ""
+          },
+          "Market": {
+            "cn": "所属市场",
+            "desc": ""
+          },
+          "Type": {
+            "cn": "证券类型",
+            "desc": ""
+          }
+        }
+      },
+      "get_market_list": {
+        "description": "获取市场列表",
+        "fields": {
+          "MarketCode": {
+            "cn": "市场代码",
+            "desc": ""
+          },
+          "MarketName": {
+            "cn": "市场名称",
+            "desc": ""
+          },
+          "MarketType": {
+            "cn": "市场类型",
+            "desc": ""
+          }
+        }
+      },
+      "get_trade_date": {
+        "description": "获取交易日",
+        "fields": {
+          "Date": {
+            "cn": "日期（YYYYMMDD）",
+            "desc": ""
+          },
+          "IsTradeDate": {
+            "cn": "是否交易日",
+            "desc": ""
+          }
+        }
+      },
+      "get_server_time": {
+        "description": "服务器时间",
+        "fields": {
+          "ServerTime": {
+            "cn": "服务器时间（HHMMSS）",
+            "desc": ""
+          },
+          "LocalTime": {
+            "cn": "本地时间",
+            "desc": ""
+          }
+        }
+      }
+    },
+    "附录": {}
+  },
+  "by_interface": {
+    "get_market_data": {
+      "section": "一、行情类接口返回字段映射",
+      "description": "获取K线行情",
+      "fields": {
+        "Date": {
+          "cn": "日期",
+          "desc": "交易日期"
+        },
+        "Time": {
+          "cn": "时间",
+          "desc": "交易时间"
+        },
+        "Open": {
+          "cn": "开盘价",
+          "desc": "开盘价"
+        },
+        "High": {
+          "cn": "最高价",
+          "desc": "最高价"
+        },
+        "Low": {
+          "cn": "最低价",
+          "desc": "最低价"
+        },
+        "Close": {
+          "cn": "收盘价",
+          "desc": "收盘价"
+        },
+        "Volume": {
+          "cn": "成交量",
+          "desc": "成交量（股）"
+        },
+        "Amount": {
+          "cn": "成交额",
+          "desc": "成交金额（元）"
+        },
+        "ForwardFactor": {
+          "cn": "前复权因子",
+          "desc": "dividend_type=none 时有效"
+        },
+        "VolInStock": {
+          "cn": "持仓量",
+          "desc": "期货数据时有值"
+        }
+      }
+    },
+    "get_market_snapshot": {
+      "section": "一、行情类接口返回字段映射",
+      "description": "获取快照数据",
+      "fields": {
+        "ItemNum": {
+          "cn": "快照笔数",
+          "desc": ""
+        },
+        "LastClose": {
+          "cn": "前收盘价",
+          "desc": ""
+        },
+        "Open": {
+          "cn": "开盘价",
+          "desc": ""
+        },
+        "Max": {
+          "cn": "最高价",
+          "desc": ""
+        },
+        "Min": {
+          "cn": "最低价",
+          "desc": ""
+        },
+        "Now": {
+          "cn": "现价",
+          "desc": ""
+        },
+        "Volume": {
+          "cn": "总手",
+          "desc": ""
+        },
+        "NowVol": {
+          "cn": "现手",
+          "desc": ""
+        },
+        "Amount": {
+          "cn": "总成交金额",
+          "desc": ""
+        },
+        "Inside": {
+          "cn": "内盘/跌停家数",
+          "desc": ""
+        },
+        "Outside": {
+          "cn": "外盘/涨停家数",
+          "desc": ""
+        },
+        "TickDiff": {
+          "cn": "笔涨跌",
+          "desc": ""
+        },
+        "InOutFlag": {
+          "cn": "内外盘标志",
+          "desc": ""
+        },
+        "Jjjz": {
+          "cn": "基金净值",
+          "desc": ""
+        },
+        "Buyp": {
+          "cn": "买价（5档）",
+          "desc": ""
+        },
+        "Buyv": {
+          "cn": "买量（5档）",
+          "desc": ""
+        },
+        "Sellp": {
+          "cn": "卖价（5档）",
+          "desc": ""
+        },
+        "Sellv": {
+          "cn": "卖量（5档）",
+          "desc": ""
+        },
+        "UpHome": {
+          "cn": "上涨家数",
+          "desc": ""
+        },
+        "DownHome": {
+          "cn": "下跌家数",
+          "desc": ""
+        },
+        "Before5MinNow": {
+          "cn": "5分钟前价格",
+          "desc": ""
+        },
+        "Average": {
+          "cn": "均价",
+          "desc": ""
+        },
+        "XsFlag": {
+          "cn": "价格小数位数",
+          "desc": ""
+        },
+        "Zangsu": {
+          "cn": "涨速",
+          "desc": ""
+        },
+        "ZAFPre3": {
+          "cn": "3日涨幅",
+          "desc": ""
+        }
+      }
+    },
+    "get_stock_info": {
+      "section": "一、行情类接口返回字段映射",
+      "description": "获取证券基本信息",
+      "fields": {
+        "Name": {
+          "cn": "证券名称",
+          "desc": ""
+        },
+        "Unit": {
+          "cn": "交易单位",
+          "desc": ""
+        },
+        "VolBase": {
+          "cn": "量比的基量",
+          "desc": ""
+        },
+        "MinPrice": {
+          "cn": "最小价格变动",
+          "desc": ""
+        },
+        "XsFlag": {
+          "cn": "价格小数位数",
+          "desc": ""
+        },
+        "Fz": {
+          "cn": "开收市时间（4段）",
+          "desc": ""
+        },
+        "DelayMin": {
+          "cn": "延时分钟数",
+          "desc": ""
+        },
+        "QHVolBaseRate": {
+          "cn": "期货期权的每手乘数",
+          "desc": ""
+        },
+        "HKVolBaseRate": {
+          "cn": "港股/日股/新加坡股每手股数",
+          "desc": ""
+        },
+        "BelongHS300": {
+          "cn": "是否属于沪深300",
+          "desc": ""
+        },
+        "BelongHasKQZ": {
+          "cn": "是否含可转债",
+          "desc": ""
+        },
+        "BelongRZRQ": {
+          "cn": "是否融资融券标的",
+          "desc": ""
+        },
+        "BelongHSGT": {
+          "cn": "是否属于沪深股通",
+          "desc": ""
+        },
+        "IsHKGP": {
+          "cn": "是否是港股",
+          "desc": ""
+        },
+        "IsQH": {
+          "cn": "是否是期货",
+          "desc": ""
+        },
+        "IsQQ": {
+          "cn": "是否是期权",
+          "desc": ""
+        },
+        "IsSTGP": {
+          "cn": "是否是ST股票",
+          "desc": ""
+        },
+        "IsQuitGP": {
+          "cn": "是否退市整理板股票",
+          "desc": ""
+        },
+        "TodayDRFlag": {
+          "cn": "当天是否除权除息",
+          "desc": ""
+        },
+        "HSStockKind": {
+          "cn": "沪深京品种类型（0指数/1主板/2北证/3创业板/4科创板/5B股/6债券/7基金/8权证/9其它/10非沪深京）",
+          "desc": ""
+        },
+        "ActiveCapital": {
+          "cn": "流通股本（万股）",
+          "desc": ""
+        },
+        "J_zgb": {
+          "cn": "总股本（万股）",
+          "desc": ""
+        },
+        "J_bg": {
+          "cn": "B股（万股）",
+          "desc": ""
+        },
+        "J_hg": {
+          "cn": "H股（万股）",
+          "desc": ""
+        },
+        "J_ldzc": {
+          "cn": "流动资产（万元）",
+          "desc": ""
+        },
+        "J_gdzc": {
+          "cn": "固定资产（万元）",
+          "desc": ""
+        },
+        "J_wxzc": {
+          "cn": "无形资产（万元）",
+          "desc": ""
+        },
+        "J_ldfz": {
+          "cn": "流动负债（万元）",
+          "desc": ""
+        },
+        "J_cqfz": {
+          "cn": "少数股东权益（万元）",
+          "desc": ""
+        },
+        "J_zbgjj": {
+          "cn": "资本公积金（万元）",
+          "desc": ""
+        },
+        "J_jzc": {
+          "cn": "股东权益/净资产（万元）",
+          "desc": ""
+        },
+        "J_yysy": {
+          "cn": "营业收入",
+          "desc": ""
+        },
+        "J_yycb": {
+          "cn": "营业成本",
+          "desc": ""
+        },
+        "J_yszk": {
+          "cn": "应收账款",
+          "desc": ""
+        },
+        "J_yyly": {
+          "cn": "营业利润",
+          "desc": ""
+        },
+        "J_tzsy": {
+          "cn": "投资收益",
+          "desc": ""
+        },
+        "J_jyxjl": {
+          "cn": "经营现金净流量",
+          "desc": ""
+        },
+        "J_zxjl": {
+          "cn": "总现金净流量",
+          "desc": ""
+        },
+        "J_ch": {
+          "cn": "存货",
+          "desc": ""
+        },
+        "J_lyze": {
+          "cn": "利润总额",
+          "desc": ""
+        },
+        "J_shly": {
+          "cn": "税后利润",
+          "desc": ""
+        },
+        "J_jly": {
+          "cn": "净利润",
+          "desc": ""
+        },
+        "J_wfply": {
+          "cn": "未分配利润",
+          "desc": ""
+        },
+        "J_jyl": {
+          "cn": "净资产收益率",
+          "desc": ""
+        },
+        "J_mgwfp": {
+          "cn": "每股未分配",
+          "desc": ""
+        },
+        "J_mgsy": {
+          "cn": "每股收益（折算为全年）",
+          "desc": ""
+        },
+        "J_mgsy2": {
+          "cn": "季报每股收益",
+          "desc": ""
+        },
+        "J_mggjj": {
+          "cn": "每股公积金",
+          "desc": ""
+        },
+        "J_mgjzc": {
+          "cn": "每股净资产",
+          "desc": ""
+        },
+        "J_mgjzc2": {
+          "cn": "季报每股净资产",
+          "desc": ""
+        },
+        "J_gdqyb": {
+          "cn": "股东权益比",
+          "desc": ""
+        },
+        "J_gdrs": {
+          "cn": "股东人数",
+          "desc": ""
+        },
+        "J_HalfYearFlag": {
+          "cn": "报告期月份（3,6,9,12）",
+          "desc": ""
+        },
+        "J_start": {
+          "cn": "上市日期",
+          "desc": ""
+        },
+        "tdx_dycode": {
+          "cn": "通达信地域代码",
+          "desc": ""
+        },
+        "tdx_dyname": {
+          "cn": "通达信地域",
+          "desc": ""
+        },
+        "rs_hycode_sim": {
+          "cn": "通达信行业代码",
+          "desc": ""
+        },
+        "rs_hyname": {
+          "cn": "通达信行业",
+          "desc": ""
+        },
+        "blockzscode": {
+          "cn": "所属行业板块指数代码",
+          "desc": ""
+        },
+        "underly_setcode": {
+          "cn": "标的市场代码（如ETF跟踪的指数）",
+          "desc": ""
+        },
+        "underly_code": {
+          "cn": "标的代码（如ETF跟踪的指数代码）",
+          "desc": ""
+        }
+      }
+    },
+    "get_more_info": {
+      "section": "一、行情类接口返回字段映射",
+      "description": "获取股票更多信息",
+      "fields": {
+        "MainBusiness": {
+          "cn": "主营构成",
+          "desc": ""
+        },
+        "SafeValue": {
+          "cn": "安全分",
+          "desc": ""
+        },
+        "ShineValue": {
+          "cn": "亮点数",
+          "desc": ""
+        },
+        "ShapeValue": {
+          "cn": "短期形态+中期形态+长期形态编号",
+          "desc": ""
+        },
+        "TPFlag": {
+          "cn": "停牌标识",
+          "desc": ""
+        },
+        "ZTPrice": {
+          "cn": "涨停价",
+          "desc": ""
+        },
+        "DTPrice": {
+          "cn": "跌停价",
+          "desc": ""
+        },
+        "HqDate": {
+          "cn": "行情日期",
+          "desc": ""
+        },
+        "fHSL": {
+          "cn": "换手率",
+          "desc": ""
+        },
+        "fLianB": {
+          "cn": "量比",
+          "desc": ""
+        },
+        "Wtb": {
+          "cn": "委比",
+          "desc": ""
+        },
+        "Zsz": {
+          "cn": "总市值（亿）",
+          "desc": ""
+        },
+        "Ltsz": {
+          "cn": "流通市值（亿）",
+          "desc": ""
+        },
+        "vzangsu": {
+          "cn": "量涨速",
+          "desc": ""
+        },
+        "Fzhsl": {
+          "cn": "分钟换手率",
+          "desc": ""
+        },
+        "FzAmo": {
+          "cn": "2分钟金额（万元）",
+          "desc": ""
+        },
+        "FreeLtgb": {
+          "cn": "自由流通股本（万）",
+          "desc": ""
+        },
+        "VOpenZAF": {
+          "cn": "抢筹涨幅",
+          "desc": ""
+        },
+        "ZAF": {
+          "cn": "涨幅",
+          "desc": ""
+        },
+        "ZAFYesterday": {
+          "cn": "昨日涨幅",
+          "desc": ""
+        },
+        "ZAFPre2D": {
+          "cn": "前天涨幅",
+          "desc": ""
+        },
+        "ZAFPre5": {
+          "cn": "5日涨幅",
+          "desc": ""
+        },
+        "ZAFPre10": {
+          "cn": "10日涨幅",
+          "desc": ""
+        },
+        "ZAFPre20": {
+          "cn": "20日涨幅",
+          "desc": ""
+        },
+        "ZAFPre30": {
+          "cn": "30日涨幅",
+          "desc": ""
+        },
+        "ZAFPre60": {
+          "cn": "60日涨幅",
+          "desc": ""
+        },
+        "ZAFYear": {
+          "cn": "年初至今涨幅",
+          "desc": ""
+        },
+        "ZAFPreMyMonth": {
+          "cn": "本月来涨幅",
+          "desc": ""
+        },
+        "ZAFPreOneYear": {
+          "cn": "一年来涨幅",
+          "desc": ""
+        },
+        "ConZAFDateNum": {
+          "cn": "连涨天数",
+          "desc": ""
+        },
+        "Zjl": {
+          "cn": "主买净额（万元）",
+          "desc": ""
+        },
+        "Zjl_HB": {
+          "cn": "主力净流入（万元）",
+          "desc": ""
+        },
+        "TotalBVol": {
+          "cn": "总买量",
+          "desc": ""
+        },
+        "TotalSVol": {
+          "cn": "总卖量",
+          "desc": ""
+        },
+        "BCancel": {
+          "cn": "总撤买量",
+          "desc": ""
+        },
+        "SCancel": {
+          "cn": "总撤卖量",
+          "desc": ""
+        },
+        "L2TicNum": {
+          "cn": "L2逐笔成交数",
+          "desc": ""
+        },
+        "L2OrderNum": {
+          "cn": "L2逐笔委托数",
+          "desc": ""
+        },
+        "FCAmo": {
+          "cn": "封单额（万元）",
+          "desc": ""
+        },
+        "FCb": {
+          "cn": "封成比",
+          "desc": ""
+        },
+        "OpenAmo": {
+          "cn": "开盘金额（万元）（A股和板块指数有效）",
+          "desc": ""
+        },
+        "OpenZTBuy": {
+          "cn": "竞价涨停买入金额（万元）",
+          "desc": ""
+        },
+        "OpenAmoPre1": {
+          "cn": "昨开盘金额（万元）",
+          "desc": ""
+        },
+        "OpenVolPre1": {
+          "cn": "昨开盘量",
+          "desc": ""
+        },
+        "CJJEPre1": {
+          "cn": "昨成交额（万元）",
+          "desc": ""
+        },
+        "CJJEPre3": {
+          "cn": "3日成交额（万元）",
+          "desc": ""
+        },
+        "FDEPre1": {
+          "cn": "昨封单额（万元）",
+          "desc": ""
+        },
+        "FDEPre2": {
+          "cn": "前封单额（万元）",
+          "desc": ""
+        },
+        "ZTGPNum": {
+          "cn": "板块指数的涨停家数",
+          "desc": ""
+        },
+        "LastStartZT": {
+          "cn": "几天",
+          "desc": ""
+        },
+        "LastZTHzNum": {
+          "cn": "几板",
+          "desc": ""
+        },
+        "EverZTCount": {
+          "cn": "连板天数",
+          "desc": ""
+        },
+        "YearZTDay": {
+          "cn": "年涨停天数",
+          "desc": ""
+        },
+        "MA5Value": {
+          "cn": "5日均价",
+          "desc": ""
+        },
+        "HisHigh": {
+          "cn": "52周最高",
+          "desc": ""
+        },
+        "HisLow": {
+          "cn": "52周最低",
+          "desc": ""
+        },
+        "IPO_Price": {
+          "cn": "发行价",
+          "desc": ""
+        },
+        "More_YJL": {
+          "cn": "ETF/LOF溢价率",
+          "desc": ""
+        },
+        "BetaValue": {
+          "cn": "贝塔系数",
+          "desc": ""
+        },
+        "DynaPE": {
+          "cn": "动态市盈率",
+          "desc": ""
+        },
+        "MorePE": {
+          "cn": "市盈率",
+          "desc": ""
+        },
+        "StaticPE_TTM": {
+          "cn": "市盈率（TTM）",
+          "desc": ""
+        },
+        "DYRatio": {
+          "cn": "股息率",
+          "desc": ""
+        },
+        "PB_MRQ": {
+          "cn": "市净率（MRQ）",
+          "desc": ""
+        },
+        "IsT0Fund": {
+          "cn": "是否是T+0基金",
+          "desc": ""
+        },
+        "IsZCZGP": {
+          "cn": "是否是注册制A股",
+          "desc": ""
+        },
+        "IsKzz": {
+          "cn": "是否是可转债",
+          "desc": ""
+        },
+        "Kzz_HSCode": {
+          "cn": "可转债对应的正股代码",
+          "desc": ""
+        },
+        "QHMainYYMM": {
+          "cn": "主力合约关联的月份（期货）",
+          "desc": ""
+        },
+        "Yield": {
+          "cn": "应计利息（债券）/占款天数（回购）",
+          "desc": ""
+        },
+        "KfEarnMoney": {
+          "cn": "扣非净利润（万元）",
+          "desc": ""
+        },
+        "RDInputFee": {
+          "cn": "研发费用（万元）",
+          "desc": ""
+        },
+        "CashZJ": {
+          "cn": "货币资金（万元）",
+          "desc": ""
+        },
+        "PreReceiveZJ": {
+          "cn": "合同负债（万元）",
+          "desc": ""
+        },
+        "OtherQYJzc": {
+          "cn": "其它权益工具（万元）",
+          "desc": ""
+        },
+        "StaffNum": {
+          "cn": "员工人数",
+          "desc": ""
+        },
+        "RecentGGJYDate": {
+          "cn": "最近北上大额交易日",
+          "desc": ""
+        },
+        "RecentHGDate": {
+          "cn": "最近回购预案日",
+          "desc": ""
+        },
+        "RecentIncentDate": {
+          "cn": "最近股权激励预案日",
+          "desc": ""
+        },
+        "NoticeDate_Recent": {
+          "cn": "最近业绩预告日",
+          "desc": ""
+        },
+        "RecentReleaseDate": {
+          "cn": "最近解禁日",
+          "desc": ""
+        },
+        "RecentDZDate": {
+          "cn": "最近定增日",
+          "desc": ""
+        },
+        "ReportDate": {
+          "cn": "最近财报公告日期",
+          "desc": ""
+        },
+        "ZTDate_Recent": {
+          "cn": "近2年最近涨停板日期",
+          "desc": ""
+        },
+        "DTDate_Recent": {
+          "cn": "近2年最近跌停板日期",
+          "desc": ""
+        },
+        "TopDate_Recent": {
+          "cn": "近2年最近龙虎榜日期",
+          "desc": ""
+        },
+        "StopJYDate_Recent": {
+          "cn": "最近停牌日期",
+          "desc": ""
+        }
+      }
+    },
+    "get_finance_data": {
+      "section": "二、财务类接口返回字段映射",
+      "description": "获取财务数据",
+      "fields": {
+        "RDate": {
+          "cn": "报告期",
+          "desc": ""
+        },
+        "RType": {
+          "cn": "报告类型（1中报/2三季报/3年报/4一季报/5半年/6三季度/7全年）",
+          "desc": ""
+        },
+        "TotalCapitalStock": {
+          "cn": "总股本（股）",
+          "desc": ""
+        },
+        "CirculateA": {
+          "cn": "A股流通股本",
+          "desc": ""
+        },
+        "CirculateB": {
+          "cn": "B股流通股本",
+          "desc": ""
+        },
+        "CirculateH": {
+          "cn": "H股流通股本",
+          "desc": ""
+        },
+        "TotalAssets": {
+          "cn": "总资产",
+          "desc": ""
+        },
+        "CurrentAssets": {
+          "cn": "流动资产",
+          "desc": ""
+        },
+        "FixedAssets": {
+          "cn": "固定资产",
+          "desc": ""
+        },
+        "IntangibleAssets": {
+          "cn": "无形资产",
+          "desc": ""
+        },
+        "Liability": {
+          "cn": "总负债",
+          "desc": ""
+        },
+        "CurrentLiability": {
+          "cn": "流动负债",
+          "desc": ""
+        },
+        "LongTermLiability": {
+          "cn": "长期负债",
+          "desc": ""
+        },
+        "MinorityInterests": {
+          "cn": "少数股东权益",
+          "desc": ""
+        },
+        "ShareholdersEquity": {
+          "cn": "股东权益",
+          "desc": ""
+        },
+        "CapitalReserve": {
+          "cn": "资本公积金",
+          "desc": ""
+        },
+        "UndistributedProfit": {
+          "cn": "未分配利润",
+          "desc": ""
+        },
+        "OperatingRevenue": {
+          "cn": "营业收入",
+          "desc": ""
+        },
+        "OperatingCost": {
+          "cn": "营业成本",
+          "desc": ""
+        },
+        "OperatingProfit": {
+          "cn": "营业利润",
+          "desc": ""
+        },
+        "InvestmentIncome": {
+          "cn": "投资收益",
+          "desc": ""
+        },
+        "NetCashFlowFromOperating": {
+          "cn": "经营现金净流量",
+          "desc": ""
+        },
+        "NetIncreaseInCashAndCashEquivalents": {
+          "cn": "总现金净流量",
+          "desc": ""
+        },
+        "Inventory": {
+          "cn": "存货",
+          "desc": ""
+        },
+        "TotalProfit": {
+          "cn": "利润总额",
+          "desc": ""
+        },
+        "ProfitAfterTax": {
+          "cn": "税后利润",
+          "desc": ""
+        },
+        "NetProfit": {
+          "cn": "净利润",
+          "desc": ""
+        },
+        "Roe": {
+          "cn": "净资产收益率",
+          "desc": ""
+        },
+        "NetProfitPerShare": {
+          "cn": "每股收益（折算为全年）",
+          "desc": ""
+        },
+        "ReportNetProfitPerShare": {
+          "cn": "季报每股收益",
+          "desc": ""
+        },
+        "CapitalReservePerShare": {
+          "cn": "每股公积金",
+          "desc": ""
+        },
+        "NetAssetValuePerShare": {
+          "cn": "每股净资产",
+          "desc": ""
+        },
+        "ReportNavPerShare": {
+          "cn": "季报每股净资产",
+          "desc": ""
+        },
+        "EquityRatio": {
+          "cn": "股东权益比",
+          "desc": ""
+        },
+        "TotalShareholders": {
+          "cn": "股东人数",
+          "desc": ""
+        },
+        "ListingDate": {
+          "cn": "上市日期",
+          "desc": ""
+        }
+      }
+    },
+    "get_express_data": {
+      "section": "二、财务类接口返回字段映射",
+      "description": "业绩快报",
+      "fields": {
+        "Date": {
+          "cn": "日期",
+          "desc": ""
+        },
+        "Revenue": {
+          "cn": "营业收入",
+          "desc": ""
+        },
+        "NetProfit": {
+          "cn": "净利润",
+          "desc": ""
+        },
+        "EPS": {
+          "cn": "每股收益",
+          "desc": ""
+        },
+        "NAPS": {
+          "cn": "每股净资产",
+          "desc": ""
+        },
+        "ROE": {
+          "cn": "净资产收益率",
+          "desc": ""
+        }
+      }
+    },
+    "get_gross_yield": {
+      "section": "二、财务类接口返回字段映射",
+      "description": "分红数据",
+      "fields": {
+        "Date": {
+          "cn": "除权除息日期",
+          "desc": ""
+        },
+        "Plan": {
+          "cn": "分红方案",
+          "desc": ""
+        },
+        "BonusRatio": {
+          "cn": "送股比例",
+          "desc": ""
+        },
+        "TransferRatio": {
+          "cn": "转股比例",
+          "desc": ""
+        },
+        "DividendRatio": {
+          "cn": "派现比例",
+          "desc": ""
+        },
+        "PlanDate": {
+          "cn": "预案公告日",
+          "desc": ""
+        },
+        "GDRDate": {
+          "cn": "股东大会公告日",
+          "desc": ""
+        },
+        "ExecuteDate": {
+          "cn": "实施方案公告日",
+          "desc": ""
+        }
+      }
+    },
+    "get_right_issue": {
+      "section": "二、财务类接口返回字段映射",
+      "description": "配股数据",
+      "fields": {
+        "Date": {
+          "cn": "缴款起始日期",
+          "desc": ""
+        },
+        "R1Date": {
+          "cn": "缴款截止日期",
+          "desc": ""
+        },
+        "R2Date": {
+          "cn": "配股上市日期",
+          "desc": ""
+        },
+        "R3Date": {
+          "cn": "股权登记日",
+          "desc": ""
+        },
+        "RightIssueRatio": {
+          "cn": "配股比例",
+          "desc": ""
+        },
+        "RightIssuePrice": {
+          "cn": "配股价格",
+          "desc": ""
+        },
+        "RightIssueAmount": {
+          "cn": "配股数量（万股）",
+          "desc": ""
+        },
+        "RightIssueCode": {
+          "cn": "配股代码",
+          "desc": ""
+        },
+        "RightIssueName": {
+          "cn": "配股简称",
+          "desc": ""
+        }
+      }
+    },
+    "get_capital": {
+      "section": "二、财务类接口返回字段映射",
+      "description": "分红派息（除权",
+      "fields": {
+        "Date": {
+          "cn": "除权除息日期",
+          "desc": ""
+        },
+        "DRDate": {
+          "cn": "股权登记日",
+          "desc": ""
+        },
+        "DRPlan": {
+          "cn": "分红方案",
+          "desc": ""
+        },
+        "BonusRatio": {
+          "cn": "送股比例",
+          "desc": ""
+        },
+        "TransferRatio": {
+          "cn": "转股比例",
+          "desc": ""
+        },
+        "DividendRatio": {
+          "cn": "派现比例",
+          "desc": ""
+        },
+        "DRType": {
+          "cn": "分红类型",
+          "desc": ""
+        }
+      }
+    },
+    "get_board_list": {
+      "section": "三、板块管理接口返回字段映射",
+      "description": "获取板块列表",
+      "fields": {
+        "BoardCode": {
+          "cn": "板块代码",
+          "desc": ""
+        },
+        "BoardName": {
+          "cn": "板块名称",
+          "desc": ""
+        },
+        "BoardType": {
+          "cn": "板块类型",
+          "desc": ""
+        },
+        "GPNume": {
+          "cn": "成份股数量",
+          "desc": ""
+        }
+      }
+    },
+    "get_board_stock_list": {
+      "section": "三、板块管理接口返回字段映射",
+      "description": "获取板块成份股",
+      "fields": {
+        "Code": {
+          "cn": "股票代码",
+          "desc": ""
+        },
+        "Name": {
+          "cn": "股票名称",
+          "desc": ""
+        }
+      }
+    },
+    "get_board_history": {
+      "section": "三、板块管理接口返回字段映射",
+      "description": "获取板块历史行情",
+      "fields": {
+        "Date": {
+          "cn": "日期",
+          "desc": ""
+        },
+        "Time": {
+          "cn": "时间",
+          "desc": ""
+        },
+        "Open": {
+          "cn": "开盘价",
+          "desc": ""
+        },
+        "High": {
+          "cn": "最高价",
+          "desc": ""
+        },
+        "Low": {
+          "cn": "最低价",
+          "desc": ""
+        },
+        "Close": {
+          "cn": "收盘价",
+          "desc": ""
+        },
+        "Volume": {
+          "cn": "成交量",
+          "desc": ""
+        },
+        "Amount": {
+          "cn": "成交额",
+          "desc": ""
+        },
+        "ConstituentCount": {
+          "cn": "成分股数量",
+          "desc": ""
+        },
+        "UpCount": {
+          "cn": "上涨家数",
+          "desc": ""
+        },
+        "DownCount": {
+          "cn": "下跌家数",
+          "desc": ""
+        },
+        "EqualCount": {
+          "cn": "平盘家数",
+          "desc": ""
+        },
+        "LeadCode": {
+          "cn": "领涨股代码",
+          "desc": ""
+        },
+        "LeadName": {
+          "cn": "领涨股名称",
+          "desc": ""
+        },
+        "LeadZAF": {
+          "cn": "领涨股涨幅",
+          "desc": ""
+        }
+      }
+    },
+    "get_kzz_data": {
+      "section": "四、可转债 / ETF 类接口返回字段映射",
+      "description": "可转债数据",
+      "fields": {
+        "Code": {
+          "cn": "可转债代码",
+          "desc": ""
+        },
+        "Name": {
+          "cn": "可转债名称",
+          "desc": ""
+        },
+        "HSCode": {
+          "cn": "正股代码",
+          "desc": ""
+        },
+        "HSName": {
+          "cn": "正股名称",
+          "desc": ""
+        },
+        "ZQDate": {
+          "cn": "转股起始日",
+          "desc": ""
+        },
+        "ZQEndDate": {
+          "cn": "转股截止日",
+          "desc": ""
+        },
+        "HS_Price": {
+          "cn": "正股现价",
+          "desc": ""
+        },
+        "HG_Price": {
+          "cn": "转股价",
+          "desc": ""
+        },
+        "ZZG": {
+          "cn": "纯债价值",
+          "desc": ""
+        },
+        "ZZB": {
+          "cn": "转股价值",
+          "desc": ""
+        },
+        "PremRate": {
+          "cn": "溢价率",
+          "desc": ""
+        },
+        "StockConvergenceRate": {
+          "cn": "股性活跃度",
+          "desc": ""
+        },
+        "DuraTime": {
+          "cn": "剩余年限（年）",
+          "desc": ""
+        },
+        "ConvRate": {
+          "cn": "转股比例/每张可转债转股数量",
+          "desc": ""
+        },
+        "PayRate": {
+          "cn": "票面利率（%）",
+          "desc": ""
+        },
+        "LeftYear": {
+          "cn": "剩余期限",
+          "desc": ""
+        },
+        "KzzScale": {
+          "cn": "发行规模（亿）",
+          "desc": ""
+        },
+        "CurrScale": {
+          "cn": "余额规模（亿）",
+          "desc": ""
+        },
+        "ChangePriceDate": {
+          "cn": "已调整转股价次数",
+          "desc": ""
+        },
+        "StockRedeemDate": {
+          "cn": "强赎最后交易日",
+          "desc": ""
+        },
+        "PutBackPrice": {
+          "cn": "回售价格",
+          "desc": ""
+        },
+        "PutBackDate": {
+          "cn": "回售起始日",
+          "desc": ""
+        },
+        "CreditRating": {
+          "cn": "信用评级",
+          "desc": ""
+        },
+        "ConvertibleBondType": {
+          "cn": "可转债类型",
+          "desc": ""
+        }
+      }
+    },
+    "get_etf_info": {
+      "section": "四、可转债 / ETF 类接口返回字段映射",
+      "description": "ETF基金信息",
+      "fields": {
+        "Code": {
+          "cn": "ETF代码",
+          "desc": ""
+        },
+        "Name": {
+          "cn": "ETF名称",
+          "desc": ""
+        },
+        "FundName": {
+          "cn": "基金全称",
+          "desc": ""
+        },
+        "Manager": {
+          "cn": "管理人",
+          "desc": ""
+        },
+        "Trustee": {
+          "cn": "托管人",
+          "desc": ""
+        },
+        "IssueDate": {
+          "cn": "发行日期",
+          "desc": ""
+        },
+        "ListDate": {
+          "cn": "上市日期",
+          "desc": ""
+        },
+        "EstablishDate": {
+          "cn": "成立日期",
+          "desc": ""
+        },
+        "EndDate": {
+          "cn": "到期日期",
+          "desc": ""
+        },
+        "IndexCode": {
+          "cn": "跟踪指数代码",
+          "desc": ""
+        },
+        "IndexName": {
+          "cn": "跟踪指数名称",
+          "desc": ""
+        },
+        "InvestStyle": {
+          "cn": "投资风格",
+          "desc": ""
+        },
+        "FundType": {
+          "cn": "基金类型",
+          "desc": ""
+        },
+        "Unit": {
+          "cn": "交易单位",
+          "desc": ""
+        },
+        "MinPrice": {
+          "cn": "最小价格变动",
+          "desc": ""
+        },
+        "ManagementFee": {
+          "cn": "管理费率（%）",
+          "desc": ""
+        },
+        "CustodyFee": {
+          "cn": "托管费率（%）",
+          "desc": ""
+        },
+        "SubscriptionFee": {
+          "cn": "申购费率（%）",
+          "desc": ""
+        },
+        "RedemptionFee": {
+          "cn": "赎回费率（%）",
+          "desc": ""
+        }
+      }
+    },
+    "get_etf_nav": {
+      "section": "四、可转债 / ETF 类接口返回字段映射",
+      "description": "ETF净值",
+      "fields": {
+        "Date": {
+          "cn": "日期",
+          "desc": ""
+        },
+        "UnitNav": {
+          "cn": "单位净值",
+          "desc": ""
+        },
+        "AccNav": {
+          "cn": "累计净值",
+          "desc": ""
+        },
+        "ReturnRatio": {
+          "cn": "日增长率（%）",
+          "desc": ""
+        },
+        "PremRate": {
+          "cn": "折溢率（%）",
+          "desc": ""
+        }
+      }
+    },
+    "evaluate_formula": {
+      "section": "五、公式调用接口返回字段映射",
+      "description": "执行公式",
+      "fields": {
+        "Code": {
+          "cn": "股票代码",
+          "desc": ""
+        },
+        "Date": {
+          "cn": "日期",
+          "desc": ""
+        },
+        "OPEN": {
+          "cn": "开盘价",
+          "desc": "原始价 OHLC"
+        },
+        "HIGH": {
+          "cn": "最高价",
+          "desc": "原始价 OHLC"
+        },
+        "LOW": {
+          "cn": "最低价",
+          "desc": "原始价 OHLC"
+        },
+        "CLOSE": {
+          "cn": "收盘价",
+          "desc": "原始价 OHLC"
+        },
+        "VOL": {
+          "cn": "成交量",
+          "desc": ""
+        },
+        "AMOUNT": {
+          "cn": "成交额",
+          "desc": ""
+        },
+        "MA5": {
+          "cn": "5日均线",
+          "desc": "MA(CLOSE,5)"
+        },
+        "MA10": {
+          "cn": "10日均线",
+          "desc": "MA(CLOSE,10)"
+        },
+        "MA20": {
+          "cn": "20日均线",
+          "desc": "MA(CLOSE,20)"
+        },
+        "MA60": {
+          "cn": "60日均线",
+          "desc": "MA(CLOSE,60)"
+        },
+        "EMA12": {
+          "cn": "12日指数均线",
+          "desc": "EMA(CLOSE,12)"
+        },
+        "EMA26": {
+          "cn": "26日指数均线",
+          "desc": "EMA(CLOSE,26)"
+        },
+        "DIFF": {
+          "cn": "DIF（MACD）",
+          "desc": "EMA12-EMA26"
+        },
+        "DEA": {
+          "cn": "DEA（MACD）",
+          "desc": "EMA(DIFF,9)"
+        },
+        "MACD": {
+          "cn": "MACD柱",
+          "desc": "2*(DIFF-DEA)"
+        },
+        "K": {
+          "cn": "KDJ K值",
+          "desc": ""
+        },
+        "D": {
+          "cn": "KDJ D值",
+          "desc": ""
+        },
+        "J": {
+          "cn": "KDJ J值",
+          "desc": ""
+        },
+        "RSV": {
+          "cn": "未成熟随机值",
+          "desc": ""
+        },
+        "RSI6": {
+          "cn": "6日RSI",
+          "desc": ""
+        },
+        "RSI12": {
+          "cn": "12日RSI",
+          "desc": ""
+        },
+        "BOLL": {
+          "cn": "布林中轨",
+          "desc": ""
+        },
+        "UPPER": {
+          "cn": "布林上轨",
+          "desc": ""
+        },
+        "LOWER": {
+          "cn": "布林下轨",
+          "desc": ""
+        },
+        "SAR": {
+          "cn": "抛物转向",
+          "desc": ""
+        },
+        "OBV": {
+          "cn": "能量潮",
+          "desc": ""
+        },
+        "CCI": {
+          "cn": "顺势指标",
+          "desc": ""
+        },
+        "ATR": {
+          "cn": "真实波幅",
+          "desc": ""
+        },
+        "BBI": {
+          "cn": "多空指数",
+          "desc": ""
+        },
+        "WR": {
+          "cn": "威廉指标",
+          "desc": ""
+        },
+        "MTM": {
+          "cn": "动力指标",
+          "desc": ""
+        },
+        "DMA": {
+          "cn": "平均线差",
+          "desc": ""
+        },
+        "ASI": {
+          "cn": "振动升降指标",
+          "desc": ""
+        },
+        "BIAS6": {
+          "cn": "6日乖离率",
+          "desc": ""
+        },
+        "PSY": {
+          "cn": "心理线",
+          "desc": ""
+        },
+        "CR": {
+          "cn": "中间意愿指标",
+          "desc": ""
+        },
+        "VR": {
+          "cn": "成交量变异率",
+          "desc": ""
+        },
+        "BRAR": {
+          "cn": "情绪指标BRAR",
+          "desc": ""
+        }
+      }
+    },
+    "subscribe_tick": {
+      "section": "六、订阅 / 消息接口返回字段映射",
+      "description": "订阅/取消订阅实时行情",
+      "fields": {
+        "Code": {
+          "cn": "股票代码",
+          "desc": ""
+        },
+        "Name": {
+          "cn": "股票名称",
+          "desc": ""
+        },
+        "Time": {
+          "cn": "时间",
+          "desc": ""
+        },
+        "Now": {
+          "cn": "现价",
+          "desc": ""
+        },
+        "LastClose": {
+          "cn": "昨收",
+          "desc": ""
+        },
+        "Open": {
+          "cn": "今开",
+          "desc": ""
+        },
+        "High": {
+          "cn": "最高",
+          "desc": ""
+        },
+        "Low": {
+          "cn": "最低",
+          "desc": ""
+        },
+        "Volume": {
+          "cn": "成交量",
+          "desc": ""
+        },
+        "Amount": {
+          "cn": "成交额",
+          "desc": ""
+        },
+        "ZFA": {
+          "cn": "涨幅",
+          "desc": ""
+        },
+        "AvgPrice": {
+          "cn": "均价",
+          "desc": ""
+        },
+        "Buyp1": {
+          "cn": "买一价",
+          "desc": ""
+        },
+        "Buyv1": {
+          "cn": "买一量",
+          "desc": ""
+        },
+        "Buyp2": {
+          "cn": "买二价",
+          "desc": ""
+        },
+        "Buyv2": {
+          "cn": "买二量",
+          "desc": ""
+        },
+        "Buyp3": {
+          "cn": "买三价",
+          "desc": ""
+        },
+        "Buyv3": {
+          "cn": "买三量",
+          "desc": ""
+        },
+        "Buyp4": {
+          "cn": "买四价",
+          "desc": ""
+        },
+        "Buyv4": {
+          "cn": "买四量",
+          "desc": ""
+        },
+        "Buyp5": {
+          "cn": "买五价",
+          "desc": ""
+        },
+        "Buyv5": {
+          "cn": "买五量",
+          "desc": ""
+        },
+        "Sellp1": {
+          "cn": "卖一价",
+          "desc": ""
+        },
+        "Sellv1": {
+          "cn": "卖一量",
+          "desc": ""
+        },
+        "Sellp2": {
+          "cn": "卖二价",
+          "desc": ""
+        },
+        "Sellv2": {
+          "cn": "卖二量",
+          "desc": ""
+        },
+        "Sellp3": {
+          "cn": "卖三价",
+          "desc": ""
+        },
+        "Sellv3": {
+          "cn": "卖三量",
+          "desc": ""
+        },
+        "Sellp4": {
+          "cn": "卖四价",
+          "desc": ""
+        },
+        "Sellv4": {
+          "cn": "卖四量",
+          "desc": ""
+        },
+        "Sellp5": {
+          "cn": "卖五价",
+          "desc": ""
+        },
+        "Sellv5": {
+          "cn": "卖五量",
+          "desc": ""
+        }
+      }
+    },
+    "get_message": {
+      "section": "六、订阅 / 消息接口返回字段映射",
+      "description": "获取消息",
+      "fields": {
+        "MsgID": {
+          "cn": "消息唯一标识",
+          "desc": ""
+        },
+        "MsgType": {
+          "cn": "消息类型",
+          "desc": ""
+        },
+        "MsgTime": {
+          "cn": "消息时间",
+          "desc": ""
+        },
+        "Title": {
+          "cn": "消息标题",
+          "desc": ""
+        },
+        "Content": {
+          "cn": "消息内容",
+          "desc": ""
+        },
+        "Priority": {
+          "cn": "优先级",
+          "desc": ""
+        },
+        "From": {
+          "cn": "消息来源",
+          "desc": ""
+        },
+        "ReadFlag": {
+          "cn": "是否已读",
+          "desc": ""
+        }
+      }
+    },
+    "login": {
+      "section": "七、客户端操作接口返回字段映射",
+      "description": "登录 / 登出",
+      "fields": {
+        "Status": {
+          "cn": "状态码（0成功）",
+          "desc": ""
+        },
+        "Message": {
+          "cn": "状态信息",
+          "desc": ""
+        },
+        "SessionID": {
+          "cn": "会话ID",
+          "desc": ""
+        },
+        "UserID": {
+          "cn": "用户ID",
+          "desc": ""
+        },
+        "LoginTime": {
+          "cn": "登录时间",
+          "desc": ""
+        }
+      }
+    },
+    "get_account_info": {
+      "section": "七、客户端操作接口返回字段映射",
+      "description": "账户信息",
+      "fields": {
+        "Account": {
+          "cn": "资金账号",
+          "desc": ""
+        },
+        "CustomerName": {
+          "cn": "客户姓名",
+          "desc": ""
+        },
+        "TotalAssets": {
+          "cn": "总资产",
+          "desc": ""
+        },
+        "AvailableCash": {
+          "cn": "可用资金",
+          "desc": ""
+        },
+        "FrozenCash": {
+          "cn": "冻结资金",
+          "desc": ""
+        },
+        "MarketValue": {
+          "cn": "持仓市值",
+          "desc": ""
+        },
+        "ProfitLoss": {
+          "cn": "盈亏",
+          "desc": ""
+        },
+        "ProfitRate": {
+          "cn": "盈亏比例",
+          "desc": ""
+        },
+        "HoldCount": {
+          "cn": "持仓数量",
+          "desc": ""
+        }
+      }
+    },
+    "get_position_list": {
+      "section": "七、客户端操作接口返回字段映射",
+      "description": "持仓列表",
+      "fields": {
+        "Code": {
+          "cn": "证券代码",
+          "desc": ""
+        },
+        "Name": {
+          "cn": "证券名称",
+          "desc": ""
+        },
+        "HoldVolume": {
+          "cn": "持仓数量",
+          "desc": ""
+        },
+        "AvailableVolume": {
+          "cn": "可用数量",
+          "desc": ""
+        },
+        "CostPrice": {
+          "cn": "成本价",
+          "desc": ""
+        },
+        "CurrentPrice": {
+          "cn": "现价",
+          "desc": ""
+        },
+        "MarketValue": {
+          "cn": "市值",
+          "desc": ""
+        },
+        "ProfitLoss": {
+          "cn": "盈亏金额",
+          "desc": ""
+        },
+        "ProfitRate": {
+          "cn": "盈亏比例",
+          "desc": ""
+        },
+        "FrozenVolume": {
+          "cn": "冻结数量",
+          "desc": ""
+        }
+      }
+    },
+    "get_order_list": {
+      "section": "七、客户端操作接口返回字段映射",
+      "description": "委托 / 成交",
+      "fields": {
+        "OrderID": {
+          "cn": "委托编号",
+          "desc": ""
+        },
+        "Code": {
+          "cn": "证券代码",
+          "desc": ""
+        },
+        "Name": {
+          "cn": "证券名称",
+          "desc": ""
+        },
+        "OrderTime": {
+          "cn": "委托时间",
+          "desc": ""
+        },
+        "OrderVolume": {
+          "cn": "委托数量",
+          "desc": ""
+        },
+        "OrderPrice": {
+          "cn": "委托价格",
+          "desc": ""
+        },
+        "OrderType": {
+          "cn": "委托类型（买入/卖出）",
+          "desc": ""
+        },
+        "DealVolume": {
+          "cn": "成交数量",
+          "desc": ""
+        },
+        "DealPrice": {
+          "cn": "成交均价",
+          "desc": ""
+        },
+        "DealAmount": {
+          "cn": "成交金额",
+          "desc": ""
+        },
+        "Status": {
+          "cn": "委托状态",
+          "desc": ""
+        },
+        "StatusText": {
+          "cn": "状态描述",
+          "desc": ""
+        },
+        "CancelFlag": {
+          "cn": "撤单标记",
+          "desc": ""
+        }
+      }
+    },
+    "init": {
+      "section": "八、通用 / 初始化接口返回字段映射",
+      "description": "初始化 / 反初始化",
+      "fields": {
+        "Status": {
+          "cn": "状态码（0成功）",
+          "desc": ""
+        },
+        "Message": {
+          "cn": "状态信息",
+          "desc": ""
+        },
+        "Version": {
+          "cn": "版本号",
+          "desc": ""
+        },
+        "APILevel": {
+          "cn": "API等级",
+          "desc": ""
+        }
+      }
+    },
+    "get_security_list": {
+      "section": "八、通用 / 初始化接口返回字段映射",
+      "description": "获取证券列表",
+      "fields": {
+        "Code": {
+          "cn": "证券代码",
+          "desc": ""
+        },
+        "Name": {
+          "cn": "证券名称",
+          "desc": ""
+        },
+        "Market": {
+          "cn": "所属市场",
+          "desc": ""
+        },
+        "Type": {
+          "cn": "证券类型",
+          "desc": ""
+        }
+      }
+    },
+    "get_market_list": {
+      "section": "八、通用 / 初始化接口返回字段映射",
+      "description": "获取市场列表",
+      "fields": {
+        "MarketCode": {
+          "cn": "市场代码",
+          "desc": ""
+        },
+        "MarketName": {
+          "cn": "市场名称",
+          "desc": ""
+        },
+        "MarketType": {
+          "cn": "市场类型",
+          "desc": ""
+        }
+      }
+    },
+    "get_trade_date": {
+      "section": "八、通用 / 初始化接口返回字段映射",
+      "description": "获取交易日",
+      "fields": {
+        "Date": {
+          "cn": "日期（YYYYMMDD）",
+          "desc": ""
+        },
+        "IsTradeDate": {
+          "cn": "是否交易日",
+          "desc": ""
+        }
+      }
+    },
+    "get_server_time": {
+      "section": "八、通用 / 初始化接口返回字段映射",
+      "description": "服务器时间",
+      "fields": {
+        "ServerTime": {
+          "cn": "服务器时间（HHMMSS）",
+          "desc": ""
+        },
+        "LocalTime": {
+          "cn": "本地时间",
+          "desc": ""
+        }
+      }
+    }
+  },
+  "fields_flat": {
+    "Date": "日期",
+    "Time": "时间",
+    "Open": "开盘价",
+    "High": "最高价",
+    "Low": "最低价",
+    "Close": "收盘价",
+    "Volume": "成交量",
+    "Amount": "成交额",
+    "ForwardFactor": "前复权因子",
+    "VolInStock": "持仓量",
+    "ItemNum": "快照笔数",
+    "LastClose": "前收盘价",
+    "Max": "最高价",
+    "Min": "最低价",
+    "Now": "现价",
+    "NowVol": "现手",
+    "Inside": "内盘/跌停家数",
+    "Outside": "外盘/涨停家数",
+    "TickDiff": "笔涨跌",
+    "InOutFlag": "内外盘标志",
+    "Jjjz": "基金净值",
+    "Buyp": "买价（5档）",
+    "Buyv": "买量（5档）",
+    "Sellp": "卖价（5档）",
+    "Sellv": "卖量（5档）",
+    "UpHome": "上涨家数",
+    "DownHome": "下跌家数",
+    "Before5MinNow": "5分钟前价格",
+    "Average": "均价",
+    "XsFlag": "价格小数位数",
+    "Zangsu": "涨速",
+    "ZAFPre3": "3日涨幅",
+    "Name": "证券名称",
+    "Unit": "交易单位",
+    "VolBase": "量比的基量",
+    "MinPrice": "最小价格变动",
+    "Fz": "开收市时间（4段）",
+    "DelayMin": "延时分钟数",
+    "QHVolBaseRate": "期货期权的每手乘数",
+    "HKVolBaseRate": "港股/日股/新加坡股每手股数",
+    "BelongHS300": "是否属于沪深300",
+    "BelongHasKQZ": "是否含可转债",
+    "BelongRZRQ": "是否融资融券标的",
+    "BelongHSGT": "是否属于沪深股通",
+    "IsHKGP": "是否是港股",
+    "IsQH": "是否是期货",
+    "IsQQ": "是否是期权",
+    "IsSTGP": "是否是ST股票",
+    "IsQuitGP": "是否退市整理板股票",
+    "TodayDRFlag": "当天是否除权除息",
+    "HSStockKind": "沪深京品种类型（0指数/1主板/2北证/3创业板/4科创板/5B股/6债券/7基金/8权证/9其它/10非沪深京）",
+    "ActiveCapital": "流通股本（万股）",
+    "J_zgb": "总股本（万股）",
+    "J_bg": "B股（万股）",
+    "J_hg": "H股（万股）",
+    "J_ldzc": "流动资产（万元）",
+    "J_gdzc": "固定资产（万元）",
+    "J_wxzc": "无形资产（万元）",
+    "J_ldfz": "流动负债（万元）",
+    "J_cqfz": "少数股东权益（万元）",
+    "J_zbgjj": "资本公积金（万元）",
+    "J_jzc": "股东权益/净资产（万元）",
+    "J_yysy": "营业收入",
+    "J_yycb": "营业成本",
+    "J_yszk": "应收账款",
+    "J_yyly": "营业利润",
+    "J_tzsy": "投资收益",
+    "J_jyxjl": "经营现金净流量",
+    "J_zxjl": "总现金净流量",
+    "J_ch": "存货",
+    "J_lyze": "利润总额",
+    "J_shly": "税后利润",
+    "J_jly": "净利润",
+    "J_wfply": "未分配利润",
+    "J_jyl": "净资产收益率",
+    "J_mgwfp": "每股未分配",
+    "J_mgsy": "每股收益（折算为全年）",
+    "J_mgsy2": "季报每股收益",
+    "J_mggjj": "每股公积金",
+    "J_mgjzc": "每股净资产",
+    "J_mgjzc2": "季报每股净资产",
+    "J_gdqyb": "股东权益比",
+    "J_gdrs": "股东人数",
+    "J_HalfYearFlag": "报告期月份（3,6,9,12）",
+    "J_start": "上市日期",
+    "tdx_dycode": "通达信地域代码",
+    "tdx_dyname": "通达信地域",
+    "rs_hycode_sim": "通达信行业代码",
+    "rs_hyname": "通达信行业",
+    "blockzscode": "所属行业板块指数代码",
+    "underly_setcode": "标的市场代码（如ETF跟踪的指数）",
+    "underly_code": "标的代码（如ETF跟踪的指数代码）",
+    "MainBusiness": "主营构成",
+    "SafeValue": "安全分",
+    "ShineValue": "亮点数",
+    "ShapeValue": "短期形态+中期形态+长期形态编号",
+    "TPFlag": "停牌标识",
+    "ZTPrice": "涨停价",
+    "DTPrice": "跌停价",
+    "HqDate": "行情日期",
+    "fHSL": "换手率",
+    "fLianB": "量比",
+    "Wtb": "委比",
+    "Zsz": "总市值（亿）",
+    "Ltsz": "流通市值（亿）",
+    "vzangsu": "量涨速",
+    "Fzhsl": "分钟换手率",
+    "FzAmo": "2分钟金额（万元）",
+    "FreeLtgb": "自由流通股本（万）",
+    "VOpenZAF": "抢筹涨幅",
+    "ZAF": "涨幅",
+    "ZAFYesterday": "昨日涨幅",
+    "ZAFPre2D": "前天涨幅",
+    "ZAFPre5": "5日涨幅",
+    "ZAFPre10": "10日涨幅",
+    "ZAFPre20": "20日涨幅",
+    "ZAFPre30": "30日涨幅",
+    "ZAFPre60": "60日涨幅",
+    "ZAFYear": "年初至今涨幅",
+    "ZAFPreMyMonth": "本月来涨幅",
+    "ZAFPreOneYear": "一年来涨幅",
+    "ConZAFDateNum": "连涨天数",
+    "Zjl": "主买净额（万元）",
+    "Zjl_HB": "主力净流入（万元）",
+    "TotalBVol": "总买量",
+    "TotalSVol": "总卖量",
+    "BCancel": "总撤买量",
+    "SCancel": "总撤卖量",
+    "L2TicNum": "L2逐笔成交数",
+    "L2OrderNum": "L2逐笔委托数",
+    "FCAmo": "封单额（万元）",
+    "FCb": "封成比",
+    "OpenAmo": "开盘金额（万元）（A股和板块指数有效）",
+    "OpenZTBuy": "竞价涨停买入金额（万元）",
+    "OpenAmoPre1": "昨开盘金额（万元）",
+    "OpenVolPre1": "昨开盘量",
+    "CJJEPre1": "昨成交额（万元）",
+    "CJJEPre3": "3日成交额（万元）",
+    "FDEPre1": "昨封单额（万元）",
+    "FDEPre2": "前封单额（万元）",
+    "ZTGPNum": "板块指数的涨停家数",
+    "LastStartZT": "几天",
+    "LastZTHzNum": "几板",
+    "EverZTCount": "连板天数",
+    "YearZTDay": "年涨停天数",
+    "MA5Value": "5日均价",
+    "HisHigh": "52周最高",
+    "HisLow": "52周最低",
+    "IPO_Price": "发行价",
+    "More_YJL": "ETF/LOF溢价率",
+    "BetaValue": "贝塔系数",
+    "DynaPE": "动态市盈率",
+    "MorePE": "市盈率",
+    "StaticPE_TTM": "市盈率（TTM）",
+    "DYRatio": "股息率",
+    "PB_MRQ": "市净率（MRQ）",
+    "IsT0Fund": "是否是T+0基金",
+    "IsZCZGP": "是否是注册制A股",
+    "IsKzz": "是否是可转债",
+    "Kzz_HSCode": "可转债对应的正股代码",
+    "QHMainYYMM": "主力合约关联的月份（期货）",
+    "Yield": "应计利息（债券）/占款天数（回购）",
+    "KfEarnMoney": "扣非净利润（万元）",
+    "RDInputFee": "研发费用（万元）",
+    "CashZJ": "货币资金（万元）",
+    "PreReceiveZJ": "合同负债（万元）",
+    "OtherQYJzc": "其它权益工具（万元）",
+    "StaffNum": "员工人数",
+    "RecentGGJYDate": "最近北上大额交易日",
+    "RecentHGDate": "最近回购预案日",
+    "RecentIncentDate": "最近股权激励预案日",
+    "NoticeDate_Recent": "最近业绩预告日",
+    "RecentReleaseDate": "最近解禁日",
+    "RecentDZDate": "最近定增日",
+    "ReportDate": "最近财报公告日期",
+    "ZTDate_Recent": "近2年最近涨停板日期",
+    "DTDate_Recent": "近2年最近跌停板日期",
+    "TopDate_Recent": "近2年最近龙虎榜日期",
+    "StopJYDate_Recent": "最近停牌日期",
+    "BlockCode": "板块代码",
+    "BlockName": "板块名称",
+    "BlockType": "板块类型（行业/概念/地区/风格/指数）",
+    "GPNume": "成份股数量",
+    "Zgb": "总股本（股）",
+    "Ltgb": "流通股本（股）",
+    "Code": "证券代码",
+    "SGDate": "申购日期",
+    "SGPrice": "申购价格",
+    "SGCode": "申购代码",
+    "MaxSG": "申购上限",
+    "PE_Issue": "发行市盈率",
+    "RDate": "报告期",
+    "RType": "报告类型（1中报/2三季报/3年报/4一季报/5半年/6三季度/7全年）",
+    "TotalCapitalStock": "总股本（股）",
+    "CirculateA": "A股流通股本",
+    "CirculateB": "B股流通股本",
+    "CirculateH": "H股流通股本",
+    "TotalAssets": "总资产",
+    "CurrentAssets": "流动资产",
+    "FixedAssets": "固定资产",
+    "IntangibleAssets": "无形资产",
+    "Liability": "总负债",
+    "CurrentLiability": "流动负债",
+    "LongTermLiability": "长期负债",
+    "MinorityInterests": "少数股东权益",
+    "ShareholdersEquity": "股东权益",
+    "CapitalReserve": "资本公积金",
+    "UndistributedProfit": "未分配利润",
+    "OperatingRevenue": "营业收入",
+    "OperatingCost": "营业成本",
+    "OperatingProfit": "营业利润",
+    "InvestmentIncome": "投资收益",
+    "NetCashFlowFromOperating": "经营现金净流量",
+    "NetIncreaseInCashAndCashEquivalents": "总现金净流量",
+    "Inventory": "存货",
+    "TotalProfit": "利润总额",
+    "ProfitAfterTax": "税后利润",
+    "NetProfit": "净利润",
+    "Roe": "净资产收益率",
+    "NetProfitPerShare": "每股收益（折算为全年）",
+    "ReportNetProfitPerShare": "季报每股收益",
+    "CapitalReservePerShare": "每股公积金",
+    "NetAssetValuePerShare": "每股净资产",
+    "ReportNavPerShare": "季报每股净资产",
+    "EquityRatio": "股东权益比",
+    "TotalShareholders": "股东人数",
+    "ListingDate": "上市日期",
+    "Revenue": "营业收入",
+    "EPS": "每股收益",
+    "NAPS": "每股净资产",
+    "ROE": "净资产收益率",
+    "Plan": "分红方案",
+    "BonusRatio": "送股比例",
+    "TransferRatio": "转股比例",
+    "DividendRatio": "派现比例",
+    "PlanDate": "预案公告日",
+    "GDRDate": "股东大会公告日",
+    "ExecuteDate": "实施方案公告日",
+    "R1Date": "缴款截止日期",
+    "R2Date": "配股上市日期",
+    "R3Date": "股权登记日",
+    "RightIssueRatio": "配股比例",
+    "RightIssuePrice": "配股价格",
+    "RightIssueAmount": "配股数量（万股）",
+    "RightIssueCode": "配股代码",
+    "RightIssueName": "配股简称",
+    "DRDate": "股权登记日",
+    "DRPlan": "分红方案",
+    "DRType": "分红类型",
+    "BoardCode": "板块代码",
+    "BoardName": "板块名称",
+    "BoardType": "板块类型",
+    "ConstituentCount": "成分股数量",
+    "UpCount": "上涨家数",
+    "DownCount": "下跌家数",
+    "EqualCount": "平盘家数",
+    "LeadCode": "领涨股代码",
+    "LeadName": "领涨股名称",
+    "LeadZAF": "领涨股涨幅",
+    "HSCode": "正股代码",
+    "HSName": "正股名称",
+    "ZQDate": "转股起始日",
+    "ZQEndDate": "转股截止日",
+    "HS_Price": "正股现价",
+    "HG_Price": "转股价",
+    "ZZG": "纯债价值",
+    "ZZB": "转股价值",
+    "PremRate": "溢价率",
+    "StockConvergenceRate": "股性活跃度",
+    "DuraTime": "剩余年限（年）",
+    "ConvRate": "转股比例/每张可转债转股数量",
+    "PayRate": "票面利率（%）",
+    "LeftYear": "剩余期限",
+    "KzzScale": "发行规模（亿）",
+    "CurrScale": "余额规模（亿）",
+    "ChangePriceDate": "已调整转股价次数",
+    "StockRedeemDate": "强赎最后交易日",
+    "PutBackPrice": "回售价格",
+    "PutBackDate": "回售起始日",
+    "CreditRating": "信用评级",
+    "ConvertibleBondType": "可转债类型",
+    "FundName": "基金全称",
+    "Manager": "管理人",
+    "Trustee": "托管人",
+    "IssueDate": "发行日期",
+    "ListDate": "上市日期",
+    "EstablishDate": "成立日期",
+    "EndDate": "到期日期",
+    "IndexCode": "跟踪指数代码",
+    "IndexName": "跟踪指数名称",
+    "InvestStyle": "投资风格",
+    "FundType": "基金类型",
+    "ManagementFee": "管理费率（%）",
+    "CustodyFee": "托管费率（%）",
+    "SubscriptionFee": "申购费率（%）",
+    "RedemptionFee": "赎回费率（%）",
+    "UnitNav": "单位净值",
+    "AccNav": "累计净值",
+    "ReturnRatio": "日增长率（%）",
+    "OPEN": "开盘价",
+    "HIGH": "最高价",
+    "LOW": "最低价",
+    "CLOSE": "收盘价",
+    "VOL": "成交量",
+    "AMOUNT": "成交额",
+    "MA5": "5日均线",
+    "MA10": "10日均线",
+    "MA20": "20日均线",
+    "MA60": "60日均线",
+    "EMA12": "12日指数均线",
+    "EMA26": "26日指数均线",
+    "DIFF": "DIF（MACD）",
+    "DEA": "DEA（MACD）",
+    "MACD": "MACD柱",
+    "K": "KDJ K值",
+    "D": "KDJ D值",
+    "J": "KDJ J值",
+    "RSV": "未成熟随机值",
+    "RSI6": "6日RSI",
+    "RSI12": "12日RSI",
+    "BOLL": "布林中轨",
+    "UPPER": "布林上轨",
+    "LOWER": "布林下轨",
+    "SAR": "抛物转向",
+    "OBV": "能量潮",
+    "CCI": "顺势指标",
+    "ATR": "真实波幅",
+    "BBI": "多空指数",
+    "WR": "威廉指标",
+    "MTM": "动力指标",
+    "DMA": "平均线差",
+    "ASI": "振动升降指标",
+    "BIAS6": "6日乖离率",
+    "PSY": "心理线",
+    "CR": "中间意愿指标",
+    "VR": "成交量变异率",
+    "BRAR": "情绪指标BRAR",
+    "ZFA": "涨幅",
+    "AvgPrice": "均价",
+    "Buyp1": "买一价",
+    "Buyv1": "买一量",
+    "Buyp2": "买二价",
+    "Buyv2": "买二量",
+    "Buyp3": "买三价",
+    "Buyv3": "买三量",
+    "Buyp4": "买四价",
+    "Buyv4": "买四量",
+    "Buyp5": "买五价",
+    "Buyv5": "买五量",
+    "Sellp1": "卖一价",
+    "Sellv1": "卖一量",
+    "Sellp2": "卖二价",
+    "Sellv2": "卖二量",
+    "Sellp3": "卖三价",
+    "Sellv3": "卖三量",
+    "Sellp4": "卖四价",
+    "Sellv4": "卖四量",
+    "Sellp5": "卖五价",
+    "Sellv5": "卖五量",
+    "MsgID": "消息唯一标识",
+    "MsgType": "消息类型",
+    "MsgTime": "消息时间",
+    "Title": "消息标题",
+    "Content": "消息内容",
+    "Priority": "优先级",
+    "From": "消息来源",
+    "ReadFlag": "是否已读",
+    "Status": "状态码（0成功）",
+    "Message": "状态信息",
+    "SessionID": "会话ID",
+    "UserID": "用户ID",
+    "LoginTime": "登录时间",
+    "Account": "资金账号",
+    "CustomerName": "客户姓名",
+    "AvailableCash": "可用资金",
+    "FrozenCash": "冻结资金",
+    "MarketValue": "持仓市值",
+    "ProfitLoss": "盈亏",
+    "ProfitRate": "盈亏比例",
+    "HoldCount": "持仓数量",
+    "HoldVolume": "持仓数量",
+    "AvailableVolume": "可用数量",
+    "CostPrice": "成本价",
+    "CurrentPrice": "现价",
+    "FrozenVolume": "冻结数量",
+    "OrderID": "委托编号",
+    "OrderTime": "委托时间",
+    "OrderVolume": "委托数量",
+    "OrderPrice": "委托价格",
+    "OrderType": "委托类型（买入/卖出）",
+    "DealVolume": "成交数量",
+    "DealPrice": "成交均价",
+    "DealAmount": "成交金额",
+    "StatusText": "状态描述",
+    "CancelFlag": "撤单标记",
+    "Version": "版本号",
+    "APILevel": "API等级",
+    "Market": "所属市场",
+    "Type": "证券类型",
+    "MarketCode": "市场代码",
+    "MarketName": "市场名称",
+    "MarketType": "市场类型",
+    "IsTradeDate": "是否交易日",
+    "ServerTime": "服务器时间（HHMMSS）",
+    "LocalTime": "本地时间"
+  },
+  "constants": {
+    "TDX_SH": {
+      "value": "1",
+      "cn": "上海市场"
+    },
+    "TDX_SZ": {
+      "value": "0",
+      "cn": "深圳市场"
+    },
+    "TDX_BJ": {
+      "value": "2",
+      "cn": "北京市场"
+    },
+    "TDX_HK": {
+      "value": "3",
+      "cn": "香港市场"
+    },
+    "MIN1": {
+      "value": "0",
+      "cn": "1分钟K线"
+    },
+    "MIN5": {
+      "value": "1",
+      "cn": "5分钟K线"
+    },
+    "MIN15": {
+      "value": "2",
+      "cn": "15分钟K线"
+    },
+    "MIN30": {
+      "value": "3",
+      "cn": "30分钟K线"
+    },
+    "HOUR1": {
+      "value": "4",
+      "cn": "1小时K线"
+    },
+    "DAY": {
+      "value": "9",
+      "cn": "日线"
+    },
+    "WEEK": {
+      "value": "10",
+      "cn": "周线"
+    },
+    "MONTH": {
+      "value": "11",
+      "cn": "月线"
+    },
+    "YEAR": {
+      "value": "12",
+      "cn": "年线"
+    },
+    "BUY": {
+      "value": "0",
+      "cn": "买入"
+    },
+    "SELL": {
+      "value": "1",
+      "cn": "卖出"
+    },
+    "CANCEL": {
+      "value": "2",
+      "cn": "撤单"
+    },
+    "ORDER_LIMIT": {
+      "value": "1",
+      "cn": "限价委托"
+    },
+    "ORDER_MARKET": {
+      "value": "2",
+      "cn": "市价委托"
+    },
+    "STATUS_SUCCESS": {
+      "value": "0",
+      "cn": "成功"
+    },
+    "STATUS_FAIL": {
+      "value": "1",
+      "cn": "失败"
+    },
+    "STATUS_PENDING": {
+      "value": "2",
+      "cn": "待处理"
+    },
+    "STATUS_FILLED": {
+      "value": "3",
+      "cn": "已成交"
+    },
+    "STATUS_PARTIAL": {
+      "value": "4",
+      "cn": "部分成交"
+    },
+    "STATUS_CANCELED": {
+      "value": "5",
+      "cn": "已撤单"
+    }
+  }
+}
