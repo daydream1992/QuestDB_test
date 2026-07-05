@@ -182,6 +182,8 @@ data/
 
 ### 11.2 加载器约定
 
+> ⚠️ **当前未实现**：`lib/market_data_loader.py` 尚未创建。业务代码当前加载走 `lib.relation_graph.load_from_json`（被 `collect/c5_mapping` 与 `runner/intraday_loop` 引用）。以下为前瞻设计，开工时再实现。
+
 ```python
 # 业务代码统一通过 lib.market_data_loader 加载，禁止直接读 JSON
 from lib.market_data_loader import load_market_data
@@ -197,6 +199,8 @@ data = load_market_data(refresh='auto')  # 'auto' | 'cache' | 'force'
 - **未来扩展**：支持增量 delta（市场数据模块/全市场数据架构导出.py 已具备此能力）
 
 ### 11.3 刷新入口
+
+> ⚠️ **当前未实现**：`scripts/refresh_market_data.py` 尚未创建；`daily_close.py` 当前未调用刷新；`data/snapshots/` 与 `data/refresh_log/` 目录也尚未建立。以下为前瞻设计。
 
 - `scripts/refresh_market_data.py` — 手动/定时刷新入口
 - runner/daily_close.py 末尾调用一次（自动）
