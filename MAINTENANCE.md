@@ -82,10 +82,10 @@ K:\QuestDB_test\
 │   ├── dark_money.py       # 暗资金分析
 │   ├── big_order.py        # 大单分析
 │   ├── lhb_analyzer.py     # 龙虎榜分析
-│   └── plugins/            # 16 个策略插件 (p01~p16)
+│   └── plugins/            # 17 个策略插件 (p01, p02, p04..p18, 跳号 p03)
 │       ├── p01_zt_daban.py     # 涨停打板
 │       ├── p02_zha_fanbao.py   # 炸板反包
-│       ├── p03_macd_vol.py     # MACD金叉放量
+│       │   # ~~p03_macd_vol.py~~ 已废弃 (MACD金叉放量, 2026-07-05 删除)
 │       ├── p04_break_pressure.py # 突破压力位
 │       ├── p05_sector_rotation.py # 板块轮动
 │       ├── p06_resonance.py    # 多层共振
@@ -449,13 +449,17 @@ class MyStrategy(StrategyBase):
 
 无需改代码, 下次 `load_config` 即生效。运行时也可调 `StrategyRegistry.disable('zt_daban')`。
 
-### 8.3 现有策略清单 (16 个)
+### 8.3 现有策略清单 (17 个 — p01, p02, p04..p18, 跳号 p03)
+
+> 2026-07-05 整理: 原文档写 "16 个" 列了 17 行 (含 p03_macd_vol)
+> 实际 `strategy/plugins/` 目录只有 17 个 (p03 已从 working tree 删除, 待归档决策)
+> 替换关系未确认 — 不臆测 p03 的替代策略, 此处仅作废登记
 
 | 插件 | name | 类别 | 说明 |
 |------|------|------|------|
 | p01_zt_daban | zt_daban | 入场 | 涨停打板 |
 | p02_zha_fanbao | zha_fanbao | 入场 | 炸板反包 |
-| p03_macd_vol | macd_golden_vol | 入场 | MACD金叉放量 |
+| ~~p03_macd_vol~~ | ~~macd_golden_vol~~ | — | ~~已废弃 (MACD金叉放量)~~ |
 | p04_break_pressure | break_pressure | 入场 | 突破压力位 |
 | p05_sector_rotation | sector_rotation | 入场 | 板块轮动 |
 | p06_resonance | resonance_triple | 入场 | 多层共振 |
