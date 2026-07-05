@@ -1,11 +1,17 @@
-"""底座验证 #1: 同时读写一致性 + 重连后可见性
+"""tests._verify_rw_consistency: 底座验证 #1 — 同时读写一致性
 
-回答:
-- 写后立即读 (同连接) 能看到吗?
-- 写后新连接读 (模拟重连/不同策略) 能看到吗?
-- 有没有 O3 延迟 (写进去了但要等几秒才可见)?
-
-这决定能不能把主循环从实际 80s/轮 提到标称 10s/轮。
+脚本路径: K:\\QuestDB_test\\tests\\_verify_rw_consistency.py
+用途: 验证 QuestDB 写后立即读 (同连接/新连接) 可见性 + O3 延迟
+依赖: lib.qdb (psycopg2)
+用法: python tests/_verify_rw_consistency.py
+入参: 无
+返回: stdout 报告 (PASS/FAIL) + 退出码
+说明:
+  - 写后同连接读: 应可见 (autocommit=True)
+  - 写后新连接读: 模拟重连, 应可见 (QuestDB 不跨连接延迟)
+  - O3 延迟检测: 写后 5s 内是否能读到
+  - 这是 H5 修复 (commit d8ea329) 的回归测试
+  - 2026-07-05 整理: 下划线开头文件归档 _deprecated/legacy_tests/
 """
 import sys, time
 from datetime import datetime
