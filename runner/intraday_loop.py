@@ -277,7 +277,7 @@ def _process_decisions(con, decisions, risk, ctx=None):
     feishu_signals = []
     for d in decisions:
         # buy: 仓位风控 (情绪不再拦截 — 系统定位是"呈现事实", 不是替用户决策;
-        #   情绪作为 p17 的建议呈现, 不阻断策略。see SESSION_HANDOVER 定位修正)
+        #   情绪作为 p17 的建议呈现, 不阻断策略)
         if d.action == 'buy':
             if not risk.can_open(d.position_pct):
                 logger.info('风控拦截 buy {} {} (仓位 {}%)',

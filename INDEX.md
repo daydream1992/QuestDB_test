@@ -34,7 +34,7 @@ python e2e_legacy.py live_5min  # 5 分钟连续采集
 |---|---|
 | `HANDOVER.md` | **开发手册**（约定、陷阱、4 步法、字段-DDL 对齐规则） |
 | `MAINTENANCE.md` | **运维手册**（29→33 张表、风险参数、e2e 13 步） |
-| `SESSION_HANDOVER.md` | **交接文档**（七项不可推翻决策） |
+| `SESSION_HANDOVER.md` | ~~交接文档~~ → `_deprecated/session_handover_2026-07-03.md` (会话快照, 已撤) |
 | `ARCHITECTURE_REVIEW.md` | **体检报告**（C1-C8 / H1-H8 修复状态） |
 
 ## 目录结构
@@ -88,4 +88,4 @@ _deprecated/    ← 冻结目录 — 探针 + 标记 + 旧版 e2e 家族
 - **QuestDB**：`TIMESTAMP + PARTITION BY DAY + DEDUP UPSERT KEYS + %s 占位符`
 - **tqcenter COM 单进程**：所有调用走 `lib.tq_client.safe_call`（锁 + 3 次重试）
 
-详细见 `HANDOVER.md §1-8`、`MAINTENANCE.md`、`SESSION_HANDOVER.md`。
+详细见 `HANDOVER.md §1-8`、`MAINTENANCE.md`。
