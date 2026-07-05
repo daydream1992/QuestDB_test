@@ -389,7 +389,7 @@ def run(con, ctx):
             logger.warning('写 qd_sentiment_event_log 失败: {}', e)
         try:
             import importlib as _il
-            _feishu = _il.import_module('4_feishu')
+            _feishu = _il.import_module('feishu')
             _feishu.push_text(msg)
         except Exception as e:
             logger.warning('情绪变盘飞书推送失败: {}', e)

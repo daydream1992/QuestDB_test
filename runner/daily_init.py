@@ -25,7 +25,7 @@ from lib.qdb import connect  # noqa: E402
 from lib.tq_client import init, close  # noqa: E402
 from lib.tq_utils import refresh_registry, fetch_all_codes  # noqa: E402
 import importlib as _il
-_feishu = _il.import_module('4_feishu')  # noqa: E402
+_feishu = _il.import_module('feishu')  # noqa: E402
 
 import collect.c5_mapping as c5  # noqa: E402
 import collect.c3_more_info as c3  # noqa: E402

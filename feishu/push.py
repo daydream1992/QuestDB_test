@@ -18,8 +18,8 @@ from datetime import datetime
 import requests
 
 import importlib
-_cfg = importlib.import_module('4_feishu.config')
-_auth = importlib.import_module('4_feishu.auth')
+_cfg = importlib.import_module('feishu.config')
+_auth = importlib.import_module('feishu.auth')
 
 # 使 qdb 可用
 _PROJ_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))

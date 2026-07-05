@@ -25,7 +25,7 @@ python e2e_legacy.py live_5min  # 5 分钟连续采集
 | 采集 | `collect/c1..c6_*.py` | 由 runner 触发 |
 | 计算 | `compute/k1..k3,k5_*.py` | 60s/轮 |
 | 策略 | `strategy/plugins/p01..p18.py` | 60s/轮 |
-| 推送 | `4_feishu/` | 决策产出后即时 |
+| 推送 | `feishu/` | 决策产出后即时 |
 | 调度 | `runner/{scheduler,daily_init,auction_monitor,intraday_loop,daily_close}.py` | 全天 |
 
 ## 文档三件套
@@ -44,7 +44,7 @@ collect/        ← 新版采集器 (c1..c6)
 compute/        ← 新版计算层 (k1..k3,k5)
 strategy/       ← 策略骨架 + 16 个插件
 runner/         ← 5 个调度器
-4_feishu/       ← 飞书三通道
+feishu/         ← 飞书三通道
 lib/            ← 通用库 (qdb / tq_client / market_clock / lark / ...)
 config/         ← 配置 (.env / strategies.yaml / fields.py / ...)
 ddl/            ← 17 个 DDL 文件 + _reset_all.py

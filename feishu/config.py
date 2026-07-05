@@ -10,7 +10,6 @@
 说明:
   - 默认值与 .env.example 保持一致
   - SIGNAL_COOLDOWN_SEC 默认 300 秒 (与 qd_signal_log 配合)
-  - 4_feishu 改名为 feishu 后 (#14) 此路径将变
 """
 
 import os

@@ -29,7 +29,7 @@ from loguru import logger  # noqa: E402
 
 from lib.qdb import executemany_batch, cutoff  # noqa: E402
 import importlib as _il
-_feishu = _il.import_module('4_feishu')  # noqa: E402
+_feishu = _il.import_module('feishu')  # noqa: E402
 from lib.limit_rule import is_at_limit_up  # noqa: E402
 from lib.notify_dedup import allow_push  # noqa: E402
 

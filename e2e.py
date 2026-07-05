@@ -233,7 +233,7 @@ def _push_verify(con, decisions):
     """步骤 13: 飞书推送验证 (推送前 3 条信号 + 验收完成通知 + 决策)"""
     _step(13, '飞书推送验证')
     import importlib as _il
-    _feishu = _il.import_module('4_feishu')
+    _feishu = _il.import_module('feishu')
     push_text, push_signal, push_decision = _feishu.push_text, _feishu.push_signal, _feishu.push_decision
     from datetime import datetime as _dt
 

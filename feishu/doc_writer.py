@@ -17,8 +17,8 @@ from datetime import datetime
 import requests
 
 import importlib
-_cfg = importlib.import_module('4_feishu.config')
-_auth = importlib.import_module('4_feishu.auth')
+_cfg = importlib.import_module('feishu.config')
+_auth = importlib.import_module('feishu.auth')
 
 logger = logging.getLogger(__name__)
 
@@ -262,7 +262,7 @@ def _set_public_permission(doc_id: str):
 def _notify_link(res_type: str, title: str, doc_id: str):
     """推送新资源链接到飞书群"""
     try:
-        _push = importlib.import_module('4_feishu.push')
+        _push = importlib.import_module('feishu.push')
         url = f'https://bytedance.larkoffice.com/docx/{doc_id}'
         _push.push_text(f'📎 新{res_type}: {title}\n{url}')
     except Exception:

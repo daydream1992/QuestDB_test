@@ -20,7 +20,7 @@ cp _deprecated/probes/_probe_api.py 1_collect/_probe_api.py
 ## 守卫规则
 
 - 新代码**禁止** `import _deprecated.*` / `from _deprecated import ...`
-- `runner/` / `collect/` / `compute/` / `strategy/` / `4_feishu/` 不得引用本目录
+- `runner/` / `collect/` / `compute/` / `strategy/` / `feishu/` 不得引用本目录
 - 本目录的 commit 默认独立、单独 review
 - 任何想"复活"本目录某个模块的请求，必须走 [plan] 评审，不能直接拷贝了事
 

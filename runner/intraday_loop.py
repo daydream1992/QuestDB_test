@@ -35,7 +35,7 @@ from loguru import logger  # noqa: E402
 from lib.qdb import connect, query_df, executemany_batch, cutoff  # noqa: E402
 from lib.tq_client import init, close  # noqa: E402
 import importlib as _il
-_feishu = _il.import_module('4_feishu')  # noqa: E402
+_feishu = _il.import_module('feishu')  # noqa: E402
 from lib.market_clock import is_trading_time, is_trading_day  # noqa: E402
 
 import collect.c1_pricevol as c1  # noqa: E402

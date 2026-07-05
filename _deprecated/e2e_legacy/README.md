@@ -2,7 +2,7 @@
 
 本目录收录项目历史上的端到端脚本。它们都走**旧版流水线**
 （`1_collect/qd_NN_*.py` → `2_kline/qd_02_*` → `3_indicators/qd_03_*` → `4_signals/qd_04_*`），
-已被新版（`collect/cN_*.py` → `compute/kN_*.py` → `strategy/plugins/*` → `4_feishu/`）取代。
+已被新版（`collect/cN_*.py` → `compute/kN_*.py` → `strategy/plugins/*` → `feishu/`）取代。
 
 ## 收录脚本
 
@@ -14,7 +14,7 @@
 
 ## 新版对应物
 
-- **新版端到端**：根目录 `e2e.py`（走 `collect/compute/strategy/4_feishu` 全套，HANDOVER §9 推荐）
+- **新版端到端**：根目录 `e2e.py`（走 `collect/compute/strategy/feishu` 全套，HANDOVER §9 推荐）
 - **新版盘中持续采集**：`python runner/scheduler.py`
 
 ## 取回方式

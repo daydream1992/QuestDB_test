@@ -25,7 +25,7 @@ from lib.qdb import connect, query_df, executemany_batch, cutoff  # noqa: E402
 from lib.tq_client import init, close  # noqa: E402
 from lib.tq_utils import fetch_all_codes  # noqa: E402
 import importlib as _il
-_feishu = _il.import_module('4_feishu')  # noqa: E402
+_feishu = _il.import_module('feishu')  # noqa: E402
 
 import collect.c3_more_info as c3  # noqa: E402
 import collect.c6_lhb as c6  # noqa: E402

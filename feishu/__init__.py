@@ -1,44 +1,32 @@
-"""飞书独立模块 — 统一出口
+"""feishu.__init__: 飞书模块统一出口
 
-目录名 4_feishu 以数字开头, 无法直接 import, 需通过 importlib 加载:
+脚本路径: K:\\QuestDB_test\\feishu\\__init__.py
+用途: re-export 所有子模块公开函数, 提供 log_signals 一站式入口
+依赖: feishu.{push,doc_writer,sheet_writer,bitable_writer,auth,config}
+入参: log_signals(signals, push=False, sheet=True, bitable=True)
+返回: dict {'pushed': int, 'sheet_ok': bool, 'bitable_ok': bool}
+说明:
+  - 飞书推送+Sheet+Bitable 三通道一次搞定
+  - 各环节独立容错, 任何一个失败不影响其他
+  - 2026-07-05 整理 #14: 从 4_feishu 改为 feishu, 去掉 importlib hack
+  - 现在可直接 from feishu import log_signals, 但旧 importlib 风格也兼容
 
-    import importlib
-    feishu = importlib.import_module('4_feishu')
-
-    # 信号全链路 (推送+Sheet+Bitable, 一次搞定)
-    feishu.log_signals(signals)
-
-    # 推送
-    feishu.push_text('hello')
-    feishu.push_signal(signal_dict)
-
-    # 文档
-    feishu.create_doc('标题', '## 内容\\n...')
-    feishu.append_signal(doc_id, signal_dict)
-
-    # 电子表格 (Sheet: 简单日志追加)
-    feishu.write_signal_batch(sheet_token, sheet_id, signals)
-    feishu.auto_daily_sheet(sheet_token)
-
-    # 多维表格 (Bitable: 结构化分析 + 筛选/视图/仪表盘)
-    feishu.create_bitable('量化信号')
-    feishu.write_signal_batch_bitable(app_token, table_id, signals)
-    feishu.auto_daily_table(app_token)
-
-本 __init__.py 将所有子模块的公开函数 re-export 到顶层,
-方便调用方 importlib.import_module('4_feishu') 后直接使用。
+示例:
+    from feishu import log_signals, push_text
+    log_signals(signals, push=True)
+    push_text('hello')
 """
 
 import logging
 import importlib as _il
 
 # 加载子模块
-_push = _il.import_module('4_feishu.push')
-_doc = _il.import_module('4_feishu.doc_writer')
-_sheet = _il.import_module('4_feishu.sheet_writer')
-_bitable = _il.import_module('4_feishu.bitable_writer')
-_auth_mod = _il.import_module('4_feishu.auth')
-_cfg = _il.import_module('4_feishu.config')
+_push = _il.import_module('feishu.push')
+_doc = _il.import_module('feishu.doc_writer')
+_sheet = _il.import_module('feishu.sheet_writer')
+_bitable = _il.import_module('feishu.bitable_writer')
+_auth_mod = _il.import_module('feishu.auth')
+_cfg = _il.import_module('feishu.config')
 
 _logger = logging.getLogger(__name__)
 

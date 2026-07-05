@@ -9,7 +9,6 @@
 说明:
   - threading.Lock 保护并发
   - 提前 5 分钟续期, 避免边缘 case
-  - 4_feishu 改名为 feishu 后 (#14) 此路径将变
 """
 
 import time
@@ -19,7 +18,7 @@ import threading
 import requests
 
 import importlib
-_cfg = importlib.import_module('4_feishu.config')
+_cfg = importlib.import_module('feishu.config')
 
 logger = logging.getLogger(__name__)
 

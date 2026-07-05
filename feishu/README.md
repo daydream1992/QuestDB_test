@@ -91,13 +91,12 @@ log_signals(signals)           ← 调用方只需调这一个函数
 
 三路独立容错，任何一路失败不影响其他。
 
-### 为什么目录名是 4_feishu (数字开头)
+### 目录名变更历史 (4_feishu → feishu)
 
-用户指定了落地路径。Python 不允许 `import 4_feishu`，所以用 `importlib`：
-```python
-import importlib
-feishu = importlib.import_module('4_feishu')
-```
+- 2026-07-05 之前: 目录名 `4_feishu/` (用户原指定, 数字前缀)
+- 2026-07-05 (#14): 改名为 `feishu/`, 与 CLAUDE.md § 二 业务目录纯英文规范一致
+- importlib hack 已清理, 现在可以直接 `from feishu import log_signals`
+- 调用方 `_il.import_module('feishu')` 风格仍兼容 (但不再必要)
 
 ### 文件存哪里 & 怎么找
 
