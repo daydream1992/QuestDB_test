@@ -9,7 +9,7 @@
 说明:
   - 启 3 个子进程同时调 3 个不同 tq API
   - 验证 safe_call 锁 + 重试机制在跨进程场景下是否仍有效
-  - 配合 test_3proc_2rounds.py 做两轮对比
+  - 两轮对比版 (test_3proc_2rounds.py) 已归档至 _deprecated/legacy_tests/
 """
 import os
 import sys

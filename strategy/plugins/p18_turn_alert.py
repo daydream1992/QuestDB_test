@@ -6,7 +6,7 @@
 入库: qd_decisions (watch 市场级提示)
 说明:
   - 变盘事件由 k3_sentiment.check_turn 检测 (涨停骤降/涨跌比翻转/情绪跨越)
-  - k3 已对变盘事件直接 lark.push_text 推送; 本插件入库记录 + 给持仓侧参考
+  - k3 已对变盘事件直接 feishu.push_text 推送; 本插件入库记录 + 给持仓侧参考
 """
 
 from typing import List
