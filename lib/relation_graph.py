@@ -3,7 +3,7 @@
 脚本路径: K:\QuestDB_test\\lib\\relation_graph.py
 用途: 加载 / 查询 / 同步 板块-个股映射 (行业·概念·地域·风格·指数) + 个股行业三级分类
 依赖: psycopg2, lib.qdb
-数据源: K:\\QuestDB_test\\指数板块个股映射\\*.json
+数据源: K:\\QuestDB_test\\data\\market_data\\市场数据\\*.json
 入库表:
   - qd_sector_meta          板块元数据
   - qd_stock_industry       个股申万三级分类
@@ -25,7 +25,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 # JSON 默认目录
-DEFAULT_JSON_DIR = r'K:\QuestDB_test\指数板块个股映射'
+DEFAULT_JSON_DIR = r'K:\QuestDB_test\data\market_data\市场数据'
 
 # ---------------- 内存映射 ----------------
 # 板块元数据: {block_code: {sector_name, sector_type, stock_count}}
@@ -117,7 +117,7 @@ def load_from_json(json_dir=None):
     """从 JSON 加载映射到内存
 
     Args:
-        json_dir: JSON 目录, 默认 K:\\QuestDB_test\\指数板块个股映射
+        json_dir: JSON 目录, 默认 K:\\QuestDB_test\\data\\market_data\\市场数据
     """
     json_dir = json_dir or DEFAULT_JSON_DIR
 

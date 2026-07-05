@@ -2,7 +2,7 @@
 
 脚本路径: K:\QuestDB_test\\collect\\c5_mapping.py
 用途: 从 JSON 加载 6 维关系图谱 (行业/概念/地域/风格/指数 + 个股三级分类), 同步入库
-数据源: K:\\QuestDB_test\\指数板块个股映射\\*.json
+数据源: K:\\QuestDB_test\\data\\market_data\\市场数据\\*.json
 入库表 (6 张):
   - qd_sector_meta         板块元数据
   - qd_stock_industry      个股申万三级分类
@@ -42,7 +42,7 @@ def run(con=None, json_dir=None):
 
     Args:
         con:       psycopg2 连接, None 则自建
-        json_dir:  JSON 目录, None 用默认 (K:\\QuestDB_test\\指数板块个股映射)
+        json_dir:  JSON 目录, None 用默认 (K:\\QuestDB_test\\data\\market_data\\市场数据)
 
     Returns:
         dict: 各表写入行数

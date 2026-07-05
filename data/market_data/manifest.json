@@ -1,0 +1,91 @@
+{
+  "version": "2026-07-05",
+  "schema_ref": "./模块说明.md",
+  "refresh_strategy": "manual",
+  "auto_refresh": {
+    "trigger": "daily_close.run() 末尾",
+    "fallback_on_error": true,
+    "fallback_strategy": "用旧版本 + 日志告警"
+  },
+  "files": [
+    {
+      "path": "市场数据/名称映射.json",
+      "type": "code_to_name",
+      "rows_estimate": 5500,
+      "updated_at": "2026-07-05",
+      "schema_ref": "./模块说明.md#名称映射json"
+    },
+    {
+      "path": "市场数据/板块索引.json",
+      "type": "block_index",
+      "rows_estimate": 200,
+      "updated_at": "2026-07-05"
+    },
+    {
+      "path": "市场数据/个股板块全景.json",
+      "type": "stock_to_blocks",
+      "rows_estimate": 5000,
+      "updated_at": "2026-07-05"
+    },
+    {
+      "path": "市场数据/行业/行业层级树.json",
+      "type": "industry_tree",
+      "rows_estimate": 100,
+      "updated_at": "2026-07-05"
+    },
+    {
+      "path": "市场数据/行业/股票行业映射.json",
+      "type": "stock_to_industry",
+      "rows_estimate": 5500,
+      "updated_at": "2026-07-05"
+    },
+    {
+      "path": "市场数据/概念/概念板块列表.json",
+      "type": "block_list",
+      "rows_estimate": 300,
+      "updated_at": "2026-07-05"
+    },
+    {
+      "path": "市场数据/概念/概念成分股.json",
+      "type": "block_to_stocks",
+      "rows_estimate": 5000,
+      "updated_at": "2026-07-05"
+    },
+    {
+      "path": "市场数据/风格/风格板块列表.json",
+      "type": "block_list",
+      "rows_estimate": 50,
+      "updated_at": "2026-07-05"
+    },
+    {
+      "path": "市场数据/风格/风格成分股.json",
+      "type": "block_to_stocks",
+      "rows_estimate": 3000,
+      "updated_at": "2026-07-05"
+    },
+    {
+      "path": "市场数据/地区/地区板块列表.json",
+      "type": "block_list",
+      "rows_estimate": 50,
+      "updated_at": "2026-07-05"
+    },
+    {
+      "path": "市场数据/地区/地区成分股.json",
+      "type": "block_to_stocks",
+      "rows_estimate": 5000,
+      "updated_at": "2026-07-05"
+    },
+    {
+      "path": "市场数据/指数/指数列表.json",
+      "type": "block_list",
+      "rows_estimate": 200,
+      "updated_at": "2026-07-05"
+    },
+    {
+      "path": "市场数据/指数/指数成分股.json",
+      "type": "block_to_stocks",
+      "rows_estimate": 5000,
+      "updated_at": "2026-07-05"
+    }
+  ]
+}
