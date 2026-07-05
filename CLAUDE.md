@@ -162,6 +162,103 @@ tests/   →  lib/, collect/, compute/, strategy/, feishu/, runner/
 - 改业务约定 → 同步 `HANDOVER.md`
 - 重大决策 → 写到 memory（`~/.claude/projects/k--QuestDB-test/memory/`）
 
+## 十一、数据动态化（前瞻架构）
+
+**问题**：板块/个股映射数据随市场变化（新上市、板块重组、申万分类调整），离线 JSON 不能实时跟进。
+
+### 11.1 数据分层
+
+```
+data/
+├── market_data/              ← 板块/个股静态映射（基础数据）
+│   ├── 市场数据/             ← 14 个 JSON（名称/板块/行业/概念/...）
+│   ├── manifest.json         ← 元信息：来源/更新时间/版本/刷新策略
+│   └── 模块说明.md           ← schema 文档（已存在）
+├── snapshots/                ← 临时离线快照（按日期戳，可清理）
+└── refresh_log/              ← 刷新日志（增量同步状态）
+```
+
+### 11.2 加载器约定
+
+```python
+# 业务代码统一通过 lib.market_data_loader 加载，禁止直接读 JSON
+from lib.market_data_loader import load_market_data
+
+data = load_market_data(refresh='auto')  # 'auto' | 'cache' | 'force'
+```
+
+**`lib.market_data_loader` 设计要点**：
+- 读 `manifest.json` 的 `updated_at` 与 `refresh_strategy`
+- `auto` 模式：盘后 16:00 后用新版本，盘中用 cache
+- `cache` 模式：始终用内存缓存
+- `force` 模式：立即重新读盘（开发/调试用）
+- **未来扩展**：支持增量 delta（市场数据模块/全市场数据架构导出.py 已具备此能力）
+
+### 11.3 刷新入口
+
+- `scripts/refresh_market_data.py` — 手动/定时刷新入口
+- runner/daily_close.py 末尾调用一次（自动）
+- 失败不阻断（fallback 到旧版本 + 日志告警）
+
+### 11.4 新增数据文件的 4 步法
+
+1. 写入 `data/market_data/<scope>/<file>.json`
+2. 在 `manifest.json` 注册：source/updated_at/refresh_strategy/schema_ref
+3. 在 `lib.market_data_loader.load_X()` 加加载函数（强类型校验）
+4. 业务代码 `from lib.market_data_loader import load_X` 使用
+
+## 十二、策略层预留位（前瞻架构）
+
+**未来 3 个独立模块**（不在本批次实现，但架构已锁）：
+
+### 12.1 大盘情绪模块（k4_sentiment 预留位）
+
+- **当前**：`compute/k3_sentiment.py` 只做"实时情绪快照"（5 档评级 + 6 池分类 + 跨帧变盘）
+- **未来**：`compute/k4_sentiment.py` 做"深度大盘情绪"（历史情绪曲线/情绪周期/情绪-指数相关性/情绪-涨停家数预测）
+- **不冲突**：k3 继续做实时，k4 做深度
+- 数据源：`qd_sentiment_*` 表 + `qd_index_*` 历史
+
+### 12.2 板块资金模块（k6_sector_capital 预留位）
+
+- **当前**：`strategy/sector_flow.py` 只算"板块资金流聚合"（流入/流出/加速度）
+- **未来**：`compute/k6_sector_capital.py` 做"板块资金深度模型"（主力/北向/融资/ETF 申赎多源融合，资金-价格背离检测，板块轮动预测）
+- 数据源：`qd_sector_flow` + `qd_money_flow` + `qd_big_order` + 行情指数历史
+
+### 12.3 个股梯队模块（k7_stock_ladder 预留位）
+
+- **当前**：没有梯队识别
+- **未来**：`compute/k7_stock_ladder.py` 做"个股梯队深度模型"（龙头/跟风/卡位/掉队识别，梯队传导路径，梯队生命周期）
+- 数据源：`qd_signals` + `qd_decisions` + `qd_resonance` + 历史涨停家数
+
+### 12.4 横截面策略插件目录（strategy/cross_section/ 预留）
+
+- **当前**：`strategy/plugins/` 都是单标的插件（输入是单只股票的 df）
+- **未来**：`strategy/cross_section/` 放横截面插件（输入是全市场 df）
+- 命名约定：`cspNN_<desc>.py`（cross_section plugin）
+- 注册方式：`@StrategyRegistry.register(scope='cross_section')`
+
+### 12.5 命名位占用规则
+
+- `compute/kN_xxx.py` 中 `k4` / `k6` / `k7` 是**预留位**，禁止占用做其他用途
+- `strategy/cross_section/` 是**预留子目录**，禁止用作其他用途
+- 未来开工时只需新建文件 + 在 `__init__.py` 注册，无需改 CLAUDE.md
+
+## 十三、增量同步模式（数据动态化扩展）
+
+```python
+# lib/market_data_loader.py 未来扩展
+def load_with_delta(target: str, since: str) -> DeltaResult:
+    """增量加载（since 时间戳之后的变化）
+
+    返回: {"added": [...], "modified": [...], "removed": [...]}
+    用于: 板块新增股票/板块重组识别
+    """
+```
+
+- 触发时机：`scripts/refresh_market_data.py` 检测到 `manifest.updated_at` 超过 24h
+- 落盘位置：`data/market_data/<scope>/<file>.delta.json`（带时间戳）
+- 业务影响：横截面策略（k6/k7/csp*）必须消费 delta 才能跟住市场变化
+
 ---
 
 ## 附录：变更记录
@@ -169,3 +266,4 @@ tests/   →  lib/, collect/, compute/, strategy/, feishu/, runner/
 | 日期 | 变更 | 来源 |
 |---|---|---|
 | 2026-07-05 | 初版入库 | 整理批次 #11 |
+| 2026-07-05 | 增 §11 数据动态化 + §12 策略层预留位 + §13 增量同步 | 用户指令：数据可更新/预留 3 模块 |
