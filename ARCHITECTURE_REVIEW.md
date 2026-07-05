@@ -50,6 +50,10 @@
 **C4. ctx.positions / rotation_signal / lhb_data 三个字段全仓库无写入方**（C 补充：qd_positions 表本身完全孤立无读写）
 - → p05（轮动+持仓）、p13/p14（龙虎榜）、p15/p16（止损止盈）全部恒空；RiskManager 总仓位校验形同虚设（`current_total_position()` 恒 0）。
 - **修法**：_build_context 从持仓表加载 positions；60s 块调 `detect_rotation`；daily_close 调 `lhb_analyzer.analyze`。
+- **2026-07-05 进展**：
+  - ✅ `lhb_data` 已接通：`_build_context` 调 `strategy.lhb_analyzer.build_lhb_data` 从 `qd_lhb_detail` 表聚合（非本节记录的"daily_close 调 analyze"路径——因 p13/p14 注册在盘中策略池，从表读昨日数据更符合 T+1 语义；`analyze(lhb_raw)` 保留供原始数据场景）。p13/p14 现可触发。
+  - ✅ gpjy 链已接通：`daily_close` 调 `c5_gpjy.run` 写 `qd_stock_gpjy` → 次日 `_build_context` 读 `ctx.gp_df`。p01 GP 维度生效。
+  - ⏳ `positions` / `rotation_signal` 仍待办（p05/p15/p16/RiskManager 仍恒空）。
 
 ### 组 2：单点字段/schema 错配（改一行即修复）
 

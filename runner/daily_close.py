@@ -28,6 +28,7 @@ import importlib as _il
 _feishu = _il.import_module('feishu')  # noqa: E402
 
 import collect.c3_more_info as c3  # noqa: E402
+import collect.c5_gpjy as c5gpjy  # noqa: E402
 import collect.c6_lhb as c6  # noqa: E402
 
 # 日志配置
@@ -87,6 +88,15 @@ def run(con=None):
         n1 = c3.run(codes, mode='daily', con=con)
         logger.info('c3 daily 完成: {}', n1)
 
+        # 1.5 GP 股性数据 (盘后日级, 次日盘中供 p01_zt_daban 读 qd_stock_gpjy)
+        #     codes=None → c5_gpjy 自动从 qd_code_registry 取 stock; 失败不阻断
+        try:
+            n_gp = c5gpjy.run(con=con)
+            logger.info('c5 gpjy 完成: {}', n_gp)
+        except Exception as e:
+            n_gp = 0
+            logger.error('c5 gpjy 失败 (p01 将退化为无 GP 维度): {}', e)
+
         # 2. 龙虎榜
         n2 = c6.run(date=datetime.now().date(), con=con)
         logger.info('c6 lhb 完成: {}', n2)
@@ -97,9 +107,10 @@ def run(con=None):
         # 4. 飞书汇报当日总结 + 生成日终报告文档
         msg = ('[daily_close] 当日总结\n'
                '  日级采集: {}\n'
+               '  GP股性: {}\n'
                '  龙虎榜: {}\n'
                '  策略评估: {} 条\n'
-               '  时间: {}').format(n1, n2, n3, datetime.now())
+               '  时间: {}').format(n1, n_gp, n2, n3, datetime.now())
         _feishu.push_text(msg)
         # 日终策略报告文档
         try:

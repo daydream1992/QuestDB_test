@@ -189,6 +189,12 @@ def _build_context(con, graph):
                               f"WHERE date > '{cutoff(days=30)}'")
     except Exception as e:
         logger.warning('GP 加载失败: {}', e)
+    # 龙虎榜 (T+1, p13/p14 用): 从 qd_lhb_detail 聚合每 code 最新一日席位 → ctx.lhb_data
+    try:
+        from strategy.lhb_analyzer import build_lhb_data
+        ctx.lhb_data = build_lhb_data(con)
+    except Exception as e:
+        logger.warning('lhb_data 加载失败 (p13/p14 将空返): {}', e)
     try:
         # c3 daily 写 qd_stock_daily (含 ZTPrice/fLianB/CJJEPre1 等日级字段)
         # c3 intraday 写 qd_stock_snapshot (含 ZAF/fHSL/Zjl 等实时字段, 由 snapshot_focus_df 承载)

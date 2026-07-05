@@ -122,3 +122,54 @@ def analyze(lhb_raw) -> list:
                 sum(r['institution_count'] for r in results),
                 sum(r['north_count'] for r in results))
     return results
+
+
+def build_lhb_data(con, days: int = 3) -> list:
+    """从 qd_lhb_detail 表聚合龙虎榜信号 (供 ctx.lhb_data, p13/p14 用)
+
+    与 analyze() 的区别:
+      - analyze(lhb_raw): 从 c6 原始数据 (含 buyers/sellers 席位) 算, 输出含 famous_seats 明细
+      - build_lhb_data(con): 从已落库的 qd_lhb_detail 表聚合, 仅计数+净额 (不重建席位明细)
+
+    盘中能用最新龙虎榜是昨日 (今日盘后才出今日), 每 code 取最新 lhb_date 聚合。
+    net_buy 用该 code 知名席位 net_amount 之和 (analyze 是买方净额; 近似, p13/p14 仅判 >0)。
+
+    Args:
+        con: psycopg2 连接
+        days: 回看窗口 (默认 3 天, 容错周末/节假日空窗)
+
+    Returns:
+        list[dict]: 每 code 一项, 格式与 analyze() 兼容:
+            {code, name, date, types, famous_seats,
+             hotmoney_count, institution_count, north_count, net_buy}
+    """
+    from lib.qdb import query_df, cutoff
+    df = query_df(
+        con, f"SELECT code, lhb_date, broker_type, net_amount "
+             f"FROM qd_lhb_detail WHERE lhb_date > '{cutoff(days=days)}'")
+    if df is None or df.empty:
+        return []
+    # 每 code 只取最新 lhb_date 的所有席位行 (避免多日累计扭曲席位计数)
+    df = df.sort_values('lhb_date')
+    keep = df.groupby('code')['lhb_date'].transform('max') == df['lhb_date']
+    df = df[keep]
+    results = []
+    for code, g in df.groupby('code'):
+        btypes = g['broker_type'].fillna('').astype(str)
+        results.append({
+            'code': code,
+            'name': '',
+            'date': str(g['lhb_date'].iloc[0]),
+            'types': sorted({t for t in btypes if t}),
+            'famous_seats': [],
+            'hotmoney_count': int(btypes.str.startswith('hot_money').sum()),
+            'institution_count': int((btypes == 'institution').sum()),
+            'north_count': int(btypes.str.startswith('north').sum()),
+            'net_buy': round(float(g['net_amount'].fillna(0).sum()), 2),
+        })
+    logger.info('lhb_data 构建 (from qd_lhb_detail): {} 只, 游资={}, 机构={}, 北向={}',
+                len(results),
+                sum(r['hotmoney_count'] for r in results),
+                sum(r['institution_count'] for r in results),
+                sum(r['north_count'] for r in results))
+    return results
