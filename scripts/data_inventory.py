@@ -1,10 +1,15 @@
-"""数据资产盘点 - 字段能力骨架探测
+"""scripts.data_inventory: 数据资产盘点 - 字段能力骨架探测
 
-扫所有 qd_ 表的每个字段, 机器查真实数据状态 (非空率/distinct/min/max/样本),
-输出 JSON 骨架。语义层 (来源/能力/边界/验证状态) 由人工/代码理解后补充。
-
+脚本路径: K:\\QuestDB_test\\scripts\\data_inventory.py
+用途: 扫所有 qd_ 表的每个字段, 机器查真实数据状态 (非空率/distinct/min/max/样本)
+依赖: psycopg2 (lib.qdb), json
+输出: _deprecated/inventory/data_inventory.json
 用法: python scripts/data_inventory.py
-输出: docs/data_inventory.json
+入参: 无 (读 config/.env)
+返回: 写入 JSON 文件
+说明:
+  - 输出 JSON 骨架, 语义层 (来源/能力/边界/验证状态) 由其他脚本补充
+  - 路径常量 INV_PATH 在 scripts/data_inventory_*.py 系列中保持一致
 """
 import os
 import sys

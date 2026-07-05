@@ -1,6 +1,16 @@
-"""飞书模块配置
+"""feishu.config: 飞书模块配置加载
 
-从 config/.env 读取飞书应用凭据与目标资源 ID。
+脚本路径: K:\\QuestDB_test\\feishu\\config.py
+用途: 从 config/.env 读飞书应用凭据与目标资源 ID
+依赖: os / dotenv
+配置: LARK_APP_ID / LARK_APP_SECRET / LARK_SHEET_TOKEN / LARK_BITABLE_TOKEN /
+      LARK_DOC_ID / LARK_FOLDER_TOKEN / LARK_WEBHOOK_URL / SIGNAL_COOLDOWN_SEC
+入参: 模块级常量, 调用方直接 import
+返回: dict 形式的全局配置
+说明:
+  - 默认值与 .env.example 保持一致
+  - SIGNAL_COOLDOWN_SEC 默认 300 秒 (与 qd_signal_log 配合)
+  - 4_feishu 改名为 feishu 后 (#14) 此路径将变
 """
 
 import os

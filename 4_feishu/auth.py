@@ -1,7 +1,15 @@
-"""飞书认证管理
+"""feishu.auth: 飞书 tenant_access_token 管理
 
-自动获取 / 刷新 tenant_access_token (有效期 2h, 提前 5min 刷新)。
-线程安全 (threading.Lock)。
+脚本路径: K:\\QuestDB_test\\feishu\\auth.py
+用途: 自动获取/刷新 tenant_access_token (2h 有效, 提前 5min 刷新)
+依赖: 标准库 time/threading, 第三方 requests
+配置: LARK_APP_ID / LARK_APP_SECRET (从 config/.env 读)
+入参: FeishuAuth(app_id, app_secret)
+返回: get_token() -> str (线程安全, 缓存自动续期)
+说明:
+  - threading.Lock 保护并发
+  - 提前 5 分钟续期, 避免边缘 case
+  - 4_feishu 改名为 feishu 后 (#14) 此路径将变
 """
 
 import time

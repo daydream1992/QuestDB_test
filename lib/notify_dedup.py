@@ -1,8 +1,15 @@
-"""通用推送频控 (Deduper)
+"""lib.notify_dedup: 进程内推送频控 (Deduper)
 
-key=(code, type), TTL 秒内同 key 不重复推送; critical 事件豁免。
-移植自 DB数据库_v2 01实盘监控/notify.py (Deduper 3分钟去重 + critical 豁免)。
-进程内单例 (intraday_loop daemon 常驻); 定期 cleanup 避免内存无限增长。
+脚本路径: K:\\QuestDB_test\\lib\\notify_dedup.py
+用途: 同 (code, type) 在 TTL 秒内只推一次, critical 事件豁免
+依赖: 标准库 time, threading
+配置: _DEFAULT_TTL = 180 秒
+入参: Deduper(key_ttl=180)
+返回: allow_push(code, event_type, critical=False) -> bool
+说明:
+  - 进程内单例, intraday_loop daemon 常驻复用
+  - critical=True 事件 (如炸板) 跳过频控
+  - 移植自 DB数据库_v2 01实盘监控/notify.py
 """
 
 import time

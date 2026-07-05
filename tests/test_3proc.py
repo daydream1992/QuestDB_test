@@ -1,6 +1,15 @@
-"""_test_3proc: 多进程并行 3 接口测试 (验证 tqcenter COM 跨进程是否安全)
+"""tests.test_3proc: 多进程并行 3 接口测试
 
-启 3 个子进程, 同时调 3 个不同 API, 看是否都能完成。
+脚本路径: K:\\QuestDB_test\\tests\\test_3proc.py
+用途: 验证 tqcenter COM 跨进程是否安全 (H1 修复相关)
+依赖: multiprocessing, tqcenter (sys.path 注入)
+用法: python tests/test_3proc.py
+入参: 无
+返回: stdout 报告 + 退出码
+说明:
+  - 启 3 个子进程同时调 3 个不同 tq API
+  - 验证 safe_call 锁 + 重试机制在跨进程场景下是否仍有效
+  - 配合 test_3proc_2rounds.py 做两轮对比
 """
 import os
 import sys

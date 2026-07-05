@@ -1,7 +1,16 @@
-"""数据资产盘点 - 补业务规则 (权威判定法)
+"""scripts.data_inventory_rules: 数据资产盘点 - 补业务规则
 
-用户授权威规则: 涨停跌停用 FCAmo 判定 (>0涨停/<0跌停), 非 Now>=ZTPrice。
-记入 inventory 字段 capability + 顶层 business_rules, 并标注代码不一致处。
+脚本路径: K:\\QuestDB_test\\scripts\\data_inventory_rules.py
+用途: 用户授权威规则, 记入 inventory 字段 capability 与顶层 business_rules
+依赖: json, _deprecated/inventory/data_inventory.json (读)
+输出: 同上 (原地补充)
+用法: python scripts/data_inventory_rules.py
+入参: 无
+返回: 写回 inventory JSON
+说明:
+  - 涨停跌停用 FCAmo 判定 (>0 涨停/<0 跌停), 非 Now>=ZTPrice
+  - 标注代码不一致处 (业务侧引用与 inventory 规则)
+  - 必须先跑 data_inventory.py 生成骨架
 """
 import os, sys, json
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
