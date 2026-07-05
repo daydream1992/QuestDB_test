@@ -238,7 +238,7 @@ SEMANTICS = {
 
 
 def main():
-    inv_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'docs', 'data_inventory.json')
+    inv_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), '_deprecated', 'inventory', 'data_inventory.json')
     with open(inv_path, 'r', encoding='utf-8') as f:
         inv = json.load(f)
 

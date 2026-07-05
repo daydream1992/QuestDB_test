@@ -8,7 +8,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 try: sys.stdout.reconfigure(encoding='utf-8')
 except: pass
 
-INV = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'docs', 'data_inventory.json')
+INV = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), '_deprecated', 'inventory', 'data_inventory.json')
 
 # 代码里涨停判定不一致的位置 (grep 盘点)
 LIMIT_UP_CODE_STATUS = {

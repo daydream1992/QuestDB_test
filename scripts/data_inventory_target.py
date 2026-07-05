@@ -28,7 +28,7 @@ except Exception:
 
 import fields as F  # config/fields.py
 
-INV_PATH = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'docs', 'data_inventory.json')
+INV_PATH = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), '_deprecated', 'inventory', 'data_inventory.json')
 
 # 表级适用对象 (基于表语义)
 TABLE_TARGET = {

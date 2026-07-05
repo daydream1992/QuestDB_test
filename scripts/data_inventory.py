@@ -111,8 +111,8 @@ def main():
             })
         out['tables'][tbl] = t_info
 
-    os.makedirs(os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'docs'), exist_ok=True)
-    out_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'docs', 'data_inventory.json')
+    os.makedirs(os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), '_deprecated', 'inventory'), exist_ok=True)
+    out_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), '_deprecated', 'inventory', 'data_inventory.json')
     with open(out_path, 'w', encoding='utf-8') as fp:
         json.dump(out, fp, ensure_ascii=False, indent=2)
     print(f'\n输出: {out_path}', file=sys.stderr)

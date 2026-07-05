@@ -23,8 +23,8 @@ except Exception:
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from data_inventory_spec import parse_spec, parse_ddl  # noqa
 
-INV_PATH = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'docs', 'data_inventory.json')
-OUT_PATH = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'docs', '未使用字段清单.md')
+INV_PATH = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), '_deprecated', 'inventory', 'data_inventory.json')
+OUT_PATH = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), '_deprecated', 'inventory', '未使用字段清单.md')
 
 # 高价值关键词 (可能补现有坑/解锁策略) - 优先标注
 HIGH_VALUE_KEYS = ['涨停', '连板', '跌停', '封单', '封板', '主力', '资金', '竞价', '龙虎',
