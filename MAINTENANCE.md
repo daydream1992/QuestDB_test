@@ -113,7 +113,11 @@ K:\QuestDB_test\
 
 ---
 
-## 3. 数据库表清单 (29 张表)
+## 3. 数据库表清单 (35 张表)
+
+> 2026-07-05 整理: 原 §3 写 29 张表, 实际 DDL 已扩到 35 张
+> (C8 拆表 + qd_sentiment_* 3 张 + qd_intraday_event + qd_stock_intraday + qd_stock_gpjy)
+> 此处按 DDL 文件 00~17 顺序罗列。
 
 所有表名以 `qd_` 前缀, 使用 QuestDB 时序表 + DEDUP UPSERT KEYS 幂等去重。
 
@@ -190,6 +194,17 @@ K:\QuestDB_test\
 | 27 | qd_big_order | 11 | order_time | L2 大单事件 |
 | 28 | qd_lhb_detail | 12 | lhb_date | 龙虎榜明细 |
 | 29 | qd_lhb_broker | 12 | lhb_date | 龙虎榜营业部 (游资/机构/北向识别) |
+
+### 3.10 情绪/异动/拆表/GP (6 张 — 2026-07-05 整理补齐)
+
+| # | 表名 | DDL | 时间戳 | 用途 |
+|---|------|-----|--------|------|
+| 30 | qd_sentiment_snapshot_min | 13 | snapshot_time | 大盘情绪快照 (5 档评级/6 池分类) |
+| 31 | qd_sentiment_event_log | 13 | event_time | 情绪变盘事件 (涨跌比翻转/跨越) |
+| 32 | qd_sentiment_daily | 13 | trade_date | 情绪日级 (盘后汇总) |
+| 33 | qd_intraday_event | 14 | event_time | 盘中异动 (涨速/封板/炸板/资金脉冲) |
+| 34 | qd_stock_intraday | 16 | snapshot_time | **C8 拆表** 个股盘中高频字段 (FCAmo/Zjl/Wtb/fHSL 等) |
+| 35 | qd_stock_gpjy | 17 | trade_date | GP 系列历史 (连板率/次日红盘率/机构买入) |
 
 ---
 
