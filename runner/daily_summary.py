@@ -16,8 +16,44 @@ import importlib as _il
 _feishu = _il.import_module('feishu')
 
 
+def _split_review_sections(lines):
+    """把 daily_summary 的 lines 按分区标题拆成 4 块
+
+    分区标题格式: '── 情绪变化 ──' / '── 数据入库 ──' / '── 策略产出 ──' / '── 异常告警 ──'
+    """
+    sections = {'emotion': '', 'data': '', 'strategy': '', 'alert': ''}
+    key_map = {
+        '情绪变化': 'emotion', '情绪': 'emotion',
+        '数据入库': 'data', '入库': 'data',
+        '策略产出': 'strategy', '策略': 'strategy',
+        '异常告警': 'alert', '异常': 'alert',
+    }
+    current_key = None
+    current_lines = []
+    for line in lines:
+        matched = False
+        for keyword, key in key_map.items():
+            if keyword in line and line.strip().startswith('──'):
+                if current_key:
+                    sections[current_key] = '\n'.join(current_lines)
+                current_key = key
+                current_lines = [line]
+                matched = True
+                break
+        if not matched and current_key:
+            current_lines.append(line)
+    if current_key:
+        sections[current_key] = '\n'.join(current_lines)
+    return sections
+
+
 def run():
     """拉当日全链路数据, 生成复盘汇总, 推飞书"""
+    # 刷出盘中未推送的聚合决策桶
+    try:
+        _feishu.flush_pending_bucket()
+    except Exception as e:
+        logger.warning('close flush 桶失败: {}', e)
     con = connect()
     try:
         now = datetime.now()
@@ -139,10 +175,17 @@ def run():
         logger.info('复盘汇总:\n{}', text)
 
         try:
-            ok = _feishu.push_text(text)
-            logger.info('复盘推送: {}', ok)
+            # 构造 T4 复盘卡片
+            sections = _split_review_sections(lines)
+            card = _feishu.build_review_card(sections)
+            ok = _feishu._send({'msg_type': 'interactive', 'card': card})
+            logger.info('复盘推送(卡片): {}', ok)
         except Exception as e:
-            logger.warning('复盘推送失败: {}', e)
+            logger.warning('复盘卡片推送失败, 降级纯文本: {}', e)
+            try:
+                _feishu.push_text(text)   # 降级: 卡片失败用纯文本兜底
+            except Exception as e2:
+                logger.warning('复盘纯文本推送也失败: {}', e2)
 
         return text
     finally:

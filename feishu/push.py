@@ -16,6 +16,7 @@ import sys
 import time
 import logging
 import threading
+from collections import deque
 from datetime import datetime
 
 import requests
@@ -102,6 +103,44 @@ _COLOR_MAP = {
     'capital_in': 'green',
     'capital_out': 'red',
 }
+
+
+# ── T1 卡片辅助函数 ────────────────────────────────────────
+
+
+def _get_price_color(stype, reason):
+    """根据信号类型推断价格颜色"""
+    green_types = {'buy', 'stop_profit', 'surge_up', 'limit_seal', 'capital_in'}
+    red_types = {'sell', 'stop_loss', 'surge_down', 'limit_break', 'capital_out'}
+    if stype in green_types:
+        return 'green'
+    if stype in red_types:
+        return 'red'
+    return 'grey'
+
+
+def _price_change_md(stype, reason):
+    """生成涨跌幅描述 (从 reason 中提取或根据 stype 推断)"""
+    if stype in ('limit_seal', 'surge_up'):
+        return '<font color="green">+涨停</font>'
+    if stype in ('limit_break', 'surge_down'):
+        return '<font color="red">-跌停</font>'
+    if stype == 'buy':
+        return '<font color="green">↑ 买入信号</font>'
+    if stype == 'sell':
+        return '<font color="red">↓ 卖出信号</font>'
+    return ''
+
+
+def _score_bar(score, total=10):
+    """生成 Unicode 进度条: ████████░░"""
+    try:
+        s = float(score)
+    except (TypeError, ValueError):
+        return '░' * total
+    filled = int(round(s / 100 * total))
+    filled = max(0, min(total, filled))
+    return '█' * filled + '░' * (total - filled)
 
 
 # ══════════════════════════════════════════════════════════
@@ -450,59 +489,414 @@ def send_to_chat(chat_id, msg_type, content):
 # ══════════════════════════════════════════════════════════
 
 def _build_signal_card(signal):
-    """构造信号卡片"""
+    """T1 单标的精推卡片 (column_set 分栏 + 价格着色 + 评分进度条)
+
+    结构:
+      ┌──────────────────────────────────────────┐
+      │ [Header 绿/红/橙] 信号·buy 09:35:12       │
+      ├──────────────────────────────────────────┤
+      │ ┌──────────┬─────────────────────────┐  │
+      │ │ 002479   │ 富春环保                 │  │
+      │ │ 5.62     │ +9.98% 涨停              │  │
+      │ └──────────┴─────────────────────────┘  │
+      │ ─────────────────────────               │
+      │ 评分  87/100 ████████░░                 │
+      │ 策略  dark_money · 大单净流入           │
+      │ ─────────────────────────               │
+      │ 原因  09:33 主力单笔8000手 → 09:34 炸板  │
+      └──────────────────────────────────────────┘
+    """
     stype = signal.get('signal_type', '')
     color = _COLOR_MAP.get(stype, 'blue')
     title = f'信号 · {stype or "unknown"}'
 
-    lines = [
-        f'**代码**: {signal.get("code", "")}',
-        f'**股票名称**: {signal.get("stock_name", "")}',
-        f'**策略**: {signal.get("strategy_name", "")}',
-        f'**类型**: {stype}',
-        f'**评分**: {signal.get("signal_score", "")}',
-        f'**价格**: {signal.get("price", "")}',
-        f'**成交量**: {signal.get("volume", "")}',
-        f'**时间**: {signal.get("signal_time", "")}',
-        f'**原因**: {signal.get("reason", "")}',
+    code = signal.get('code', '')
+    name = signal.get('stock_name', '') or ''
+    price = signal.get('price', '')
+    score = signal.get('signal_score', '')
+    strategy = signal.get('strategy_name', '')
+    reason = signal.get('reason', '') or ''
+
+    # 价格涨跌着色 (根据 reason 或 signal_type 判断)
+    price_color = _get_price_color(stype, reason)
+    price_md = f'<font color="{price_color}">**{price}**</font>'
+
+    # 评分进度条 (10 格)
+    score_bar = _score_bar(score)
+
+    elements = [
+        # 1. 主体分栏: 左代码, 右名称+价格
+        {
+            'tag': 'column_set',
+            'flex_mode': 'none',
+            'background_style': 'default',
+            'columns': [
+                {
+                    'tag': 'column',
+                    'width': 'weighted',
+                    'weight': 1,
+                    'vertical_align': 'top',
+                    'elements': [
+                        {'tag': 'div', 'text': {'tag': 'lark_md',
+                            'content': f'**{code}**'}},
+                        {'tag': 'div', 'text': {'tag': 'lark_md',
+                            'content': price_md}},
+                    ],
+                },
+                {
+                    'tag': 'column',
+                    'width': 'weighted',
+                    'weight': 2,
+                    'vertical_align': 'top',
+                    'elements': [
+                        {'tag': 'div', 'text': {'tag': 'lark_md',
+                            'content': f'{name}'}},
+                        {'tag': 'div', 'text': {'tag': 'lark_md',
+                            'content': _price_change_md(stype, reason)}},
+                    ],
+                },
+            ],
+        },
+        {'tag': 'hr'},
+        # 2. 评分进度条
+        {
+            'tag': 'div',
+            'text': {'tag': 'lark_md',
+                'content': f'评分  {score}/100  {score_bar}'},
+        },
+        # 3. 策略 + 时机
+        {
+            'tag': 'div',
+            'text': {'tag': 'lark_md',
+                'content': f'策略  {strategy}'},
+        },
+        {'tag': 'hr'},
+        # 4. 原因 (重点行, 用引述样式)
+        {
+            'tag': 'div',
+            'text': {'tag': 'lark_md',
+                'content': f'原因  {reason}'},
+        },
     ]
-    md = '\n'.join(lines)
+
     return {
         'config': {'wide_screen_mode': True},
         'header': {
             'title': {'tag': 'plain_text', 'content': title},
             'template': color,
         },
-        'elements': [
-            {'tag': 'div', 'text': {'tag': 'lark_md', 'content': md}},
-        ],
+        'elements': elements,
     }
 
 
 def _build_decision_card(decision):
-    """构造决策卡片"""
+    """T1 单标的精推卡片 (决策版, 字段: action/position_size)
+
+    结构同 _build_signal_card, 但用 action 替代 signal_type,
+    position_size 替代 signal_score。
+    """
     action = decision.get('action', '')
     color = _COLOR_MAP.get(action, 'blue')
     title = f'决策 · {action or "unknown"}'
 
-    lines = [
-        f'**代码**: {decision.get("code", "")}',
-        f'**股票名称**: {decision.get("stock_name", "")}',
-        f'**策略**: {decision.get("strategy_name", "")}',
-        f'**动作**: {action}',
-        f'**建议仓位**: {decision.get("position_size", "")}%',
-        f'**价格**: {decision.get("price", "")}',
-        f'**时间**: {decision.get("decision_time", "")}',
-        f'**原因**: {decision.get("reason", "")}',
+    code = decision.get('code', '')
+    name = decision.get('stock_name', '') or ''
+    price = decision.get('price', '')
+    pos = decision.get('position_size', '')
+    strategy = decision.get('strategy_name', '')
+    reason = decision.get('reason', '') or ''
+
+    price_color = _get_price_color(action, reason)
+    price_md = f'<font color="{price_color}">**{price}**</font>'
+
+    elements = [
+        {
+            'tag': 'column_set',
+            'flex_mode': 'none',
+            'background_style': 'default',
+            'columns': [
+                {
+                    'tag': 'column',
+                    'width': 'weighted',
+                    'weight': 1,
+                    'vertical_align': 'top',
+                    'elements': [
+                        {'tag': 'div', 'text': {'tag': 'lark_md',
+                            'content': f'**{code}**'}},
+                        {'tag': 'div', 'text': {'tag': 'lark_md',
+                            'content': price_md}},
+                    ],
+                },
+                {
+                    'tag': 'column',
+                    'width': 'weighted',
+                    'weight': 2,
+                    'vertical_align': 'top',
+                    'elements': [
+                        {'tag': 'div', 'text': {'tag': 'lark_md',
+                            'content': name}},
+                        {'tag': 'div', 'text': {'tag': 'lark_md',
+                            'content': _price_change_md(action, reason)}},
+                    ],
+                },
+            ],
+        },
+        {'tag': 'hr'},
+        # 仓位 + 策略
+        {
+            'tag': 'div',
+            'text': {'tag': 'lark_md',
+                'content': f'建议仓位  **{pos}%**  ·  策略  {strategy}'},
+        },
+        {'tag': 'hr'},
+        # 原因
+        {
+            'tag': 'div',
+            'text': {'tag': 'lark_md',
+                'content': f'原因  {reason}'},
+        },
     ]
-    md = '\n'.join(lines)
+
     return {
         'config': {'wide_screen_mode': True},
         'header': {
             'title': {'tag': 'plain_text', 'content': title},
             'template': color,
         },
-        'elements': [
-            {'tag': 'div', 'text': {'tag': 'lark_md', 'content': md}},
-        ],
+        'elements': elements,
+    }
+
+
+# ══════════════════════════════════════════════════════════
+# 5 分钟桶聚合推送 (T2 模板)
+# ══════════════════════════════════════════════════════════
+#
+# 设计目的:
+#   - 解决"逐条推送被全局频控吞掉"的问题
+#   - 5 分钟一桶,桶满自动 flush 成 1 张聚合卡片
+#   - 自然遵守 CLAUDE.md §9 全局 ≤2 条/分钟
+#
+# 与现有 push_decision 的关系:
+#   - push_decision: 单条精推(低频,人工触发,如炸板/龙虎榜)
+#   - push_decision_aggregated: 批量入桶(高频,盘中自动决策)
+#   - 两者互不干扰,可共存
+# ══════════════════════════════════════════════════════════
+
+_bucket_lock = threading.Lock()
+_bucket = deque()                  # 桶内决策列表
+_bucket_start = None               # 当前桶起始时间戳
+_BUCKET_WINDOW = 300               # 5 分钟 = 300s
+_BUCKET_MAX_ITEMS = 10             # 桶满 10 条提前 flush
+_BUCKET_TOP_N = 5                  # 卡片最多展示 5 条
+
+
+def push_decision_aggregated(decision: dict, chat_id: str = None) -> bool:
+    """决策入桶, 桶满(5min 或 10 条)时 flush 一张聚合卡片。
+
+    用于盘中高频场景, 替代 push_decision。
+
+    Args:
+        decision: dict, 字段同 push_decision
+            {decision_time, code, stock_name, strategy_name,
+             action, position_size, price, reason, score}
+        chat_id: 可选群聊 ID
+
+    Returns:
+        bool: True = 本次入桶触发 flush 且推送成功;
+              False = 仅入桶未触发 flush, 或 flush 失败
+    """
+    global _bucket_start
+    now = time.time()
+    with _bucket_lock:
+        if _bucket_start is None:
+            _bucket_start = now
+        _bucket.append(decision)
+        # 触发条件: 满 5 分钟 OR 满 10 条
+        should_flush = (
+            now - _bucket_start >= _BUCKET_WINDOW
+            or len(_bucket) >= _BUCKET_MAX_ITEMS
+        )
+        if not should_flush:
+            return False
+        bucket = list(_bucket)
+        _bucket.clear()
+        _bucket_start = None
+
+    return _flush_bucket(bucket, chat_id=chat_id)
+
+
+def flush_pending_bucket(chat_id: str = None) -> bool:
+    """强制 flush 当前桶(收盘后或程序退出前调用)。
+
+    避免桶内剩余决策丢失。
+
+    Returns:
+        bool: 是否成功(空桶返回 False)
+    """
+    with _bucket_lock:
+        if not _bucket:
+            return False
+        bucket = list(_bucket)
+        _bucket.clear()
+        _bucket_start = None
+    return _flush_bucket(bucket, chat_id=chat_id)
+
+
+def _flush_bucket(bucket: list, chat_id: str = None) -> bool:
+    """把桶内决策合并为一张 T2 聚合卡片推送"""
+    if not bucket:
+        return False
+    # 排序: buy 优先, stop_loss 必入, 然后按 score 降序
+    def _priority(d):
+        action = d.get('action', '')
+        # buy=0(最优先), stop_loss/stop_profit=1, observe=2, hold=3
+        rank = {'buy': 0, 'stop_loss': 1, 'stop_profit': 1,
+                'sell': 1, 'observe': 2, 'hold': 3}.get(action, 2)
+        score = d.get('score', 0) or d.get('position_size', 0) or 0
+        try:
+            score = float(score)
+        except (TypeError, ValueError):
+            score = 0
+        return (rank, -score)
+    bucket.sort(key=_priority)
+    top = bucket[:_BUCKET_TOP_N]
+
+    card = _build_aggregate_card(top, total=len(bucket))
+    return _send({'msg_type': 'interactive', 'card': card}, chat_id=chat_id)
+
+
+def _build_aggregate_card(top: list, total: int) -> dict:
+    """T2 聚合卡片: 头部 + 决策列表 + 尾部跳转
+
+    结构:
+      ┌────────────────────────────────────┐
+      │ [Header 蓝] 09:35 盘中精选 · 12→5  │
+      ├────────────────────────────────────┤
+      │ 09:35 盘中精选 · 12 条决策入榜 5 条 │
+      │ ─────────────────────────          │
+      │ 🟢 002479 富春环保 5.62 评分87      │
+      │    dark_money · 大单1.2亿           │
+      │ 🟢 600118 中国卫星 18.3 评分81      │
+      │    alpha_breakout · rank#3          │
+      │ ...                                │
+      │ ─────────────────────────          │
+      │ 📊 完整列表见多维表格 [跳转]        │
+      └────────────────────────────────────┘
+    """
+    now_dt = datetime.now().strftime('%H:%M')
+    elements = []
+
+    # 1. 头部摘要
+    elements.append({
+        'tag': 'div',
+        'text': {'tag': 'lark_md',
+                 'content': f'**{now_dt} 盘中精选** · {total} 条决策入榜 {len(top)} 条'}
+    })
+    elements.append({'tag': 'hr'})
+
+    # 2. 决策列表 (每条 2 行: 主行 + 细节行)
+    action_emoji = {
+        'buy': '🟢', 'sell': '🔴', 'observe': '🟠',
+        'stop_loss': '🔴', 'stop_profit': '🟢', 'hold': '⚪',
+    }
+    md_lines = []
+    for d in top:
+        emoji = action_emoji.get(d.get('action', ''), '⚪')
+        code = d.get('code', '')
+        name = d.get('stock_name', '') or ''
+        price = d.get('price', '')
+        score = d.get('score', '') or d.get('position_size', '')
+        strategy = d.get('strategy_name', '')
+        # reason 截断 60 字, 避免单条过长
+        reason = (d.get('reason', '') or '')[:60]
+        md_lines.append(
+            f"{emoji} **{code}** {name}  {price}  评分{score}\n"
+            f"   {strategy} · {reason}"
+        )
+    elements.append({
+        'tag': 'div',
+        'text': {'tag': 'lark_md', 'content': '\n\n'.join(md_lines)}
+    })
+
+    # 3. 尾部: 跳转多维表格链接
+    try:
+        if _cfg.BITABLE_TOKEN:
+            url = (f'https://bytedance.larkoffice.com/base/{_cfg.BITABLE_TOKEN}')
+            elements.append({'tag': 'hr'})
+            elements.append({
+                'tag': 'div',
+                'text': {'tag': 'lark_md',
+                         'content': f'📊 [完整列表见多维表格]({url})'}
+            })
+    except Exception:
+        pass
+
+    return {
+        'config': {'wide_screen_mode': True},
+        'header': {
+            'title': {'tag': 'plain_text', 'content': f'盘中精选 · {now_dt}'},
+            'template': 'blue',
+        },
+        'elements': elements,
+    }
+
+
+# ══════════════════════════════════════════════════════════
+# T4 收盘复盘卡片
+# ══════════════════════════════════════════════════════════
+
+def build_review_card(sections: dict) -> dict:
+    """T4 收盘复盘卡片 (4 块分区: 情绪/数据/策略/异常)
+
+    Args:
+        sections: dict, 4 个分区的 Markdown 内容
+            {
+                'emotion':  '── 情绪变化 ──\\n  开盘: ...\\n  收盘: ...',
+                'data':     '── 数据入库 ──\\n  快照: 12345 行\\n  ...',
+                'strategy': '── 策略产出 ──\\n  dark_money: buy × 12\\n  ...',
+                'alert':    '── 异常告警 ──\\n  日志错误: 0 ERROR',
+            }
+
+    Returns:
+        dict: 飞书卡片 dict, 调用方用 _send({'msg_type':'interactive','card':card}) 推送
+    """
+    elements = []
+    section_emoji = {
+        'emotion': '📊',
+        'data': '💾',
+        'strategy': '🎯',
+        'alert': '⚠️',
+    }
+    for key in ('emotion', 'data', 'strategy', 'alert'):
+        content = sections.get(key, '')
+        if not content:
+            continue
+        emoji = section_emoji.get(key, '·')
+        # 标题行
+        elements.append({
+            'tag': 'div',
+            'text': {'tag': 'lark_md',
+                'content': f'{emoji} {content.split(chr(10))[0]}'},
+        })
+        # 内容行 (跳过第一行标题)
+        rest = '\n'.join(content.split(chr(10))[1:])
+        if rest.strip():
+            elements.append({
+                'tag': 'div',
+                'text': {'tag': 'lark_md', 'content': rest},
+            })
+        elements.append({'tag': 'hr'})
+
+    # 去掉末尾多余的 hr
+    if elements and elements[-1].get('tag') == 'hr':
+        elements.pop()
+
+    today = datetime.now().strftime('%Y-%m-%d')
+    return {
+        'config': {'wide_screen_mode': True},
+        'header': {
+            'title': {'tag': 'plain_text', 'content': f'收盘复盘 · {today}'},
+            'template': 'turquoise',
+        },
+        'elements': elements,
     }

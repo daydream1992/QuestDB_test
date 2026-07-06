@@ -35,6 +35,10 @@ push_text = _push.push_text
 push_signal = _push.push_signal
 push_decision = _push.push_decision
 send_to_chat = _push.send_to_chat
+push_decision_aggregated = _push.push_decision_aggregated
+flush_pending_bucket = _push.flush_pending_bucket
+build_review_card = _push.build_review_card
+_send = _push._send  # daily_summary 需直接调用统一发送器推送交互卡片
 
 # ── doc_writer ────────────────────────────────────────────
 create_doc = _doc.create_doc
@@ -132,6 +136,8 @@ def log_signals(signals, push=False, sheet=True, bitable=True):
 __all__ = [
     # push
     'push_text', 'push_signal', 'push_decision', 'send_to_chat',
+    'push_decision_aggregated', 'flush_pending_bucket',
+    'build_review_card', '_send',
     # doc
     'create_doc', 'append_to_doc', 'append_signal',
     'create_daily_report', 'get_doc_url',
