@@ -56,11 +56,10 @@ class CapitalFlowDivergenceStrategy(StrategyBase):
 
                 alpha = 0.0
                 rank = 999
-                if alpha_df is not None and not alpha_df.empty:
-                    arow = alpha_df[alpha_df['code'] == code]
-                    if not arow.empty:
-                        alpha = _safe_float(arow.iloc[0].get('alpha_score'))
-                        rank = int(_safe_float(arow.iloc[0].get('rank', 999)))
+                if alpha_df is not None and not alpha_df.empty and code in alpha_df.index:
+                    arow = alpha_df.loc[code]
+                    alpha = _safe_float(arow.get('alpha_score') if isinstance(arow, dict) else arow.get('alpha_score'))
+                    rank = int(_safe_float(arow.get('rank', 999)))
 
                 # 底背离: 价格 <5 根低点 + 净流入 >0
                 if cur <= low_5 * 1.001 and inflow > 0 and inflow > 1e5:

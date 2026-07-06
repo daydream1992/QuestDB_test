@@ -26,32 +26,31 @@ class LeaderEchelonStrategy(StrategyBase):
 
     def evaluate(self, ctx) -> List[Decision]:
         alpha_df = getattr(ctx, 'alpha_df', None)
-        ladder_df = getattr(ctx, 'ladder_df', None)
+        ladder_df = getattr(ctx, 'ladder_tracker', None)
         ind = getattr(ctx, 'indicators_df', None)
         if alpha_df is None or alpha_df.empty or ladder_df is None:
             return []
 
         decisions = []
         try:
-            # 从 ladder_df 取梯队票
+            # 从 ladder_tracker 取梯队票 (lb_tiers)
             ladder_codes = set()
-            echelon = {'lb2': [], 'lb3': [], 'lb4plus': []}
             if isinstance(ladder_df, dict):
-                ladder_codes.update(ladder_df.get('lianban', []))
+                for tier_list in ladder_df.get('lb_tiers', {}).values():
+                    ladder_codes.update(tier_list)
             elif hasattr(ladder_df, 'columns') and 'code' in ladder_df.columns:
                 ladder_codes.update(ladder_df['code'].tolist())
 
-            # alpha 过滤
+            # alpha 过滤: alpha_score > 0.6 且在梯队内
             alpha_candidates = alpha_df[alpha_df['alpha_score'] > 0.6].copy()
             if alpha_candidates.empty:
                 return []
 
-            # 按梯队排序: 4板以上 > 3板 > 2板 (从 ladder 识别)
             ranked = alpha_candidates.sort_values('alpha_score', ascending=False)
 
             for _, r in ranked.head(10).iterrows():
                 code = r.get('code') or r.name
-                if not code:
+                if not code or code not in ladder_codes:
                     continue
                 alpha = _safe_float(r.get('alpha_score'))
                 rank = int(_safe_float(r.get('rank', 999)))

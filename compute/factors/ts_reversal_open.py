@@ -26,7 +26,7 @@ class ReversalOpen(FactorBase):
     direction = 0  # 动态决定, compute_raw 返回带符号值
 
     def required_inputs(self) -> list:
-        return ['snapshot_focus_df', 'indicators_df']
+        return ['snapshot_focus_df']
 
     def compute_raw(self, ctx) -> pd.Series:
         """计算开盘反转信号

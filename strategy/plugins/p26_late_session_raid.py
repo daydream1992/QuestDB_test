@@ -27,8 +27,8 @@ class LateSessionRaidStrategy(StrategyBase):
         return []
 
     def evaluate(self, ctx) -> List[Decision]:
-        import lib.market_clock as clock
-        now = clock.now_dt()
+        from datetime import datetime
+        now = datetime.now()
         t = now.time()
 
         # 仅在 14:30-14:57 激活

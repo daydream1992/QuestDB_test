@@ -37,7 +37,7 @@ class LhbBrokerNetworkStrategy(StrategyBase):
             con = connect()
             try:
                 df = query_df(con,
-                    "SELECT code, broker_name, buy_amt, sell_amt, lhb_date "
+                    "SELECT code, broker_name, buy_amount, sell_amount, lhb_date "
                     "FROM qd_lhb_detail "
                     f"WHERE lhb_date > '{cutoff(days=3)}'")
             finally:
@@ -57,7 +57,7 @@ class LhbBrokerNetworkStrategy(StrategyBase):
                 is_famous = any(p in broker for p in FAMOUS_BROKERS)
                 if not is_famous:
                     continue
-                net = _safe_float(r.get('buy_amt')) - _safe_float(r.get('sell_amt'))
+                net = _safe_float(r.get('buy_amount')) - _safe_float(r.get('sell_amount'))
                 if net <= 0:
                     continue
                 code_heat[code] = code_heat.get(code, 0) + 1
@@ -69,10 +69,9 @@ class LhbBrokerNetworkStrategy(StrategyBase):
             for code, heat in sorted(code_heat.items(), key=lambda x: -x[1]):
                 if heat < 2:
                     continue
-                arow = alpha_df[alpha_df['code'] == code]
-                if arow.empty:
+                if code not in alpha_df.index:
                     continue
-                rank = int(_safe_float(arow.iloc[0].get('rank', 999)))
+                rank = int(_safe_float(alpha_df.loc[code, 'rank'] if 'rank' in alpha_df.columns else 999))
                 if rank > 30:
                     continue
 

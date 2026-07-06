@@ -55,7 +55,7 @@ class VolatilityRegime(FactorBase):
 
                 # 当前价格 vs 5 根前 (趋势判断)
                 cur = prices[-1]
-                prev = prices[min(-6, -len(prices))]
+                prev = prices[-6] if len(prices) >= 6 else prices[0]
                 trend = (cur - prev) / prev * 100
 
                 # 分档
@@ -78,5 +78,5 @@ class VolatilityRegime(FactorBase):
         return pd.Series(result, dtype=float)
 
     def normalize(self, raw: pd.Series) -> pd.Series:
-        # 已自定义 [-1, +1], 不做额外归一化
-        return raw
+        # 已自定义 [-1, +1], winsorize_zscore 中和量级差异
+        return winsorize_zscore(raw)

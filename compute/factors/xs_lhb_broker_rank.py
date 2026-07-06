@@ -47,7 +47,7 @@ class LhbBrokerRank(FactorBase):
         con = connect()
         try:
             df = query_df(con,
-                "SELECT code, buy_amt, sell_amt, broker_name "
+                "SELECT code, buy_amount, sell_amount, broker_name "
                 "FROM qd_lhb_detail "
                 f"WHERE lhb_date > '{cutoff(days=5)}'")
         finally:
@@ -63,8 +63,8 @@ class LhbBrokerRank(FactorBase):
             if not code:
                 continue
             broker_name = str(r.get('broker_name', ''))
-            buy_amt = _safe_float(r.get('buy_amt'))
-            sell_amt = _safe_float(r.get('sell_amt'))
+            buy_amt = _safe_float(r.get('buy_amount'))
+            sell_amt = _safe_float(r.get('sell_amount'))
             net = buy_amt - sell_amt
 
             # 查 _BROKER_QUALITY 或通过 FAMOUS_BROKERS 映射
