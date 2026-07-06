@@ -1,6 +1,6 @@
 """p26: 尾盘突袭
 
-脚本路径: K:\QuestDB_test\\strategy\\plugins\\p26_late_session_raid.py
+脚本路径: strategy/plugins/p26_late_session_raid.py
 用途: 14:30-14:57 间的尾盘买入信号
 数据源: ctx.snapshot_focus_df + ctx.alpha_df + ctx.indicators_df
 依赖: strategy.base, lib.market_clock
@@ -71,6 +71,7 @@ class LateSessionRaidStrategy(StrategyBase):
 
         except Exception as e:
             import logging
-            logging.getLogger(__name__).warning('p26 尾盘突袭异常: %s', e)
+            logger = logging.getLogger(__name__)
+            logger.warning('p26 尾盘突袭异常: %s', e)
 
         return decisions[:3]

@@ -1,6 +1,6 @@
 """p22: 板块轮动接力
 
-脚本路径: K:\QuestDB_test\\strategy\\plugins\\p22_sector_rotation_relay.py
+脚本路径: strategy/plugins/p22_sector_rotation_relay.py
 用途: 根据板块资金流变化率和 alpha 排名识别主升板块内机会
 数据源: ctx.sector_flow_df + ctx.alpha_df + ctx.top_candidates
 依赖: strategy.base
@@ -75,6 +75,7 @@ class SectorRotationRelayStrategy(StrategyBase):
                 ))
         except Exception as e:
             import logging
-            logging.getLogger(__name__).warning('p22 板块轮动异常: %s', e)
+            logger = logging.getLogger(__name__)
+            logger.warning('p22 板块轮动异常: %s', e)
 
         return decisions[:3]

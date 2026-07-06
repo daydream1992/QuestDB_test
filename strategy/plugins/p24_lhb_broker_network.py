@@ -32,9 +32,12 @@ class LhbBrokerNetworkStrategy(StrategyBase):
 
         decisions = []
         try:
-            from lib.qdb import connect, query_df, cutoff
+            from lib.qdb import query_df, cutoff
 
-            con = connect()
+            con = getattr(ctx, '_db_con', None)
+            if con is None:
+                from lib.qdb import connect as _connect
+                con = _connect()
             try:
                 df = query_df(con,
                     "SELECT code, broker_name, buy_amount, sell_amount, lhb_date "
@@ -84,6 +87,7 @@ class LhbBrokerNetworkStrategy(StrategyBase):
 
         except Exception as e:
             import logging
-            logging.getLogger(__name__).warning('p24 营业部网络异常: %s', e)
+            logger = logging.getLogger(__name__)
+            logger.warning('p24 营业部网络异常: %s', e)
 
         return decisions[:3]

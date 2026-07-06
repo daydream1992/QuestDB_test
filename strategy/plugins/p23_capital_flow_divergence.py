@@ -1,6 +1,6 @@
 """p23: 资金流背离
 
-脚本路径: K:\QuestDB_test\\strategy\\plugins\\p23_capital_flow_divergence.py
+脚本路径: strategy/plugins/p23_capital_flow_divergence.py
 用途: 主力净流入 vs 股价方向的背离检测
 数据源: ctx.snapshot_focus_df (NetInflow) + ctx.indicators_df (close) + ctx.alpha_df
 依赖: strategy.base
@@ -79,6 +79,7 @@ class CapitalFlowDivergenceStrategy(StrategyBase):
                     ))
         except Exception as e:
             import logging
-            logging.getLogger(__name__).warning('p23 资金流背离异常: %s', e)
+            logger = logging.getLogger(__name__)
+            logger.warning('p23 资金流背离异常: %s', e)
 
         return decisions[:3]

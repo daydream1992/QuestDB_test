@@ -1,6 +1,6 @@
 """p21: 龙头梯队接力
 
-脚本路径: K:\QuestDB_test\\strategy\\plugins\\p21_leader_echelon.py
+脚本路径: strategy/plugins/p21_leader_echelon.py
 用途: 根据连板梯队的 alpha 筛选和入场时机识别
 数据源: ctx.ladder_df + ctx.alpha_df + ctx.indicators_df
 依赖: strategy.base
@@ -64,6 +64,7 @@ class LeaderEchelonStrategy(StrategyBase):
                 ))
         except Exception as e:
             import logging
-            logging.getLogger(__name__).warning('p21 leader_echelon 异常: %s', e)
+            logger = logging.getLogger(__name__)
+            logger.warning('p21 leader_echelon 异常: %s', e)
 
         return decisions[:3]  # 最多 3 只

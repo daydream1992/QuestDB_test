@@ -13,8 +13,7 @@ import pandas as pd
 
 from compute.factors.base import FactorBase, FactorRegistry
 from compute.factors._normalize import rank_normalize
-from config.broker_list import FAMOUS_BROKERS
-from compute.factors._normalize import rank_normalize
+from lib.qdb import connect, query_df, cutoff
 
 # 营业部质量分 (按身份标识)
 _BROKER_QUALITY = {
@@ -42,8 +41,6 @@ class LhbBrokerRank(FactorBase):
         Returns:
             pd.Series: index=code, value=营业部质量分 (越大越好)
         """
-        from lib.qdb import connect, query_df, cutoff
-
         con = connect()
         try:
             df = query_df(con,

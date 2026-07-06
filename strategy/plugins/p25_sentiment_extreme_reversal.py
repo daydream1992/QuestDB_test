@@ -1,6 +1,6 @@
 """p25: 情绪极端反转
 
-脚本路径: K:\QuestDB_test\\strategy\\plugins\\p25_sentiment_extreme_reversal.py
+脚本路径: strategy/plugins/p25_sentiment_extreme_reversal.py
 用途: 极端情绪 + alpha 高分 = 反转信号
 数据源: ctx.sentiment_df + ctx.alpha_df + ctx.ladder_df
 依赖: strategy.base
@@ -62,6 +62,7 @@ class SentimentExtremeReversalStrategy(StrategyBase):
 
         except Exception as e:
             import logging
-            logging.getLogger(__name__).warning('p25 情绪反转异常: %s', e)
+            logger = logging.getLogger(__name__)
+            logger.warning('p25 情绪反转异常: %s', e)
 
         return decisions[:5]
