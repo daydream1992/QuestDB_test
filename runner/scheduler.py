@@ -69,6 +69,9 @@ _POLL_INTERVAL = 10
 # 非交易日等待间隔 (秒)
 _IDLE_INTERVAL = 300
 
+# 子进程崩溃统计 (用于 _ensure_running 指数退避)
+_crash_count = {}
+
 
 def _start_proc(script):
     """非阻塞启动一个 runner 子进程 (H7: CREATE_NEW_PROCESS_GROUP)
@@ -145,27 +148,26 @@ def _stop_proc(proc, name):
 
 
 def _ensure_running(proc, script, name, phase_ok):
-    """确保子进程存活，已崩溃则在运行时段内自动重启。
-
-    Args:
-        proc: subprocess.Popen 或 None
-        script: 脚本绝对路径
-        name: 进程名（日志用）
-        phase_ok: bool — 当前是否在该进程应运行的时段
-
-    Returns:
-        subprocess.Popen 或 None
-    """
+    """确保子进程存活，已崩溃则在运行时段内自动重启（含指数退避）。"""
+    global _crash_count
     if not phase_ok:
         if proc is not None and proc.poll() is not None:
             logger.info('{} 子进程已退出 (非运行时段, code={})', name, proc.returncode)
+            _crash_count.pop(name, None)
         return proc
     if proc is None or proc.poll() is not None:
         if proc is not None:
-            logger.error('{} 子进程已崩溃 (code={}), 自动重启', name, proc.returncode)
+            cnt = _crash_count.get(name, 0) + 1
+            _crash_count[name] = cnt
+            backoff = min(60, 2 ** cnt)
+            logger.error('{} 子进程已崩溃 (code={}), 第{}次, 等待{}s后重启',
+                         name, proc.returncode, cnt, backoff)
+            time.sleep(backoff)
         else:
-            logger.warning('{} 子进程未启动, 补启动', name)
+            logger.info('{} 子进程未启动, 启动', name)
         return _start_proc(script)
+    # 进程正常运行 → 清掉崩溃计数
+    _crash_count.pop(name, None)
     return proc
 
 
@@ -399,6 +401,15 @@ def run():
 
 
 def main():
+    import signal
+
+    def _graceful_exit(signum, frame):
+        raise KeyboardInterrupt
+
+    if os.name == 'nt':
+        signal.signal(signal.SIGBREAK, _graceful_exit)
+    signal.signal(signal.SIGTERM, _graceful_exit)
+
     run()
 
 

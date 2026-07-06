@@ -18,7 +18,7 @@ from datetime import datetime, timedelta
 import numpy as np
 
 import psycopg2
-from psycopg2 import OperationalError
+from psycopg2 import OperationalError, InterfaceError
 import pandas as pd
 from dotenv import load_dotenv
 from loguru import logger
@@ -170,7 +170,7 @@ def _exec_with_reconnect(con, fn, max_retry=1):
     """H5: 调 fn(con), OperationalError 时 _ensure_alive 后重试一次"""
     try:
         return fn(con)
-    except OperationalError:
+    except (OperationalError, InterfaceError):
         if max_retry <= 0:
             raise
         new_con = _ensure_alive(con, max_retry=max_retry - 1)

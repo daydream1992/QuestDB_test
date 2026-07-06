@@ -60,6 +60,10 @@ class StrategyContext:
     emotion_rating: Optional[int] = None       # 0-4 (冰点/低迷/中性/活跃/过热)
     divergence_signals: Optional[list] = None
 
+    # 因子框架 (AlphaEngine 计算, p20-p26 消费)
+    alpha_df: Optional[pd.DataFrame] = None    # 因子评分/排序
+    top_candidates: Optional[list] = None      # 横截面候选池 [code, ...]
+
     def get_stock_data(self, code) -> dict:
         """按 code 查个股全部数据"""
         result = {'code': code}

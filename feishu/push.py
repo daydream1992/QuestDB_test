@@ -269,11 +269,27 @@ def _send(payload, chat_id=None):
         logger.info('[DRY-RUN] 拦截推送: {}', payload.get('msg_type'))
         _stats_inc('dry_run')
         return True
-    # 全局频控
+    # 全局频控 (进程内滑动窗口)
     if not _global_rate_allow():
         logger.warning('全局频控拦截 (≤{}条/分钟)', _GLOBAL_MAX_PER_MIN)
         _stats_inc('rate_limited')
         return False
+    # 跨进程频控: 查 qd_signal_log 最近 60s 推送数 (多进程合计 ≤2条/分钟)
+    try:
+        from lib.qdb import connect, query_one
+        _qcon = connect()
+        try:
+            row = query_one(_qcon,
+                "SELECT COUNT(*) as cnt FROM qd_signal_log "
+                f"WHERE log_time > '{cutoff(minutes=1)}' AND pushed = TRUE")
+            if row and int(row.get('cnt', 0)) >= _GLOBAL_MAX_PER_MIN:
+                logger.warning('跨进程频控拦截 (已有%d条/分钟)', int(row.get('cnt', 0)))
+                _stats_inc('rate_limited')
+                return False
+        finally:
+            _qcon.close()
+    except Exception:
+        pass  # DB 不可用时仅依赖进程内频控
 
     # 1) Webhook 优先
     if _post_webhook(payload):

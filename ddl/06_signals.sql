@@ -22,7 +22,7 @@
 --   volume        ← 触发时成交量
 --   reason        ← 信号原因 (人类可读描述)
 --   metadata      ← 附加数据 (JSON 字符串, 存放策略特有参数)
--- 去重: (signal_time, code)
+-- 去重: (signal_time, code) → 同刻同标的同信号类型去重
 -- ------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS qd_signals (
     code           VARCHAR,
@@ -35,7 +35,7 @@ CREATE TABLE IF NOT EXISTS qd_signals (
     reason         VARCHAR,
     metadata       VARCHAR
 ) TIMESTAMP(signal_time) PARTITION BY DAY
-DEDUP UPSERT KEYS(signal_time, code);
+DEDUP UPSERT KEYS(signal_time, code, signal_type);
 
 
 -- ------------------------------------------------------------
@@ -76,7 +76,7 @@ DEDUP UPSERT KEYS(log_time, strategy_name);
 --   position_size  ← 建议仓位 (%)
 --   price          ← 决策时现价
 --   reason         ← 决策原因
--- 去重: (decision_time, code)
+-- 去重: (decision_time, code) → 同刻同标的不同策略各自保留
 -- ------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS qd_decisions (
     decision_time   TIMESTAMP,
@@ -87,7 +87,7 @@ CREATE TABLE IF NOT EXISTS qd_decisions (
     price           DOUBLE,
     reason          VARCHAR
 ) TIMESTAMP(decision_time) PARTITION BY DAY
-DEDUP UPSERT KEYS(decision_time, code);
+DEDUP UPSERT KEYS(decision_time, code, strategy_name);
 
 
 -- ------------------------------------------------------------

@@ -101,6 +101,9 @@ _CACHED_TS = 0.0
 _SECTOR_FLOW_HISTORY: dict = {}  # block_code → list[{block_code, net_flow, flow_strength, avg_change, flow_time}]
 _SECTOR_FLOW_HISTORY_LEN = 5
 
+# Alpha 引擎 (延时初始化, 进程内单例)
+_alpha_engine = None
+
 
 def _safe_float(v, default=0.0):
     try:
@@ -763,6 +766,19 @@ def run(con=None, max_rounds=None, force=False):
                         logger.error('k4 打板梯队失败: {}', e)
                 # 共振分析 (先于策略评估, 确保 ctx.resonance_df 为本轮数据)
                 _run_resonance(con, ctx)
+                # 因子引擎: AlphaEngine → alpha_df (挂 ctx 供 p20-p26 消费)
+                try:
+                    from compute.alpha_engine import AlphaEngine
+                    if _alpha_engine is None:
+                        _alpha_engine = AlphaEngine.from_yaml(_YAML_PATH)
+                    if _alpha_engine is not None:
+                        alpha_df, coverage = _alpha_engine.compute(ctx)
+                        ctx.alpha_df = alpha_df
+                        if coverage > 0:
+                            from compute.ranking import rank_sector_neutral
+                            ctx.top_candidates = rank_sector_neutral(alpha_df, top_n=50)
+                except Exception as e:
+                    logger.error('AlphaEngine 失败: {}', e)
                 # 遍历策略
                 decisions = []
                 for name, cls in StrategyRegistry.get_all().items():
