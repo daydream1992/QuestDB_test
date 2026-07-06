@@ -18,7 +18,8 @@ from typing import List
 from strategy.base import StrategyBase, Decision
 from strategy.registry import StrategyRegistry
 
-_STOCK_CHANGE_MIN = 1.0   # 个股涨幅阈值
+_STOCK_CHANGE_MIN = 3.0      # 个股涨幅阈值 (从1%提到3%, 过滤噪音)
+_MAIN_NET_MIN = -1e6          # 板块主力净流出: < -100万才触发 (单位=元) -- 从0改成有意   # 个股涨幅阈值
 
 
 def _safe_float(v, default=0.0) -> float:
@@ -57,7 +58,7 @@ class DivergenceWarnStrategy(StrategyBase):
         outflow_blocks = {}
         for _, r in sf.iterrows():
             nf = _safe_float(r.get('main_net'))
-            if nf < 0:
+            if nf < _MAIN_NET_MIN:
                 outflow_blocks[r.get('code')] = nf
         if not outflow_blocks:
             return []

@@ -23,9 +23,9 @@ from strategy.base import StrategyBase, Decision
 from strategy.registry import StrategyRegistry
 
 # 阈值
-_AMOUNT_MIN = 5e8               # 成交额 >= 5亿 (流动性)
+_AMOUNT_MIN = 0                # 成交额门槛: 0 (快照 Amount 单位不明, 去掉门槛)
 _HSL_MIN, _HSL_MAX = 3.0, 20.0  # 换手 3%-20%
-_SECTOR_ZT_MIN = 3              # 板块内涨停 >= 3 (涨停潮)
+_SECTOR_ZT_MIN = 2              # 板块内涨停 >= 2 (从3降到2, 扩大筛选)
 # GP 股性筛选 (B1+B2: 连板率+次日红盘率, 数据来自 qd_stock_gpjy 近1年统计)
 _GP40_LB_RATE_MIN = 20.0        # 近1年连板率 >= 20% (p80分位, 筛能连板的活跃股)
 _GP39_NEXT_RED_MIN = 70.0       # 近1年次日红盘率 >= 70% (p70, T+1命门: 选次日大概率溢价的)
@@ -65,7 +65,9 @@ class ZtDabanStrategy(StrategyBase):
             df = snap.groupby('code', as_index=False).last()[needed]
 
         # GP 股性 merge (B1+B2: 连板率/次日红盘率, 从 ctx.gp_df 每code最新)
+        # GP 数据可选择性地忽略: 无 gp_df 时仅用封板+换手+板块筛选
         gp = ctx.gp_df
+        gp_lb_rate_ok = False
         if gp is not None and not gp.empty and 'code' in gp.columns:
             gp_need = [c for c in ('code', 'gp40_lb_rate', 'gp39_next_red_rate', 'gp38_zt_cnt') if c in gp.columns]
             if 'snapshot_time' in gp.columns:
@@ -73,9 +75,12 @@ class ZtDabanStrategy(StrategyBase):
             else:
                 gp_l = gp.groupby('code', as_index=False).last()[gp_need]
             df = df.merge(gp_l, on='code', how='left')
+            gp_lb_rate_ok = 'gp40_lb_rate' in df.columns
         else:
-            df['gp40_lb_rate'] = None
-            df['gp39_next_red_rate'] = None
+            # GP 数据不存在, 用默认值跳过 GP 筛选
+            df['gp40_lb_rate'] = 50.0  # 容错值, 不筛
+            df['gp39_next_red_rate'] = 50.0
+            gp_lb_rate_ok = False
 
         # 真封板: FCAmo > 0 (权威涨跌停判定, 有买单封单)
         zt_df = df[df['FCAmo'].apply(lambda v: _safe_float(v) > 0)]
@@ -97,7 +102,11 @@ class ZtDabanStrategy(StrategyBase):
             lianb = _safe_float(r.get('fLianB'))   # 量比 (⚠️非连板, 放量活跃度)
             hsl = _safe_float(r.get('fHSL'))
             amt = _safe_float(r.get('Amount'))
-            fcamo = _safe_float(r.get('FCAmo'))    # 封单额(万元), 越大封板越结实
+            fcamo = _safe_float(r.get('FCAmo'))    # 封单额, 越大封板越结实
+            # p01 用快照 Amount (累计成交额, tqcenter 返回的是日累计)
+            # 需要的是当日全天成交额，但 snapshot 只有累计值
+            # 对于涨停票(封板)只看封单额即可
+            # 去掉 Amount 门槛，用封单额 + 换手率 + 板块涨停数三维度
             if amt < _AMOUNT_MIN:
                 continue
             if not (_HSL_MIN <= hsl <= _HSL_MAX):
@@ -108,11 +117,10 @@ class ZtDabanStrategy(StrategyBase):
             if cnt < _SECTOR_ZT_MIN:
                 continue
             # B1+B2 GP 股性筛选: 连板率 + 次日红盘率 (T+1打板核心)
+            # GP 数据可选: 无 gp_df 时跳过此筛选
             lb_rate = _safe_float(r.get('gp40_lb_rate'))
             red_rate = _safe_float(r.get('gp39_next_red_rate'))
-            if lb_rate < _GP40_LB_RATE_MIN:
-                continue
-            if red_rate < _GP39_NEXT_RED_MIN:
+            if gp_lb_rate_ok and (lb_rate < _GP40_LB_RATE_MIN or red_rate < _GP39_NEXT_RED_MIN):
                 continue
             # 评分: 封单额 + 板块潮 + 量比 + 连板率 + 次日红盘率
             score = min(100.0, 50.0 + fcamo / 1e4 + cnt * 3 + lianb * 2

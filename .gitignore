@@ -4,6 +4,7 @@
 !.env.example
 *.key
 *.pem
+questdb_deploy_key
 secrets/
 
 # --- Runtime logs & output ---

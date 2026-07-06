@@ -162,17 +162,23 @@ def _load_market_breadth(con):
     except Exception as e:
         logger.warning('读涨跌家数失败: {}', e)
 
-    # 涨跌停家数 (intraday 表有 FCAmo, snapshot 没有)
+    # 涨跌停家数 (intraday 表有 FCAmo, snapshot 有 Max)
+    # C8 拆表: snapshot_time 不对齐，按 code 取最新再合并，不按精确 timestamp JOIN
     try:
-        df_snap = query_df(con,
-            f"SELECT i.code, i.FCAmo, i.ZTPrice, s.Max "
-            f"FROM qd_stock_intraday i "
-            f"JOIN qd_stock_snapshot s ON i.code = s.code AND i.snapshot_time = s.snapshot_time "
-            f"WHERE i.snapshot_time > '{cutoff(minutes=5)}'")
-        if df_snap is not None and not df_snap.empty:
-            latest = df_snap.sort_values('snapshot_time').groupby('code', as_index=False).last()
+        # 分别取两表最近5min数据
+        snap = query_df(con,
+            f"SELECT code, Max, snapshot_time FROM qd_stock_snapshot "
+            f"WHERE snapshot_time > '{cutoff(minutes=5)}'")
+        intra = query_df(con,
+            f"SELECT code, FCAmo, ZTPrice, snapshot_time FROM qd_stock_intraday "
+            f"WHERE snapshot_time > '{cutoff(minutes=5)}'")
+        if snap is not None and not snap.empty and intra is not None and not intra.empty:
+            # 每个 code 取各表最新
+            snap_l = snap.sort_values('snapshot_time').groupby('code', as_index=False).last()
+            intra_l = intra.sort_values('snapshot_time').groupby('code', as_index=False).last()
+            merged = snap_l.merge(intra_l, on='code', how='left')
             zt = dt = brk = 0
-            for _, r in latest.iterrows():
+            for _, r in merged.iterrows():
                 fcamo = _sf(r.get('FCAmo'))
                 mx = _sf(r.get('Max'))
                 zt_p = _sf(r.get('ZTPrice'))

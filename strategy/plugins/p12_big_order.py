@@ -71,17 +71,12 @@ class BigOrderPulseStrategy(StrategyBase):
         else:
             pv_l = pv.groupby('code', as_index=False).last()
 
-        # zjl 映射 (money_flow_df 优先, 回退 more_info.Zjl)
+        # zjl 映射 (money_flow_df 优先; 列名为 main_net, 即主力净流入)
         zjl_map = {}
         mf = ctx.money_flow_df
-        if mf is not None and not mf.empty and 'code' in mf.columns and 'Zjl' in mf.columns:
+        if mf is not None and not mf.empty and 'code' in mf.columns and 'main_net' in mf.columns:
             for c, g in mf.groupby('code'):
-                zjl_map[c] = _safe_float(g.iloc[-1]['Zjl'])
-        else:
-            mi = ctx.more_info_df
-            if mi is not None and not mi.empty and 'Zjl' in mi.columns:
-                for c, g in mi.groupby('code'):
-                    zjl_map[c] = _safe_float(g.iloc[-1]['Zjl'])
+                zjl_map[c] = _safe_float(g.iloc[-1]['main_net'])
 
         for _, r in pv_l.iterrows():
             code = r['code']

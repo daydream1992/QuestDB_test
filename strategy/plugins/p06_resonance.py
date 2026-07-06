@@ -18,8 +18,8 @@ from typing import List
 from strategy.base import StrategyBase, Decision
 from strategy.registry import StrategyRegistry
 
-_SCORE_MIN = 80.0
-_STOCK_CHANGE_MIN = 3.0
+_SCORE_MIN = 70.0          # 共振总分阈，从 80 降到 70
+_STOCK_CHANGE_MIN = 2.0    # 个股涨幅阈值，从 3% 降到 2%
 
 
 def _safe_float(v, default=0.0) -> float:
