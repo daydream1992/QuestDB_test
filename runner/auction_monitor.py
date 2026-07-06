@@ -35,7 +35,8 @@ def _write_heartbeat(name):
     hb_dir = _os.path.join(_PROJ_ROOT, 'logs', 'heartbeats')
     _os.makedirs(hb_dir, exist_ok=True)
     try:
-        with _os.path.join(hb_dir, f'{name}.ts'), 'w') as f:
+        fp = os.path.join(hb_dir, f'{name}.ts')
+        with open(fp, 'w') as f:
             f.write(str(time.time()))
     except Exception:
         pass

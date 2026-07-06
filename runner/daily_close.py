@@ -78,6 +78,11 @@ def run(con=None):
         con: psycopg2 连接, None 则自建
     """
     logger.info('===== daily_close 开始 {} =====', datetime.now())
+    # 刷出盘中未推送的聚合决策桶
+    try:
+        _feishu.flush_pending_bucket()
+    except Exception as e:
+        logger.warning('close flush 桶失败: {}', e)
     own_con = con is None
     if own_con:
         con = connect()

@@ -357,10 +357,14 @@ def _process_decisions(con, decisions, risk, ctx=None):
                 'price': d.price,
                 'reason': reason,
             })
-    # 批量写入飞书 (推送+Sheet+Bitable)
+    # 批量写入飞书 (聚合推送 + Sheet + Bitable)
     if feishu_signals:
         try:
-            _feishu.log_signals(feishu_signals)
+            # 1. 入桶聚合推送 (5min 一张卡, 解决刷屏)
+            for s in feishu_signals:
+                _feishu.push_decision_aggregated(s)
+            # 2. 表格写入 (推送=False, 表格=True)
+            _feishu.log_signals(feishu_signals, push=False, sheet=True, bitable=True)
         except Exception as e:
             logger.warning('飞书写入失败: {}', e)
     if rows:
