@@ -1,6 +1,6 @@
 -- ============================================================
 -- 表名: qd_indicators
--- 脚本路径: K:\QuestDB_prod\ddl\05_indicators.sql
+-- 脚本路径: K:\QuestDB_test\ddl\05_indicators.sql
 -- 用途: 技术指标计算结果 (MACD / 压力支撑 / 布林带 / 均线)
 -- 数据源: 由 compute 模块基于 qd_kline_*/qd_*_snapshot 计算
 -- 时间戳: calc_time (计算时刻)

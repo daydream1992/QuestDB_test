@@ -1,5 +1,5 @@
 -- ============================================================
--- 脚本路径: K:\QuestDB_prod\ddl\01_daily.sql
+-- 脚本路径: K:\QuestDB_test\ddl\01_daily.sql
 -- 用途: 3 类标的的日级 more_info 数据 (每日收盘后/盘中定时写入)
 -- 数据源: tqcenter get_more_info
 -- 时间戳: date (由 HqDate 解析而来, 作为 designated timestamp)

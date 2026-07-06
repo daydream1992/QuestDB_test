@@ -14,9 +14,16 @@
 
 import os
 import json
-from datetime import datetime, time
+from datetime import datetime, time, timedelta
 
 from loguru import logger
+
+# 加载 config/.env 确保 FORCE_TRADE_DAY 生效
+_ENV_PATH = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+                         'config', '.env')
+if os.path.exists(_ENV_PATH):
+    from dotenv import load_dotenv
+    load_dotenv(_ENV_PATH)
 
 
 # === H6 交易日历缓存 ===
@@ -169,6 +176,56 @@ def get_phase(now=None):
     if t <= time(15, 0):
         return 'pre_close'
     return 'closed'
+
+
+# ══════════════════════════════════════════════════════════════
+# 倒计时与提前启动函数 (监工/scheduler 用)
+# ══════════════════════════════════════════════════════════════
+
+# 关键时间节点 (时, 分, 秒)
+_PHASE_TARGETS = {
+    'auction_start':    (9, 15, 0),   # 竞价开始
+    'daily_init':       (9, 25, 0),   # 盘前初始化
+    'market_open':      (9, 30, 0),   # 开盘
+    'afternoon_open':   (13, 0, 0),   # 下午开盘
+    'pre_close_start':  (14, 57, 0),  # 收盘竞价
+    'market_close':     (15, 0, 0),   # 收盘
+}
+
+_DEFAULT_LEAD_SECONDS = 480  # 8 分钟
+
+
+def seconds_until(target_hour, target_min, target_sec=0):
+    """距目标时间还有多少秒 (负数表示已过)"""
+    now = datetime.now()
+    target = now.replace(hour=target_hour, minute=target_min,
+                         second=target_sec, microsecond=0)
+    return (target - now).total_seconds()
+
+
+def countdown_seconds(target_hour, target_min):
+    """距目标还有多少秒 (倒计时, >=0)"""
+    return max(0, seconds_until(target_hour, target_min))
+
+
+def should_prestart(target_hour, target_min, lead_seconds=None):
+    """判断是否应该提前启动进程
+
+    检查当前时间是否在 [target-lead, target] 区间内。
+    用于 scheduler 在主循环中决定是否提前拉起子进程。
+    """
+    secs = seconds_until(target_hour, target_min)
+    lead = lead_seconds if lead_seconds is not None else _DEFAULT_LEAD_SECONDS
+    return 0 <= secs <= lead
+
+
+def format_countdown(target_hour, target_min):
+    """返回倒计时文本 (供飞书推送用)"""
+    secs = countdown_seconds(target_hour, target_min)
+    m, s = divmod(int(secs), 60)
+    if m > 0:
+        return f'{m}分{s}秒'
+    return f'{s}秒'
 
 
 def get_auction_phase(now=None):

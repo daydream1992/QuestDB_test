@@ -15,6 +15,7 @@
 
 import os
 from datetime import datetime, timedelta
+import numpy as np
 
 import psycopg2
 from psycopg2 import OperationalError
@@ -130,9 +131,18 @@ def executemany_batch(con, table, columns, rows, batch_size=500):
     placeholders = ', '.join(['%s'] * len(columns))
     sql = 'INSERT INTO {table} ({cols}) VALUES ({ph})'.format(
         table=table, cols=cols, ph=placeholders)
+    # 将 numpy 标量转为原生 Python (np.float64 → float, np.int64 → int)
+    # QuestDB PG 协议不能直接推 np.float64 等 numpy 标量
+    def _native(v):
+        if isinstance(v, (np.floating, np.integer)):
+            return v.item()
+        if isinstance(v, (np.bool_,)):
+            return bool(v)
+        return v
+    native_rows = [tuple(_native(v) for v in row) for row in rows]
     # H5: 重连后重试一次 (DEDUP UPSERT 幂等, 重写无副作用)
     try:
-        return _exec_with_reconnect(con, lambda c: _do_executemany(c, sql, rows, batch_size))
+        return _exec_with_reconnect(con, lambda c: _do_executemany(c, sql, native_rows, batch_size))
     except Exception as e:
         logger.warning('executemany_batch 失败 {}.{}: {}', table, len(rows), e)
         raise

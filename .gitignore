@@ -36,6 +36,7 @@ htmlcov/
 
 # --- QuestDB / DB local data ---
 db/
+qdbroot/
 *.db
 *.sqlite
 *.sqlite3

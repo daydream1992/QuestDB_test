@@ -45,6 +45,9 @@ import collect.c4_kline as c4  # noqa: E402
 import compute.k1_indicators as k1  # noqa: E402
 import compute.k2_signals as k2  # noqa: E402
 import compute.k3_sentiment as k3  # noqa: E402
+import compute.k4_sentiment as k4  # noqa: E402
+import compute.k4_sector_heatmap as k4_heatmap  # noqa: E402
+import compute.k4_ladder_tracker as k4_ladder  # noqa: E402
 import compute.k5_kline_synth as k5  # noqa: E402
 import strategy.intraday_engine as intraday_engine  # noqa: E402
 from strategy import dark_money  # noqa: E402
@@ -56,7 +59,7 @@ from strategy.context import StrategyContext  # noqa: E402
 from strategy.risk import RiskManager  # noqa: E402
 from strategy.selector import select_focus_pool  # noqa: E402
 from strategy.resonance import scan_market  # noqa: E402
-from lib.relation_graph import load_from_json, DEFAULT_JSON_DIR, get_stock_sectors  # noqa: E402
+from lib.relation_graph import load_from_json, DEFAULT_JSON_DIR, get_stock_sectors, get_stock_name  # noqa: E402
 
 # 配置路径
 _YAML_PATH = os.path.join(_PROJ_ROOT, 'config', 'strategies.yaml')
@@ -114,9 +117,9 @@ def _load_yaml():
 
 
 def _get_all_stock_codes(con):
-    """从注册表取所有股票代码"""
+    """从注册表取所有股票代码 + 板块代码 + 指数代码"""
     try:
-        df = query_df(con, "SELECT code FROM qd_code_registry WHERE code_type = 'stock'")
+        df = query_df(con, "SELECT code FROM qd_code_registry WHERE code_type IN ('stock', 'sector', 'index')")
         if not df.empty:
             return df['code'].tolist()
     except Exception as e:
@@ -136,6 +139,14 @@ def _get_focus_codes(con, all_stocks):
                       f"SELECT * FROM qd_stock_daily "
                       f"WHERE date > '{cutoff(days=2)}'")
         focus = select_focus_pool(pv, mi)
+        # 把板块/指数也加到 focus 池 (即使不在 pricevol 中)
+        try:
+            sector_codes = query_df(con, "SELECT code FROM qd_code_registry WHERE code_type IN ('sector', 'index')")
+            if sector_codes is not None and not sector_codes.empty:
+                extra = [c for c in sector_codes['code'].tolist() if c not in focus]
+                focus = focus + extra if focus else extra
+        except Exception:
+            pass
         return focus if focus else all_stocks
     except Exception as e:
         logger.warning('选股器失败, 回退全股票: {}', e)
@@ -304,6 +315,7 @@ def _process_decisions(con, decisions, risk, ctx=None):
             feishu_signals.append({
                 'decision_time': now,
                 'code': d.code,
+                'stock_name': get_stock_name(d.code),
                 'strategy_name': d.strategy,
                 'action': d.action,
                 'position_size': d.position_pct,
@@ -380,8 +392,12 @@ def _run_sector_flow(con, ctx):
                     continue
                 agg = sector_agg.setdefault(
                     bc, {'main_net': 0.0, 'total_flow': 0.0, 'count': 0})
-                agg['main_net'] += zjl
-                agg['total_flow'] += amt
+                _zjl = _safe_float(zjl)
+                if _zjl != 0 and (_zjl == _zjl):  # 跳过 NaN 和 0 (非 focus 池无 Zjl)
+                    agg['main_net'] += _zjl
+                _amt = _safe_float(amt)
+                if _amt == _amt:  # 跳过 NaN
+                    agg['total_flow'] += _amt
                 agg['count'] += 1
         if not sector_agg:
             return {}
@@ -687,6 +703,28 @@ def run(con=None, max_rounds=None, force=False):
                     ctx.divergence_signals = snt.get('divergences')
                 except Exception as e:
                     logger.error('k3 情绪失败: {}', e)
+
+                # k4 深度情绪 (5min/轮: 每 5 次 60s 块跑一次)
+                _k4_deep_round = getattr(_run_rotation, '_k4_deep_round', 0) + 1
+                _run_rotation._k4_deep_round = _k4_deep_round
+                if _k4_deep_round % 5 == 0:
+                    try:
+                        k4_deep = k4.run(con, ctx)
+                        ctx.sentiment_deep = k4_deep
+                    except Exception as e:
+                        logger.error('k4 深度情绪失败: {}', e)
+
+                    # k4 板块热力图 + 梯队 (同 5min 周期)
+                    try:
+                        k4_heatmap.run(con, ctx)
+                    except Exception as e:
+                        logger.error('k4 板块热力图失败: {}', e)
+
+                    # k4 打板梯队 (同 5min 周期)
+                    try:
+                        k4_ladder.run(con, ctx)
+                    except Exception as e:
+                        logger.error('k4 打板梯队失败: {}', e)
                 # 遍历策略
                 decisions = []
                 for name, cls in StrategyRegistry.get_all().items():

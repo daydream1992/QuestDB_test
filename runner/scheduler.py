@@ -52,6 +52,8 @@ _PLUGINS_DIR = os.path.join(_PROJ_ROOT, 'strategy', 'plugins')
 # 阻塞型 runner 脚本路径 (用 subprocess 启动)
 _AUCTION_SCRIPT = os.path.join(_PROJ_ROOT, 'runner', 'auction_monitor.py')
 _INTRADAY_SCRIPT = os.path.join(_PROJ_ROOT, 'runner', 'intraday_loop.py')
+_SUBSCRIBE_SCRIPT = os.path.join(_PROJ_ROOT, 'compute', 'subscribe.py')
+_OVERSEER_SCRIPT = os.path.join(_PROJ_ROOT, 'runner', 'overseer.py')
 
 # Python 解释器 (与当前进程一致)
 _PY = sys.executable
@@ -191,16 +193,23 @@ def run():
     # 避免模块级 import 触发 tqcenter 初始化, 保证 `from runner.scheduler import run` 可用
     import runner.daily_init as daily_init
     import runner.daily_close as daily_close
+    from lib.market_clock import (
+        seconds_until, should_prestart, countdown_seconds, format_countdown
+    )
 
     # 阶段完成标记 (避免重复执行)
     flags = {'daily_init': False, 'daily_close': False, 'verify_tables': False}
     # 阻塞型子进程句柄
     auction_proc = None
     intraday_proc = None
+    subscribe_proc = None
+    overseer_proc = None
 
     # 启动时杀掉已运行的旧子进程，防止重复拉起
     _attach_if_running('auction_monitor')
     _attach_if_running('intraday_loop')
+    _attach_if_running('subscribe')
+    _attach_if_running('overseer')
 
     try:
         while True:
@@ -224,41 +233,74 @@ def run():
                 time.sleep(_IDLE_INTERVAL)
                 continue
 
-            # === 交易日 ===
-            logger.debug('phase={}, auction_proc={}, intraday_proc={}, flags={}',
-                         phase, auction_proc, intraday_proc, flags)
-            if phase == 'auction':
-                # 竞价阶段: 启动 auction_monitor (子进程, 非阻塞)
+            # === 提前启动检查 (在阶段切换前预热子进程) ===
+            # 用 should_prestart 提前 8 分钟启动, 让进程在阶段到来前完成初始化
+
+            # 竞价: 目标 09:15, 提前 8 分钟 → 约 09:07 启动
+            if should_prestart(9, 15):
                 if auction_proc is None:
+                    logger.info('提前启动 auction_monitor (距竞价约 %s)', format_countdown(9,15))
                     auction_proc = _start_proc(_AUCTION_SCRIPT)
 
-            elif phase == 'pre_market':
-                # 09:25-09:30 撮合段: 跑 daily_init (一次性, 直接调用)
-                if not flags['daily_init']:
+            # 开盘: 目标 09:30, 提前 8 分钟 → 约 09:22 停竞价 + 启动 intraday
+            if should_prestart(9, 30):
+                if auction_proc is not None:
+                    logger.info('停 auction_monitor, 准备切换到盘中')
+                    _stop_proc(auction_proc, 'auction_monitor')
+                    auction_proc = None
+                if intraday_proc is None:
+                    logger.info('提前启动 intraday_loop (距开盘约 %s)', format_countdown(9,30))
+                    intraday_proc = _start_proc(_INTRADAY_SCRIPT)
+                if subscribe_proc is None:
+                    subscribe_proc = _start_proc(_SUBSCRIBE_SCRIPT)
+                if overseer_proc is None:
+                    overseer_proc = _start_proc(_OVERSEER_SCRIPT)
+
+            # 下午盘: 目标 13:00, 提前 8 分钟 → 约 12:52 启动
+            if should_prestart(13, 0):
+                if intraday_proc is None:
+                    logger.info('提前启动 intraday_loop (距下午盘约 %s)', format_countdown(13,0))
+                    intraday_proc = _start_proc(_INTRADAY_SCRIPT)
+                if subscribe_proc is None:
+                    subscribe_proc = _start_proc(_SUBSCRIBE_SCRIPT)
+                if overseer_proc is None:
+                    overseer_proc = _start_proc(_OVERSEER_SCRIPT)
+
+            # 下午收盘竞价: 目标 14:57, 提前 8 分钟 → 约 14:49 启动
+            if should_prestart(14, 57):
+                if auction_proc is None:
+                    logger.info('提前启动 auction_monitor (距收盘竞价约 %s)', format_countdown(14,57))
+                    auction_proc = _start_proc(_AUCTION_SCRIPT)
+
+            # === 原有的 get_phase() 逻辑 (兜底 + 一次性任务) ===
+            if phase == 'pre_market':
+                # 09:25-09:30 撮合段: 跑 daily_init (一次性)
+                if not flags['daily_init'] and now.hour == 9 and now.minute >= 25:
                     try:
                         daily_init.run()
                     except Exception as e:
                         logger.error('daily_init 失败: {}', e)
-                    # 无论成功失败都标记, 避免反复重试
                     flags['daily_init'] = True
 
-            elif phase in ('morning', 'afternoon'):
-                # 盘中阶段: 切换竞价 → 盘中
-                logger.info('检测到 morning/afternoon 阶段, 切换到 intraday_loop')
-                if auction_proc is not None:
-                    _stop_proc(auction_proc, 'auction_monitor')
-                    auction_proc = None
-                if intraday_proc is None:
-                    intraday_proc = _start_proc(_INTRADAY_SCRIPT)
-
             elif phase == 'closed':
-                # 收盘后: 停 intraday, 跑 daily_close (一次性)
+                # 收盘后: 停 intraday + subscribe + overseer
                 if intraday_proc is not None:
                     _stop_proc(intraday_proc, 'intraday_loop')
                     intraday_proc = None
+                if subscribe_proc is not None:
+                    _stop_proc(subscribe_proc, 'subscribe')
+                    subscribe_proc = None
+                if overseer_proc is not None:
+                    _stop_proc(overseer_proc, 'overseer')
+                    overseer_proc = None
                 if not flags['daily_close']:
                     try:
                         daily_close.run()
+                        try:
+                            import runner.daily_summary as summary
+                            summary.run()
+                        except Exception as e:
+                            logger.error('复盘汇总失败: {}', e)
                     except Exception as e:
                         logger.error('daily_close 失败: {}', e)
                     flags['daily_close'] = True
@@ -294,6 +336,8 @@ def run():
     finally:
         _stop_proc(auction_proc, 'auction_monitor')
         _stop_proc(intraday_proc, 'intraday_loop')
+        _stop_proc(subscribe_proc, 'subscribe')
+        _stop_proc(overseer_proc, 'overseer')
         logger.info('===== scheduler 退出 =====')
 
 

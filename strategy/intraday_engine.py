@@ -32,14 +32,15 @@ import importlib as _il
 _feishu = _il.import_module('feishu')  # noqa: E402
 from lib.limit_rule import is_at_limit_up  # noqa: E402
 from lib.notify_dedup import allow_push  # noqa: E402
+from lib.relation_graph import get_stock_name  # noqa: E402
 
 DST = 'qd_intraday_event'
 _EVENT_COLS = ['event_time', 'code', 'event_type', 'description', 'critical']
 
 # 阈值 (集中, 调阈值不改逻辑)
-SURGE_PCT = 2.0           # 5 分钟涨速绝对值 >= 2%
-LIMIT_SELLV_MAX = 100     # 卖一量 <= 100 手 视为封死 (卖一被吃光)
-CAPITAL_FLOW_MIN = 2e7    # 主力 |Zjl| >= 2000 万
+SURGE_PCT = 1.0           # 5 分钟涨速绝对值 >= 1%
+LIMIT_SELLV_MAX = 500     # 卖一量 <= 500 手 视为封死 (卖一被吃光)
+CAPITAL_FLOW_MIN = 5e6    # 主力 |Zjl| >= 500 万
 
 
 @dataclass
@@ -167,6 +168,7 @@ def run(con, snapshot_df, watchlist=None):
             for code, etype, desc, critical in pushed:
                 feishu_signals.append({
                     'code': code,
+                    'stock_name': get_stock_name(code),
                     'strategy_name': 'intraday_engine',
                     'action': etype,
                     'reason': desc,

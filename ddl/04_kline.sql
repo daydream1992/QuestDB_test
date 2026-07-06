@@ -1,5 +1,5 @@
 -- ============================================================
--- 脚本路径: K:\QuestDB_prod\ddl\04_kline.sql
+-- 脚本路径: K:\QuestDB_test\ddl\04_kline.sql
 -- 用途: 2 个周期的 K 线数据 (1 分钟 / 5 分钟)
 -- 数据源: tqcenter get_kline_data
 -- 时间戳: kline_time (K 线周期时间戳)

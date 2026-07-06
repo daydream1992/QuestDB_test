@@ -9,9 +9,9 @@ strategies:
   zha_fanbao:
     enabled: true
     name: 炸板反包
-  macd_golden_vol:
-    enabled: true
-    name: MACD金叉放量
+  # macd_golden_vol:       # 禁用: p03_macd_golden_vol.py 插件文件不存在
+  #   enabled: true
+  #   name: MACD金叉放量
   break_pressure:
     enabled: true
     name: 突破压力位
@@ -89,7 +89,7 @@ schedule:
   resonance_interval: 60      # 共振分析 (秒)
 
 # === 订阅池 (实盘异动监控 intraday_engine; 留空则仅监控 selector 重点池) ===
-watchlist: []
-# watchlist 示例 (标准代码):
-#   - '000001.SZ'
-#   - '600519.SH'
+watchlist:
+  - '002747.SZ'   # 埃斯顿
+  - '002580.SZ'   # 圣阳股份
+  - '002008.SZ'   # 大族激光

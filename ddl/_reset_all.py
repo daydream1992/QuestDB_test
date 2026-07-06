@@ -2,7 +2,7 @@ r"""一键重建全部 QuestDB 表
 
 执行: python K:\QuestDB_test\ddl\_reset_all.py
 """
-import os, sys, time
+import os, sys, re, time
 from pathlib import Path
 import psycopg2
 from loguru import logger
@@ -45,6 +45,9 @@ DDL_FILES = [
     '14_intraday_event.sql',
     '16_stock_intraday.sql',
     '17_stock_gpjy.sql',
+    '18_sentiment_deep.sql',
+    '19_sector_heatmap.sql',
+    '20_ladder_tracker.sql',
 ]
 
 def main():
@@ -76,19 +79,16 @@ def main():
             logger.warning(f'跳过(不存在): {fname}')
             continue
         sql_text = fpath.read_text(encoding='utf-8')
-        # 按 ; 分割执行
-        for stmt in sql_text.split(';'):
+        # 去掉 SQL 行注释 (-- 到行尾) 再分割, 避免注释内的 ; 切碎语句
+        cleaned = re.sub(r'--.*$', '', sql_text, flags=re.MULTILINE)
+        for stmt in cleaned.split(';'):
             stmt = stmt.strip()
             if not stmt:
                 continue
-            # 跳过纯注释行, 只保留非注释内容
-            lines = [l for l in stmt.split('\n') if l.strip() and not l.strip().startswith('--')]
-            if not lines:
-                continue
             try:
-                cur.execute('\n'.join(lines))
-                first_line = lines[0].strip()[:80]
-                logger.info(f'OK: {first_line}')
+                cur.execute(stmt)
+                first80 = stmt.split('\n')[0].strip()[:80]
+                logger.info(f'OK: {first80}')
                 ok += 1
             except Exception as e:
                 logger.error(f'ERR: {str(e)[:120]}')

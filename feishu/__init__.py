@@ -77,7 +77,7 @@ def log_signals(signals, push=False, sheet=True, bitable=True):
 
     Args:
         signals: list[dict], 信号列表
-        push:    是否推送卡片 (默认 False, 等二次过滤层实现后再开启)
+        push:    是否推送卡片 (默认 False, 已关闭推送只写表格)
         sheet:   是否写入电子表格 (默认 True)
         bitable: 是否写入多维表格 (默认 True)
 

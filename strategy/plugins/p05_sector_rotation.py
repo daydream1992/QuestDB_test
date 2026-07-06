@@ -49,11 +49,13 @@ class SectorRotationStrategy(StrategyBase):
         if not rtype or rtype == 'insufficient' or not block_code:
             return []
 
-        from lib.relation_graph import get_stock_sectors, get_sector_stocks
+        from lib.relation_graph import get_stock_sectors, get_sector_stocks, get_stock_name
+        from lib.relation_graph import _sector_meta as _sector_meta_local
 
         # 兑现板块: 流出加速 → 卖出该板块持仓
         if rtype == 'outflow_accelerate':
             sector_codes = {block_code}
+            block_name = _sector_meta_local.get(block_code, {}).get('sector_name', block_code)
             for p in ctx.positions or []:
                 pcode = p.get('code')
                 if not pcode:
@@ -63,7 +65,7 @@ class SectorRotationStrategy(StrategyBase):
                 if in_sector:
                     decisions.append(Decision(
                         action='sell', code=pcode, strategy=self.name,
-                        reason=f'板块轮动兑现: {block_code} 流出加速 '
+                        reason=f'板块轮动兑现: {block_name} 流出加速 '
                                f'{rot.get("reason", "")}',
                         price=_safe_float(p.get('cost_price')),
                         score=70.0,
@@ -72,6 +74,7 @@ class SectorRotationStrategy(StrategyBase):
 
         # 切入板块: 流入加速 → 买龙头 (板块内涨幅最大)
         if rtype == 'inflow_accelerate':
+            block_name = _sector_meta_local.get(block_code, {}).get('sector_name', block_code)
             pv = ctx.pricevol_df
             if pv is None or pv.empty:
                 return decisions
@@ -95,8 +98,8 @@ class SectorRotationStrategy(StrategyBase):
                 return decisions
             decisions.append(Decision(
                 action='buy', code=leader['code'], strategy=self.name,
-                reason=f'板块轮动切入: {block_code} 流入加速 龙头'
-                       f'{leader["code"]} 涨{chg:.2f}%',
+                reason=f'板块轮动切入: {block_name} 流入加速 龙头'
+                       f'{get_stock_name(leader["code"])} 涨{chg:.2f}%',
                 position_pct=10, stop_loss=5, stop_profit=10,
                 price=_safe_float(leader.get('Now')), score=75.0,
             ))

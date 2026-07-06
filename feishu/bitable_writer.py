@@ -5,6 +5,10 @@
   - append_records:         追加记录到数据表
   - write_signal_batch:     批量写入信号 (自动格式化字段)
   - auto_daily_table:       按日期自动创建/切换数据表
+  - auto_panorama_table:    按类型创建/切换全景数据表 (情绪/板块/打板)
+  - write_panorama_row:     写入全景情绪一行
+  - write_heatmap_row:      写入板块热力图一行
+  - write_ladder_row:       写入打板梯队一行
 
 与 Sheet 的分工:
   - Sheet:  简单日志追加, 程序写入优先
@@ -331,3 +335,183 @@ def _notify_link(res_type: str, name: str, app_token: str):
         _push.push_text(f'📎 新{res_type}: {name}\n{url}')
     except Exception:
         pass
+
+
+# ══════════════════════════════════════════════════════════════
+# 全景数据表 (k4 情绪/板块/打板 每 5min 行)
+# ══════════════════════════════════════════════════════════════
+
+# 情绪全景表字段
+PANORAMA_FIELDS = [
+    {'field_name': '时间', 'type': 1},
+    {'field_name': 'PG指数', 'type': 2},
+    {'field_name': 'PG信号', 'type': 1},
+    {'field_name': '涨停数', 'type': 2},
+    {'field_name': '跌停数', 'type': 2},
+    {'field_name': '封板率', 'type': 2},
+    {'field_name': '涨跌比', 'type': 2},
+    {'field_name': '涨家数', 'type': 2},
+    {'field_name': '跌家数', 'type': 2},
+    {'field_name': '主力净流(亿)', 'type': 2},
+    {'field_name': '背离数', 'type': 2},
+    {'field_name': '拐点信号', 'type': 1},
+]
+
+# 板块梯队表字段
+HEATMAP_FIELDS = [
+    {'field_name': '时间', 'type': 1},
+    {'field_name': '行业Top1', 'type': 1},
+    {'field_name': '行业Top1涨幅', 'type': 2},
+    {'field_name': '行业Top1涨停', 'type': 2},
+    {'field_name': '概念Top1', 'type': 1},
+    {'field_name': '概念Top1涨幅', 'type': 2},
+    {'field_name': '最强个股', 'type': 1},
+    {'field_name': '最强个股涨幅', 'type': 2},
+    {'field_name': '最强个股涨停', 'type': 1},
+]
+
+# 打板梯队表字段
+LADDER_FIELDS = [
+    {'field_name': '时间', 'type': 1},
+    {'field_name': '首板数', 'type': 2},
+    {'field_name': '二板数', 'type': 2},
+    {'field_name': '三板数', 'type': 2},
+    {'field_name': '四板数', 'type': 2},
+    {'field_name': '五板+数', 'type': 2},
+    {'field_name': '候选2进3', 'type': 2},
+    {'field_name': '最强标的', 'type': 1},
+    {'field_name': '晋级评分', 'type': 2},
+]
+
+_PANORAMA_TABLE_NAMES = {
+    'sentiment': '情绪全景',
+    'heatmap': '板块梯队',
+    'ladder': '打板梯队',
+}
+
+
+def auto_panorama_table(app_token: str, table_type: str) -> str:
+    """按类型创建/切换全景数据表。
+
+    table_type: 'sentiment' | 'heatmap' | 'ladder'
+    每天一个表 (如 "情绪全景 2026-07-06"), 自动创建+加字段。
+    返回 table_id; 失败返回 ''。
+    """
+    today = datetime.now().strftime('%Y-%m-%d')
+    base_name = _PANORAMA_TABLE_NAMES.get(table_type, table_type)
+    table_name = f'{base_name} {today}'
+
+    # 查已有表
+    data = _api('GET', f'/bitable/v1/apps/{app_token}/tables')
+    if data:
+        tables = data.get('data', {}).get('items', [])
+        for t in tables:
+            if t.get('name') == table_name:
+                logger.info('找到已有全景表: %s', table_name)
+                return t.get('table_id', '')
+
+    # 创建
+    table_id = _create_table(app_token, table_name)
+    if not table_id:
+        return ''
+
+    # 加字段
+    fields = {
+        'sentiment': PANORAMA_FIELDS,
+        'heatmap': HEATMAP_FIELDS,
+        'ladder': LADDER_FIELDS,
+    }.get(table_type, PANORAMA_FIELDS)
+    for fd in fields:
+        _create_field(app_token, table_id, fd)
+    return table_id
+
+
+def write_panorama_row(app_token: str, result: dict) -> bool:
+    """写入全景情绪一行 (每 5min)
+
+    从 k4.run() 返回的 result 中提取字段写到飞书多维表格。
+
+    Args:
+        app_token: 多维表格 token
+        result: k4.run() 返回的 dict
+
+    Returns:
+        bool: 是否成功
+    """
+    table_id = auto_panorama_table(app_token, 'sentiment')
+    if not table_id:
+        return False
+    ts = datetime.now().strftime('%H:%M')
+    pg = result.get('pg_index')
+    sig = result.get('pg_signal', '')
+    b = result.get('breadth', {})
+    cf = result.get('capital_flow', {})
+    mn = _safe_num(cf.get('main_net')) / 1e8
+    turn = result.get('turning_point')
+    turn_str = f'{turn["type"]}: {turn["action"]}' if turn else ''
+    record = {
+        '时间': ts,
+        'PG指数': _safe_num(pg),
+        'PG信号': sig,
+        '涨停数': _safe_num(b.get('zt_cnt')),
+        '跌停数': _safe_num(b.get('dt_cnt')),
+        '封板率': _safe_num(b.get('fbl')),
+        '涨跌比': _safe_num(b.get('udr')),
+        '涨家数': _safe_num(b.get('up_cnt')),
+        '跌家数': _safe_num(b.get('down_cnt')),
+        '主力净流(亿)': round(mn, 2),
+        '背离数': _safe_num(result.get('divergence_count')),
+        '拐点信号': turn_str,
+    }
+    return append_records(app_token, table_id, [record])
+
+
+def write_heatmap_row(app_token: str, result: dict) -> bool:
+    """写入板块热力图一行 (每 5min)"""
+    table_id = auto_panorama_table(app_token, 'heatmap')
+    if not table_id:
+        return False
+    ts = datetime.now().strftime('%H:%M')
+
+    l1 = (result.get('industry_l1_ranking') or [{}])[0]
+    concept = (result.get('concept_ranking') or [{}])[0]
+    # 最强个股: 行业一级最强板块的个股梯队 Top1
+    l1_stocks = result.get('industry_l1_stocks') or []
+    best_stock = l1_stocks[0] if l1_stocks else {}
+
+    record = {
+        '时间': ts,
+        '行业Top1': l1.get('name', ''),
+        '行业Top1涨幅': _safe_num(l1.get('zaf')),
+        '行业Top1涨停': _safe_num(l1.get('zt_count')),
+        '概念Top1': concept.get('name', ''),
+        '概念Top1涨幅': _safe_num(concept.get('zaf')),
+        '最强个股': best_stock.get('name', ''),
+        '最强个股涨幅': _safe_num(best_stock.get('zaf')),
+        '最强个股涨停': '📈涨停' if best_stock.get('is_zt') else '',
+    }
+    return append_records(app_token, table_id, [record])
+
+
+def write_ladder_row(app_token: str, result: dict) -> bool:
+    """写入打板梯队一行 (每 5min)"""
+    table_id = auto_panorama_table(app_token, 'ladder')
+    if not table_id:
+        return False
+    ts = datetime.now().strftime('%H:%M')
+    stats = result.get('stats', {})
+    candidates = result.get('promotion_rankings', [])
+    best = candidates[0] if candidates else {}
+
+    record = {
+        '时间': ts,
+        '首板数': _safe_num(stats.get('total_1b')),
+        '二板数': _safe_num(stats.get('total_2b')),
+        '三板数': _safe_num(stats.get('total_3b')),
+        '四板数': _safe_num(stats.get('total_4b')),
+        '五板+数': _safe_num(stats.get('total_5b_plus')),
+        '候选2进3': _safe_num(stats.get('candidates_2to3')),
+        '最强标的': best.get('name', ''),
+        '晋级评分': _safe_num(best.get('total_score')),
+    }
+    return append_records(app_token, table_id, [record])

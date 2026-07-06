@@ -130,7 +130,7 @@ def fetch_kline(con, rows_per_code=KLINE_ROWS_PER_CODE, since_ts=None) -> pd.Dat
         f"SELECT code, kline_time, open, high, low, close FROM ("
         f"  SELECT code, kline_time, open, high, low, close, "
         f"         row_number() OVER (PARTITION BY code ORDER BY kline_time DESC) AS rn "
-        f"  FROM {SRC_KLINE} WHERE kline_time > '{cutoff(days=2)}'"
+        f"  FROM {SRC_KLINE}"
         f") WHERE rn <= {rows_per_code} ORDER BY code, kline_time"
     )
     return query_df(con, sql)

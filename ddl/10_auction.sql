@@ -1,6 +1,6 @@
 -- ============================================================
 -- 表名: qd_auction_snapshot
--- 脚本路径: K:\QuestDB_prod\ddl\10_auction.sql
+-- 脚本路径: K:\QuestDB_test\ddl\10_auction.sql
 -- 用途: 集合竞价快照 (开盘竞价 9:20-9:25 / 尾盘竞价 14:57-15:00)
 -- 数据源: tqcenter get_market_snapshot (竞价时段特殊采集)
 -- 时间戳: auction_time (竞价快照时刻)

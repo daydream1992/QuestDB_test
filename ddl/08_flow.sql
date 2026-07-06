@@ -1,5 +1,5 @@
 -- ============================================================
--- 脚本路径: K:\QuestDB_prod\ddl\08_flow.sql
+-- 脚本路径: K:\QuestDB_test\ddl\08_flow.sql
 -- 用途: 2 张资金流表 (板块资金流 + 个股明暗资金)
 -- 数据源: tqcenter get_money_flow + compute 暗资金计算
 -- 时间戳: flow_time (资金流采样时刻)

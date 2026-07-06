@@ -68,7 +68,8 @@ class DivergenceWarnStrategy(StrategyBase):
         else:
             pv_l = pv.groupby('code', as_index=False).last()
 
-        from lib.relation_graph import get_stock_sectors
+        from lib.relation_graph import get_stock_sectors, get_stock_name
+        from lib.relation_graph import _sector_meta as _sector_meta_local
         for _, r in pv_l.iterrows():
             code = r['code']
             chg = _change_pct(r.get('Now'), r.get('LastClose'))
@@ -85,7 +86,8 @@ class DivergenceWarnStrategy(StrategyBase):
                 continue
             decisions.append(Decision(
                 action='warn', code=code, strategy=self.name,
-                reason=f'顶背离: 个股涨{chg:.2f}% 但板块{hit_block}'
+                reason=f'顶背离: 个股涨{chg:.2f}% 但板块'
+                       f'{_sector_meta_local.get(hit_block, {}).get("sector_name", hit_block)}'
                        f'主力净流出{hit_flow:.0f}',
                 price=_safe_float(r.get('Now')), score=60.0,
             ))

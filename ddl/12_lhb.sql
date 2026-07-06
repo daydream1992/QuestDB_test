@@ -1,5 +1,5 @@
 -- ============================================================
--- 脚本路径: K:\QuestDB_prod\ddl\12_lhb.sql
+-- 脚本路径: K:\QuestDB_test\ddl\12_lhb.sql
 -- 用途: 2 张龙虎榜表 (龙虎榜明细 + 营业部画像)
 -- 数据源: tqcenter get_lhb_detail + 东方财富龙虎榜接口
 -- 时间戳: lhb_date / update_time

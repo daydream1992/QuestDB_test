@@ -1,6 +1,6 @@
 -- ============================================================
 -- 表名: qd_big_order
--- 脚本路径: K:\QuestDB_prod\ddl\11_big_order.sql
+-- 脚本路径: K:\QuestDB_test\ddl\11_big_order.sql
 -- 用途: L2 大单事件 (单笔超大单/大单成交记录)
 -- 数据源: tqcenter get_big_order / L2 逐笔成交
 -- 时间戳: order_time (大单成交时刻)

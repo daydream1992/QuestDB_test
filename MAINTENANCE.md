@@ -116,8 +116,8 @@ K:\QuestDB_test\
 ## 3. 数据库表清单 (35 张表)
 
 > 2026-07-05 整理: 原 §3 写 29 张表, 实际 DDL 已扩到 35 张
-> (C8 拆表 + qd_sentiment_* 3 张 + qd_intraday_event + qd_stock_intraday + qd_stock_gpjy)
-> 此处按 DDL 文件 00~17 顺序罗列。
+> (C8 拆表 + qd_sentiment_* 4 张 + qd_intraday_event + qd_stock_intraday + qd_stock_gpjy)
+> 此处按 DDL 文件 00~18 顺序罗列。
 
 所有表名以 `qd_` 前缀, 使用 QuestDB 时序表 + DEDUP UPSERT KEYS 幂等去重。
 
@@ -195,7 +195,7 @@ K:\QuestDB_test\
 | 28 | qd_lhb_detail | 12 | lhb_date | 龙虎榜明细 |
 | 29 | qd_lhb_broker | 12 | lhb_date | 龙虎榜营业部 (游资/机构/北向识别) |
 
-### 3.10 情绪/异动/拆表/GP (6 张 — 2026-07-05 整理补齐)
+### 3.10 情绪/异动/拆表/GP (7 张 — 2026-07-05 整理补齐, 2026-07-06 增 18_sentiment_deep)
 
 | # | 表名 | DDL | 时间戳 | 用途 |
 |---|------|-----|--------|------|
@@ -205,8 +205,38 @@ K:\QuestDB_test\
 | 33 | qd_intraday_event | 14 | event_time | 盘中异动 (涨速/封板/炸板/资金脉冲) |
 | 34 | qd_stock_intraday | 16 | snapshot_time | **C8 拆表** 个股盘中高频字段 (FCAmo/Zjl/Wtb/fHSL 等) |
 | 35 | qd_stock_gpjy | 17 | trade_date | GP 系列历史 (连板率/次日红盘率/机构买入) |
+| 36 | qd_sentiment_deep | 18 | snapshot_time | 深度情绪分析 (恐慌/贪婪指数/资金情绪/背离综合) |
+| 37 | qd_sector_heatmap | 19 | snapshot_time | 板块热力图 + 最强个股梯队 (4组Top5+个股Top3) |
+| 38 | qd_ladder_tracker | 20 | snapshot_time | 打板梯队 + 2进3 晋级监控 |
+
+### 3.11 DDL 对账 (2026-07-05 核对, 2026-07-06 更新至 38 张)
+
+**核对结论**: SQL 实际建表 = 文档表数 = **38 张, 完全对齐零差异**。
+
+| 维度 | 数值 |
+|------|------|
+| DDL 文件数 | 20 个 `.sql` (00~20, 跳 15) |
+| SQL `CREATE TABLE` 总数 | 38 |
+| 本节 §3.1~§3.10 表数 | 38 |
+| 只在 SQL 里、文档缺 | **0** |
+| 只在文档里、SQL 没有 | **0** |
+
+**对账方法**: 运行 `python scripts/data_inventory_ddl_audit.py`。重新核对命令:
+
+```bash
+python scripts/data_inventory_ddl_audit.py            # 人类可读
+python scripts/data_inventory_ddl_audit.py --json     # CI
+python scripts/data_inventory_ddl_audit.py --strict   # 任何漂移都失败
+```
+
+**对账规则** ([CLAUDE.md §十 文档维护](CLAUDE.md)):
+
+- 改表结构 → 同步本节 §3.x 对应表格 + §3.11 重对账
+- 新增 DDL 文件 → 同步更新 [ddl/_reset_all.py](ddl/_reset_all.py) 的 `DDL_FILES` 数组
+- 表名映射关系: `qd_<scope>_<type>` (scope=stock/sector/index/map_xxx/sentiment 等)
 
 ---
+
 
 ## 4. 脚本清单 (按层分类)
 

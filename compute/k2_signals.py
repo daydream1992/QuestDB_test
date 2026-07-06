@@ -45,7 +45,7 @@ if _PROJ_ROOT not in sys.path:
 
 from loguru import logger  # noqa: E402
 
-from lib.qdb import connect, query_df, executemany_batch  # noqa: E402
+from lib.qdb import connect, query_df, executemany_batch, cutoff  # noqa: E402
 
 # 日志配置
 _LOG_DIR = os.path.join(_PROJ_ROOT, 'logs')
@@ -74,11 +74,12 @@ BREAK_SUPPORT = 'break_support'
 
 
 def fetch_indicators(con) -> pd.DataFrame:
-    """读全表指标, 按 code, calc_time 排序"""
+    """读最近 3 天的指标, 按 code, calc_time 排序 (避免全表扫拖慢性能)"""
     sql = (
         f"SELECT code, calc_time, close, "
         f"macd_dif, macd_dea, macd_hist, pressure_high, support_low "
         f"FROM {SRC} "
+        f"WHERE calc_time > '{cutoff(days=3)}' "
         f"ORDER BY code, calc_time"
     )
     return query_df(con, sql)

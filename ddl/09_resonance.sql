@@ -1,6 +1,6 @@
 -- ============================================================
 -- 表名: qd_resonance
--- 脚本路径: K:\QuestDB_prod\ddl\09_resonance.sql
+-- 脚本路径: K:\QuestDB_test\ddl\09_resonance.sql
 -- 用途: 多层共振分析结果 (个股 / 板块 / 指数 / MACD / 量能 / 资金流 共振)
 -- 数据源: 由 compute/resonance 模块基于多表数据综合计算
 -- 时间戳: resonance_time (共振分析时刻)

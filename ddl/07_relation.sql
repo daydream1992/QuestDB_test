@@ -1,5 +1,5 @@
 -- ============================================================
--- 脚本路径: K:\QuestDB_prod\ddl\07_relation.sql
+-- 脚本路径: K:\QuestDB_test\ddl\07_relation.sql
 -- 用途: 6 张关系图谱表 (板块元数据 + 个股三级分类 + 概念/地域/风格/指数映射)
 -- 数据源: tqcenter get_sector_list + get_stock_list_in_sector + 财经分类接口
 -- 时间戳: update_time (关系更新时刻)

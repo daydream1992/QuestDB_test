@@ -1,5 +1,5 @@
 -- ============================================================
--- 脚本路径: K:\QuestDB_prod\ddl\02_snapshot.sql
+-- 脚本路径: K:\QuestDB_test\ddl\02_snapshot.sql
 -- 用途: 3 类标的的盘中高频快照 (10s/轮 重点标的, 60s/轮 全场轮换)
 -- 数据源: tqcenter get_market_snapshot + get_more_info (盘中高频字段)
 -- 时间戳: snapshot_time (datetime.now() 采集时刻)

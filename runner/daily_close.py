@@ -104,7 +104,16 @@ def run(con=None):
         # 3. 策略评估
         n3 = _eval_strategies(con)
 
-        # 4. 飞书汇报当日总结 + 生成日终报告文档
+        # 4. k4 盘后深度情绪日结写入
+        try:
+            import compute.k4_sentiment as k4  # noqa: E402
+            deep = k4.run(con)
+            logger.info('k4 盘后深度情绪: PG={} 资金={} 背离={}',
+                        deep.get('pg_index'), deep.get('capital_sentiment'), deep.get('divergence_count'))
+        except Exception as e:
+            logger.error('k4 盘后深度情绪失败: {}', e)
+
+        # 5. 飞书汇报当日总结 + 生成日终报告文档
         msg = ('[daily_close] 当日总结\n'
                '  日级采集: {}\n'
                '  GP股性: {}\n'
