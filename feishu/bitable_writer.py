@@ -26,25 +26,71 @@ _auth = importlib.import_module('feishu.auth')
 
 logger = logging.getLogger(__name__)
 
-# 信号表字段定义
+# 信号表字段定义 (升级版: 日期时间/单选/多选/复选/公式)
 SIGNAL_FIELDS = [
-    {'field_name': '时间', 'type': 1},       # 1=文本
-    {'field_name': '代码', 'type': 1},
+    {'field_name': '时间', 'type': 5},            # 5=日期时间 (升级, 原为 1 文本)
+    {'field_name': '代码', 'type': 1},            # 1=文本
     {'field_name': '股票名称', 'type': 1},
-    {'field_name': '策略', 'type': 1},
-    {'field_name': '信号类型', 'type': 3},    # 3=单选
-    {'field_name': '评分', 'type': 2},        # 2=数字
+    {'field_name': '策略', 'type': 3},            # 3=单选 (升级, 原为 1 文本)
+    {'field_name': '信号类型', 'type': 3},        # 3=单选 (保留)
+    {'field_name': '评分', 'type': 2},            # 2=数字 (保留)
+    {'field_name': '涨跌幅%', 'type': 2},         # 新增: 涨跌幅
     {'field_name': '价格', 'type': 2},
     {'field_name': '成交量', 'type': 2},
+    {'field_name': '板块', 'type': 4},            # 新增: 4=多选
+    {'field_name': '是否涨停', 'type': 7},        # 新增: 7=复选框
+    {'field_name': '决策桶时间', 'type': 3},      # 新增: 3=单选 (09:30/09:35...)
+    {'field_name': '评分档位', 'type': 20},       # 新增: 20=公式 (优/良/中)
     {'field_name': '原因', 'type': 1},
 ]
 
-# 信号类型选项 (单选字段的可选值)
+# 信号类型选项 (单选字段的可选值, 带颜色)
 SIGNAL_TYPE_OPTIONS = [
-    'buy', 'sell', 'warn', 'observe', 'hold', 'stop_loss', 'stop_profit',
-    'surge_up', 'surge_down', 'limit_seal', 'limit_break',
-    'capital_in', 'capital_out',
+    {'name': 'buy', 'color': 0},           # 0=绿色
+    {'name': 'sell', 'color': 1},          # 1=红色
+    {'name': 'warn', 'color': 2},          # 2=橙色
+    {'name': 'observe', 'color': 3},       # 3=蓝色
+    {'name': 'hold', 'color': 4},          # 4=灰色
+    {'name': 'stop_loss', 'color': 1},
+    {'name': 'stop_profit', 'color': 0},
+    {'name': 'surge_up', 'color': 0},
+    {'name': 'surge_down', 'color': 1},
+    {'name': 'limit_seal', 'color': 0},
+    {'name': 'limit_break', 'color': 1},
+    {'name': 'capital_in', 'color': 0},
+    {'name': 'capital_out', 'color': 1},
 ]
+
+# 策略选项 (单选, 带颜色) — 从 strategy/plugins/ 自动收集
+STRATEGY_OPTIONS = [
+    {'name': 'zt_daban', 'color': 0},
+    {'name': 'zha_fanbao', 'color': 1},
+    {'name': 'break_pressure', 'color': 3},
+    {'name': 'sector_rotation', 'color': 4},
+    {'name': 'resonance', 'color': 2},
+    {'name': 'divergence', 'color': 2},
+    {'name': 'dark_money', 'color': 4},
+    {'name': 'auction_rush', 'color': 0},
+    {'name': 'auction_gap', 'color': 3},
+    {'name': 'auction_close', 'color': 3},
+    {'name': 'big_order', 'color': 0},
+    {'name': 'lhb_inst', 'color': 4},
+    {'name': 'lhb_hotmoney', 'color': 2},
+    {'name': 'stop_loss', 'color': 1},
+    {'name': 'stop_profit', 'color': 0},
+    {'name': 'market_emotion', 'color': 3},
+    {'name': 'turn_alert', 'color': 2},
+    {'name': 'alpha_breakout', 'color': 0},
+    {'name': 'leader_echelon', 'color': 0},
+    {'name': 'sector_rotation_relay', 'color': 3},
+    {'name': 'capital_flow_divergence', 'color': 2},
+    {'name': 'lhb_broker_network', 'color': 4},
+    {'name': 'sentiment_extreme_reversal', 'color': 2},
+    {'name': 'late_session_raid', 'color': 0},
+]
+
+# 决策桶时间选项 (每 5 分钟一档, 09:30 ~ 15:00)
+BUCKET_TIME_OPTIONS = [f'{h:02d}:{m:02d}' for h in range(9, 15) for m in range(0, 60, 5) if not (h == 9 and m < 30) and not (h == 15 and m > 0)]
 
 
 def _api(method, path, body=None, params=None):
@@ -195,6 +241,13 @@ def auto_daily_table(app_token: str) -> str:
 
     # 3. 添加字段
     _add_signal_fields(app_token, table_id)
+
+    # 4. 创建预设视图 (今日实时 / 按策略分组 / 优档信号)
+    try:
+        create_signal_views(app_token, table_id)
+    except Exception as e:
+        logger.warning('创建视图失败 (不影响数据写入): %s', e)
+
     return table_id
 
 
@@ -242,9 +295,13 @@ def _add_signal_fields(app_token: str, table_id: str):
     primary = existing_fields[0]
     primary_id = primary.get('field_id', '')
 
-    # 将主键字段改名为「时间」并改为文本类型
+    # 将主键字段改名为「时间」并改为日期时间类型 (type=5)
     _api('PUT', f'/bitable/v1/apps/{app_token}/tables/{table_id}/fields/{primary_id}',
-         body={'field_name': '时间', 'type': 1})
+         body={
+             'field_name': '时间',
+             'type': 5,
+             'property': {'date_formatter': 'yyyy/MM/dd HH:mm'},
+         })
 
     # 删除其余默认字段
     for f in existing_fields[1:]:
@@ -258,46 +315,166 @@ def _add_signal_fields(app_token: str, table_id: str):
 
 
 def _create_field(app_token: str, table_id: str, field_def: dict):
-    """创建单个字段"""
+    """创建单个字段 (支持单选/多选/复选/公式)
+
+    Args:
+        field_def: dict, 必须含 field_name + type, 可选 property
+            - type=3 单选: property={'options': [{'name': 'x', 'color': 0}, ...]}
+            - type=4 多选: property={'options': [{'name': 'x', 'color': 0}, ...]}
+            - type=5 日期时间: property={'date_formatter': 'yyyy/MM/dd HH:mm'}
+            - type=7 复选框: property={'symbol': '✅'}
+            - type=20 公式: property={'formula': 'IF(...)'}
+
+    飞书 bitable 字段类型:
+        1=文本, 2=数字, 3=单选, 4=多选, 5=日期时间, 7=复选框,
+        11=人员, 13=电话, 15=超链接, 18=单向关联, 19=查找引用,
+        20=公式, 21=双向关联, 22=位置, 23=群组, 1001=创建时间,
+        1002=最后更新时间, 1003=创建人, 1004=修改人
+    """
     fname = field_def['field_name']
+    ftype = field_def['type']
     body = {
         'field_name': fname,
-        'type': field_def['type'],
+        'type': ftype,
     }
-    if field_def['type'] == 3 and fname == '信号类型':
-        body['property'] = {
-            'options': [{'name': opt} for opt in SIGNAL_TYPE_OPTIONS],
-        }
+
+    # 单选/多选: 带 options
+    if ftype in (3, 4):
+        if fname == '信号类型':
+            body['property'] = {'options': SIGNAL_TYPE_OPTIONS}
+        elif fname == '策略':
+            body['property'] = {'options': STRATEGY_OPTIONS}
+        elif fname == '决策桶时间':
+            body['property'] = {'options': [{'name': t} for t in BUCKET_TIME_OPTIONS]}
+        elif 'options' in field_def:
+            body['property'] = {'options': field_def['options']}
+
+    # 日期时间: 格式化
+    elif ftype == 5:
+        body['property'] = {'date_formatter': 'yyyy/MM/dd HH:mm'}
+
+    # 复选框: 符号
+    elif ftype == 7:
+        body['property'] = {'symbol': '✅'}
+
+    # 公式: 公式表达式
+    elif ftype == 20:
+        if fname == '评分档位':
+            body['property'] = {'formula': 'IF([评分]>=80,"优",IF([评分]>=60,"良","中"))'}
+        elif 'formula' in field_def:
+            body['property'] = {'formula': field_def['formula']}
+
     _api('POST', f'/bitable/v1/apps/{app_token}/tables/{table_id}/fields', body=body)
 
 
 def _signal_to_record(signal: dict) -> dict:
-    """将信号/决策 dict 转为多维表格记录。
+    """将信号/决策 dict 转为多维表格记录 (升级版)
 
     兼容两种格式:
       - signal: {signal_time, code, strategy_name, signal_type, signal_score, ...}
       - decision: {decision_time, code, strategy_name, action, position_size, ...}
 
-    时间字段: 只有时分秒时自动补上今日日期。
+    升级点:
+      - 时间字段转成毫秒时间戳 (飞书日期时间字段要求)
+      - 涨跌幅/板块/是否涨停/决策桶时间 从 metadata 或 reason 提取
     """
+    # 1. 时间 → 毫秒时间戳 (飞书日期时间字段 type=5 要求)
     raw_time = str(signal.get('decision_time', '') or signal.get('signal_time', ''))
-    if raw_time and len(raw_time) <= 8 and ':' in raw_time:
-        today = datetime.now().strftime('%Y-%m-%d')
-        raw_time = f'{today} {raw_time}'
+    ts_ms = _parse_time_to_ms(raw_time)
+
+    # 2. 信号类型/评分/价格
     signal_type = signal.get('action', '') or signal.get('signal_type', '')
     score = signal.get('signal_score', None) or signal.get('position_size', None)
 
+    # 3. 从 metadata 提取升级字段 (调用方需在 metadata 里带上)
+    metadata = signal.get('metadata', {}) or {}
+    change_pct = metadata.get('change_pct') or _extract_change_pct(signal.get('reason', ''))
+    sectors = metadata.get('sectors', []) or []
+    is_zt = metadata.get('is_zt', False) or signal_type in ('limit_seal', 'surge_up')
+
+    # 4. 决策桶时间 (5 分钟一档)
+    bucket_time = _get_bucket_time(raw_time)
+
     return {
-        '时间': raw_time,
+        '时间': ts_ms,
         '代码': str(signal.get('code', '')),
         '股票名称': str(signal.get('stock_name', '')),
         '策略': str(signal.get('strategy_name', '')),
         '信号类型': str(signal_type),
         '评分': _safe_num(score),
+        '涨跌幅%': _safe_num(change_pct),
         '价格': _safe_num(signal.get('price')),
         '成交量': _safe_num(signal.get('volume')),
+        '板块': sectors if sectors else None,   # 多选: 传 list
+        '是否涨停': bool(is_zt),                 # 复选框: 传 bool
+        '决策桶时间': bucket_time,               # 单选: 传字符串
+        # 评分档位是公式字段, 不写入值, 飞书自动算
         '原因': str(signal.get('reason', '')),
     }
+
+
+def _parse_time_to_ms(raw_time: str) -> int:
+    """把时间字符串转成毫秒时间戳 (飞书日期时间字段要求)
+
+    支持格式:
+      - "09:35:12" → 补今日日期
+      - "2026-07-06 09:35:12"
+      - "2026-07-06T09:35:12"
+      - 已是时间戳数字 → 直接用
+    """
+    if not raw_time:
+        return int(datetime.now().timestamp() * 1000)
+    # 已是数字
+    try:
+        n = float(raw_time)
+        if n > 1e12:   # 已是毫秒
+            return int(n)
+        if n > 1e9:    # 是秒
+            return int(n * 1000)
+    except (TypeError, ValueError):
+        pass
+    # 只有时分秒
+    if len(raw_time) <= 8 and ':' in raw_time:
+        today = datetime.now().strftime('%Y-%m-%d')
+        raw_time = f'{today} {raw_time}'
+    # 尝试解析
+    for fmt in ('%Y-%m-%d %H:%M:%S', '%Y-%m-%dT%H:%M:%S', '%Y-%m-%d %H:%M'):
+        try:
+            dt = datetime.strptime(raw_time, fmt)
+            return int(dt.timestamp() * 1000)
+        except ValueError:
+            continue
+    # 解析失败, 用当前时间
+    return int(datetime.now().timestamp() * 1000)
+
+
+def _extract_change_pct(reason: str):
+    """从 reason 字段中提取涨跌幅 (如 '+9.98%' → 9.98)"""
+    if not reason:
+        return None
+    import re
+    m = re.search(r'([+-]?\d+\.?\d*)%', reason)
+    if m:
+        try:
+            return float(m.group(1))
+        except ValueError:
+            return None
+    return None
+
+
+def _get_bucket_time(raw_time: str) -> str:
+    """从时间字符串提取 5 分钟桶时间 (如 '09:37:xx' → '09:35')"""
+    if not raw_time:
+        return ''
+    # 提取 HH:MM
+    import re
+    m = re.search(r'(\d{2}):(\d{2})', raw_time)
+    if not m:
+        return ''
+    h, mn = int(m.group(1)), int(m.group(2))
+    # 5 分钟桶: 09:37 → 09:35, 09:34 → 09:30
+    bucket_min = (mn // 5) * 5
+    return f'{h:02d}:{bucket_min:02d}'
 
 
 def _safe_num(v) -> float | None:
@@ -343,9 +520,15 @@ def _notify_link(res_type: str, name: str, app_token: str):
 
 # 情绪全景表字段
 PANORAMA_FIELDS = [
-    {'field_name': '时间', 'type': 1},
+    {'field_name': '时间', 'type': 5},            # 5=日期时间 (升级)
     {'field_name': 'PG指数', 'type': 2},
-    {'field_name': 'PG信号', 'type': 1},
+    {'field_name': 'PG信号', 'type': 3, 'options': [   # 3=单选 (升级, 原为 1 文本)
+        {'name': '冰点', 'color': 1},
+        {'name': '冷', 'color': 4},
+        {'name': '温', 'color': 3},
+        {'name': '热', 'color': 2},
+        {'name': '沸腾', 'color': 0},
+    ]},
     {'field_name': '涨停数', 'type': 2},
     {'field_name': '跌停数', 'type': 2},
     {'field_name': '封板率', 'type': 2},
@@ -359,7 +542,7 @@ PANORAMA_FIELDS = [
 
 # 板块梯队表字段
 HEATMAP_FIELDS = [
-    {'field_name': '时间', 'type': 1},
+    {'field_name': '时间', 'type': 5},            # 5=日期时间 (升级)
     {'field_name': '行业Top1', 'type': 1},
     {'field_name': '行业Top1涨幅', 'type': 2},
     {'field_name': '行业Top1涨停', 'type': 2},
@@ -372,7 +555,7 @@ HEATMAP_FIELDS = [
 
 # 打板梯队表字段
 LADDER_FIELDS = [
-    {'field_name': '时间', 'type': 1},
+    {'field_name': '时间', 'type': 5},            # 5=日期时间 (升级)
     {'field_name': '首板数', 'type': 2},
     {'field_name': '二板数', 'type': 2},
     {'field_name': '三板数', 'type': 2},
@@ -441,7 +624,7 @@ def write_panorama_row(app_token: str, result: dict) -> bool:
     table_id = auto_panorama_table(app_token, 'sentiment')
     if not table_id:
         return False
-    ts = datetime.now().strftime('%H:%M')
+    ts_ms = _parse_time_to_ms(datetime.now().strftime('%H:%M'))
     pg = result.get('pg_index')
     sig = result.get('pg_signal', '')
     b = result.get('breadth', {})
@@ -450,7 +633,7 @@ def write_panorama_row(app_token: str, result: dict) -> bool:
     turn = result.get('turning_point')
     turn_str = f'{turn["type"]}: {turn["action"]}' if turn else ''
     record = {
-        '时间': ts,
+        '时间': ts_ms,
         'PG指数': _safe_num(pg),
         'PG信号': sig,
         '涨停数': _safe_num(b.get('zt_cnt')),
@@ -471,7 +654,7 @@ def write_heatmap_row(app_token: str, result: dict) -> bool:
     table_id = auto_panorama_table(app_token, 'heatmap')
     if not table_id:
         return False
-    ts = datetime.now().strftime('%H:%M')
+    ts_ms = _parse_time_to_ms(datetime.now().strftime('%H:%M'))
 
     l1 = (result.get('industry_l1_ranking') or [{}])[0]
     concept = (result.get('concept_ranking') or [{}])[0]
@@ -480,7 +663,7 @@ def write_heatmap_row(app_token: str, result: dict) -> bool:
     best_stock = l1_stocks[0] if l1_stocks else {}
 
     record = {
-        '时间': ts,
+        '时间': ts_ms,
         '行业Top1': l1.get('name', ''),
         '行业Top1涨幅': _safe_num(l1.get('zaf')),
         '行业Top1涨停': _safe_num(l1.get('zt_count')),
@@ -498,13 +681,13 @@ def write_ladder_row(app_token: str, result: dict) -> bool:
     table_id = auto_panorama_table(app_token, 'ladder')
     if not table_id:
         return False
-    ts = datetime.now().strftime('%H:%M')
+    ts_ms = _parse_time_to_ms(datetime.now().strftime('%H:%M'))
     stats = result.get('stats', {})
     candidates = result.get('promotion_rankings', [])
     best = candidates[0] if candidates else {}
 
     record = {
-        '时间': ts,
+        '时间': ts_ms,
         '首板数': _safe_num(stats.get('total_1b')),
         '二板数': _safe_num(stats.get('total_2b')),
         '三板数': _safe_num(stats.get('total_3b')),
@@ -515,3 +698,134 @@ def write_ladder_row(app_token: str, result: dict) -> bool:
         '晋级评分': _safe_num(best.get('total_score')),
     }
     return append_records(app_token, table_id, [record])
+
+
+# ══════════════════════════════════════════════════════════
+# 信号表视图配置 (3 视图: 实时/分组/优档)
+# ══════════════════════════════════════════════════════════
+
+# 视图定义 (3 个)
+SIGNAL_VIEWS = [
+    {
+        'view_name': '今日实时',
+        'view_type': 'grid',
+        'description': '按时间倒序, 一眼看到最新信号',
+        'config': {
+            'sort': [{'field_name': '时间', 'desc': True}],
+            'filter': {
+                'conjunction': 'and',
+                'conditions': [
+                    {'field_name': '决策桶时间', 'operator': 'isNot', 'value': ['']},
+                ],
+            },
+            'hidden_fields': ['成交量', '决策桶时间'],
+        },
+    },
+    {
+        'view_name': '按策略分组',
+        'view_type': 'grid',
+        'description': '按策略分组, 组内按评分降序',
+        'config': {
+            'group': [{'field_name': '策略', 'desc': False}],
+            'sort': [{'field_name': '评分', 'desc': True}],
+            'hidden_fields': ['策略'],
+        },
+    },
+    {
+        'view_name': '优档信号',
+        'view_type': 'grid',
+        'description': '只看评分档位=优 的信号',
+        'config': {
+            'filter': {
+                'conjunction': 'and',
+                'conditions': [
+                    {'field_name': '评分档位', 'operator': 'is', 'value': ['优']},
+                ],
+            },
+            'sort': [{'field_name': '时间', 'desc': True}],
+        },
+    },
+]
+
+
+def create_signal_views(app_token: str, table_id: str) -> bool:
+    """为信号表创建 3 个预设视图
+
+    在 auto_daily_table 建表 + 加字段后调用一次。
+    已存在的视图会跳过 (按 view_name 去重)。
+    """
+    existing_views = _list_views(app_token, table_id)
+    existing_names = {v.get('view_name') for v in existing_views}
+
+    all_ok = True
+    for view_def in SIGNAL_VIEWS:
+        vname = view_def['view_name']
+        if vname in existing_names:
+            logger.info('视图已存在, 跳过: %s', vname)
+            continue
+
+        view_id = _create_view(app_token, table_id, vname, view_def['view_type'])
+        if not view_id:
+            all_ok = False
+            continue
+
+        try:
+            _apply_view_config(app_token, table_id, view_id, view_def['config'])
+            logger.info('已创建视图: %s (id=%s)', vname, view_id)
+        except Exception as e:
+            logger.warning('视图 %s 配置失败: %s', vname, e)
+            all_ok = False
+
+    return all_ok
+
+
+def _list_views(app_token: str, table_id: str) -> list:
+    """查询数据表的所有视图"""
+    data = _api('GET', f'/bitable/v1/apps/{app_token}/tables/{table_id}/views')
+    if not data:
+        return []
+    return data.get('data', {}).get('items', [])
+
+
+def _create_view(app_token: str, table_id: str,
+                 view_name: str, view_type: str = 'grid') -> str:
+    """创建视图, 返回 view_id"""
+    body = {'view_name': view_name, 'view_type': view_type}
+    data = _api('POST',
+                f'/bitable/v1/apps/{app_token}/tables/{table_id}/views',
+                body=body)
+    if not data:
+        return ''
+    return data.get('data', {}).get('view_id', '')
+
+
+def _apply_view_config(app_token: str, table_id: str, view_id: str,
+                       config: dict):
+    """应用视图配置 (排序/筛选/分组/隐藏字段)
+
+    PATCH /bitable/v1/apps/{app_token}/tables/{table_id}/views/{view_id}
+    """
+    body = {}
+    if 'sort' in config:
+        body['sort'] = config['sort']
+    if 'filter' in config:
+        body['filter'] = config['filter']
+    if 'group' in config:
+        body['group'] = config['group']
+    if 'hidden_fields' in config:
+        body['hidden_fields'] = config['hidden_fields']
+
+    if not body:
+        return
+
+    _api('PATCH',
+         f'/bitable/v1/apps/{app_token}/tables/{table_id}/views/{view_id}',
+         body=body)
+
+
+def get_default_view_id(app_token: str, table_id: str) -> str:
+    """获取数据表的默认视图 ID (第一个视图)"""
+    views = _list_views(app_token, table_id)
+    if views:
+        return views[0].get('view_id', '')
+    return ''

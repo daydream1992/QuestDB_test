@@ -153,6 +153,12 @@ def auto_daily_sheet(spreadsheet_token: str = '') -> str:
     # 3. 写入表头 (新创建的 sheet 直接强制写入)
     ensure_headers(token, sheet_id, SIGNAL_HEADERS, force=True)
 
+    # 4. 应用格式 (冻结首行 + 列宽 + 表头样式 + 评分色阶)
+    try:
+        _apply_sheet_format(token, sheet_id, SIGNAL_HEADERS)
+    except Exception as e:
+        logger.warning('sheet 格式化失败 (不影响数据写入): %s', e)
+
     return sheet_id
 
 
@@ -294,3 +300,142 @@ def _notify_link(res_type: str, name: str, spreadsheet_token: str):
         _push.push_text(f'📎 新{res_type}: {name}\n{url}')
     except Exception:
         pass
+
+
+# ══════════════════════════════════════════════════════════
+# Sheet 格式化 (冻结/列宽/表头样式/条件格式)
+# ══════════════════════════════════════════════════════════
+
+# 列宽配置 (与 SIGNAL_HEADERS 对齐)
+_COLUMN_WIDTHS = {
+    'A': 140,   # 时间
+    'B': 100,   # 代码
+    'C': 100,   # 股票名称
+    'D': 120,   # 策略
+    'E': 80,    # 信号类型
+    'F': 60,    # 评分
+    'G': 80,    # 价格
+    'H': 80,    # 成交量
+    'I': 300,   # 原因 (最宽)
+}
+
+
+def _freeze_header_row(spreadsheet_token: str, sheet_id: str) -> bool:
+    """冻结首行 (前 1 行)
+
+    POST /sheets/v2/spreadsheets/{token}/dimension_range
+    """
+    body = {
+        'dimension_range': {
+            'sheet_id': sheet_id,
+            'major_dimension': 'ROWS',
+            'start_index': 0,
+            'end_index': 1,
+            'frozen': True,
+        }
+    }
+    data = _api('POST', f'/sheets/v2/spreadsheets/{spreadsheet_token}/dimension_range', body=body)
+    if data:
+        logger.info('已冻结首行: %s', sheet_id)
+        return True
+    return False
+
+
+def _set_column_widths(spreadsheet_token: str, sheet_id: str) -> bool:
+    """设置列宽 (按 _COLUMN_WIDTHS 配置)"""
+    all_ok = True
+    for col, width in _COLUMN_WIDTHS.items():
+        col_idx = ord(col) - ord('A')
+        body = {
+            'dimension_range': {
+                'sheet_id': sheet_id,
+                'major_dimension': 'COLUMNS',
+                'start_index': col_idx,
+                'end_index': col_idx + 1,
+                'width': width,
+            }
+        }
+        data = _api('POST', f'/sheets/v2/spreadsheets/{spreadsheet_token}/dimension_range', body=body)
+        if not data:
+            all_ok = False
+            logger.warning('设置列宽失败: %s (%s)', col, sheet_id)
+    if all_ok:
+        logger.info('已设置列宽: %s', sheet_id)
+    return all_ok
+
+
+def _style_header(spreadsheet_token: str, sheet_id: str,
+                  headers: list) -> bool:
+    """表头加粗 + 蓝底白字
+
+    通过 PUT /sheets/v2/spreadsheets/{token}/values_style 写入
+    """
+    end_col = chr(ord('A') + len(headers) - 1)
+    body = {
+        'valueRange': {
+            'range': f'{sheet_id}!A1:{end_col}1',
+            'values': [headers],
+        },
+        'style': {
+            'bold': True,
+            'background_color': '#1890FF',
+            'font_color': '#FFFFFF',
+            'horizontal_alignment': 'CENTER',
+        },
+    }
+    data = _api('PUT',
+                f'/sheets/v2/spreadsheets/{spreadsheet_token}/values_style',
+                body=body)
+    if data:
+        logger.info('已设置表头样式: %s', sheet_id)
+        return True
+    return False
+
+
+def _add_condition_format(spreadsheet_token: str, sheet_id: str) -> bool:
+    """评分列(F)加色阶: 0=红, 60=黄, 100=绿
+
+    POST /sheets/v2/spreadsheets/{token}/condition_formats
+    """
+    body = {
+        'condition_format': {
+            'range': f'{sheet_id}!F2:F1000',
+            'rules': [
+                {
+                    'type': 'color_scale',
+                    'min': {'type': 'num', 'value': 0,   'color': '#FF4D4F'},
+                    'mid': {'type': 'num', 'value': 60,  'color': '#FAAD14'},
+                    'max': {'type': 'num', 'value': 100, 'color': '#52C41A'},
+                }
+            ],
+        }
+    }
+    data = _api('POST',
+                f'/sheets/v2/spreadsheets/{spreadsheet_token}/condition_formats',
+                body=body)
+    if data:
+        logger.info('已添加评分色阶: %s', sheet_id)
+        return True
+    return False
+
+
+def _apply_sheet_format(spreadsheet_token: str, sheet_id: str,
+                        headers: list = None):
+    """一键应用全部格式 (冻结 + 列宽 + 表头 + 色阶)
+
+    在 auto_daily_sheet 创建子 sheet 后调用一次。
+    任何一步失败不影响其他 (容错)。
+    """
+    if not headers:
+        headers = SIGNAL_HEADERS
+
+    for fn_name, fn in [
+        ('freeze',   lambda: _freeze_header_row(spreadsheet_token, sheet_id)),
+        ('width',    lambda: _set_column_widths(spreadsheet_token, sheet_id)),
+        ('header',   lambda: _style_header(spreadsheet_token, sheet_id, headers)),
+        ('cond_fmt', lambda: _add_condition_format(spreadsheet_token, sheet_id)),
+    ]:
+        try:
+            fn()
+        except Exception as e:
+            logger.warning('sheet 格式化 %s 失败: %s', fn_name, e)
