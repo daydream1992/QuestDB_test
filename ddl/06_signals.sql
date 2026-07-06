@@ -35,7 +35,7 @@ CREATE TABLE IF NOT EXISTS qd_signals (
     reason         VARCHAR,
     metadata       VARCHAR
 ) TIMESTAMP(signal_time) PARTITION BY DAY
-DEDUP UPSERT KEYS(signal_time, code, signal_type);
+DEDUP UPSERT KEYS(signal_time, code, signal_type, strategy_name);
 
 
 -- ------------------------------------------------------------

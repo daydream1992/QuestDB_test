@@ -98,7 +98,7 @@ def _ensure_alive(con, max_retry=1):
         finally:
             cur.close()
         return con
-    except OperationalError as e:
+    except (OperationalError, InterfaceError) as e:
         if max_retry <= 0:
             raise
         logger.warning('QuestDB 连接失效, 自动重连: {}', e)
