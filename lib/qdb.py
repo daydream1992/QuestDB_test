@@ -11,9 +11,13 @@
   - QuestDB 9.4.3 不支持 DELETE FROM, 用 DEDUP UPSERT KEYS 幂等
   - H5: connect 加 libpq TCP keepalives (Linux/macOS 有效, Windows 仅 PG 客户端 ≥16 支持),
     提供 _ensure_alive(con) 工具在 query/写前 ping + OperationalError 重连一次
+  - DuckDB 双写: executemany_batch 写入高频表时, 同步缓存并落盘 parquet
+    到 D:\\dbshujubeifen, 不阻断主流程。详见 _BACKUP_* 常量。
 """
 
 import os
+import re
+from collections import defaultdict
 from datetime import datetime, timedelta
 import numpy as np
 
@@ -44,6 +48,42 @@ QDB_PORT = int(os.getenv('QDB_PORT', '8812'))
 QDB_USER = os.getenv('QDB_USER', 'admin')
 QDB_PASSWORD = os.getenv('QDB_PASSWORD', 'quest')
 QDB_DBNAME = os.getenv('QDB_DBNAME', 'qdb')
+
+# —— parquet 双写备份 (DuckDB) ——
+# executemany_batch 写入高频表后同步写 parquet, 每批直写, 按天合并
+# 不缓存: 短脚本退出不会丢数据
+_BACKUP_ENABLED = True
+_BACKUP_DIR = r'D:\dbshujubeifen'
+_BACKUP_HIGH_FREQ = {
+    'qd_pricevol', 'qd_kline_1m', 'qd_kline_5m',
+    'qd_stock_snapshot', 'qd_money_flow', 'qd_big_order',
+}
+
+
+def _write_parquet_backup(table, columns, rows):
+    """每批直写 parquet (按天合并, 不阻塞主流程)"""
+    if not _BACKUP_ENABLED:
+        return
+    if not rows or table not in _BACKUP_HIGH_FREQ:
+        return
+    try:
+        today = datetime.now().strftime('%Y-%m-%d')
+        table_dir = os.path.join(_BACKUP_DIR, table)
+        os.makedirs(table_dir, exist_ok=True)
+        dst = os.path.join(table_dir, f'{today}.parquet')
+        df = pd.DataFrame(rows, columns=columns)
+        # 如果已有今天文件, 合并后覆盖 (按天合并, 避免碎片)
+        if os.path.exists(dst):
+            existing = pd.read_parquet(dst)
+            df = pd.concat([existing, df], ignore_index=True)
+        df.to_parquet(dst, index=False)
+    except Exception as e:
+        logger.warning('parquet备份失败 {table}: {e}', table=table, e=e)
+
+
+def force_flush_backup():
+    """无操作: parquet 每批直写, 无需 flush"""
+    pass
 
 
 def connect():
@@ -146,7 +186,10 @@ def executemany_batch(con, table, columns, rows, batch_size=500):
     native_rows = [tuple(_native(v) for v in row) for row in rows]
     # H5: 重连后重试一次 (DEDUP UPSERT 幂等, 重写无副作用)
     try:
-        return _exec_with_reconnect(con, lambda c: _do_executemany(c, sql, native_rows, batch_size))
+        n = _exec_with_reconnect(con, lambda c: _do_executemany(c, sql, native_rows, batch_size))
+        # parquet 双写 (不阻断主流程, 每批直写)
+        _write_parquet_backup(table, columns, native_rows)
+        return n
     except Exception as e:
         logger.warning('executemany_batch 失败 {}.{}: {}', table, len(rows), e)
         raise

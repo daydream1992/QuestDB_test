@@ -18,6 +18,7 @@ import threading
 import functools
 
 from dotenv import load_dotenv
+from loguru import logger
 
 # 加载 config/.env
 _ENV_PATH = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
