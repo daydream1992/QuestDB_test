@@ -1,17 +1,10 @@
-# 策略开关配置 (enable/disable)
-# 每个策略可在运行时动态开关, 无需改代码
-
 strategies:
-  # === 入场策略 ===
   zt_daban:
     enabled: true
     name: 涨停打板
   zha_fanbao:
     enabled: true
     name: 炸板反包
-  # macd_golden_vol:       # 禁用: p03_macd_golden_vol.py 插件文件不存在
-  #   enabled: true
-  #   name: MACD金叉放量
   break_pressure:
     enabled: true
     name: 突破压力位
@@ -27,8 +20,6 @@ strategies:
   dark_money_anomaly:
     enabled: true
     name: 暗资金异动
-
-  # === 竞价策略 ===
   auction_rush:
     enabled: true
     name: 竞价抢筹
@@ -38,58 +29,79 @@ strategies:
   auction_close:
     enabled: true
     name: 尾盘竞价异动
-
-  # === L2 大单策略 ===
   big_order_pulse:
     enabled: true
     name: 大单跟单
-
-  # === 龙虎榜策略 ===
   lhb_institution:
     enabled: true
     name: 机构龙虎榜
   lhb_hotmoney:
     enabled: true
     name: 游资龙虎榜
-
-  # === 出场策略 ===
   stop_loss:
     enabled: true
     name: 止损退出
   stop_profit:
     enabled: true
     name: 止盈退出
-
-  # === 大盘情绪 (k3_sentiment) ===
   market_emotion:
     enabled: true
     name: 大盘情绪
   turn_alert:
     enabled: true
     name: 变盘预警
-
-# === 风控参数 ===
+  alpha_breakout:
+    enabled: true
+    name: Alpha突破
+  leader_echelon:
+    enabled: true
+    name: 龙头梯队接力
+  sector_rotation_relay:
+    enabled: true
+    name: 板块轮动接力
+  capital_flow_divergence:
+    enabled: true
+    name: 资金流背离
+  lhb_broker_network:
+    enabled: true
+    name: 龙虎榜营业部网络
+  sentiment_extreme_reversal:
+    enabled: true
+    name: 情绪极端反转
+  late_session_raid:
+    enabled: true
+    name: 尾盘突袭
 risk:
-  max_total_position: 80      # 最大总仓位 %
-  max_single_position: 30     # 单只最大仓位 %
-  max_strategies_per_day: 5   # 每日最多策略触发次数
-  push_cooldown_sec: 300      # 飞书推送频控 (秒)
-
-# === 拉取频率 ===
+  max_total_position: 80
+  max_single_position: 30
+  max_strategies_per_day: 5
+  push_cooldown_sec: 300
 schedule:
-  pricevol_interval: 10       # 全场价量 (秒)
-  snapshot_focus_interval: 10 # 重点快照 (秒)
-  snapshot_rotate_interval: 60 # 全场轮换 (秒)
-  more_info_focus_interval: 10 # 重点 88 字段 (秒)
-  more_info_full_interval: 60  # 全场 88 字段 (秒)
-  kline_interval: 60          # K 线 (秒)
-  indicator_interval: 10      # 指标计算 (秒)
-  strategy_interval: 10       # 策略评估 (秒)
-  sector_flow_interval: 60    # 板块资金流 (秒)
-  resonance_interval: 60      # 共振分析 (秒)
-
-# === 订阅池 (实盘异动监控 intraday_engine; 留空则仅监控 selector 重点池) ===
+  pricevol_interval: 10
+  snapshot_focus_interval: 10
+  snapshot_rotate_interval: 60
+  more_info_focus_interval: 10
+  more_info_full_interval: 60
+  kline_interval: 60
+  indicator_interval: 10
+  strategy_interval: 10
+  sector_flow_interval: 60
+  resonance_interval: 60
 watchlist:
-  - '002747.SZ'   # 埃斯顿
-  - '002580.SZ'   # 圣阳股份
-  - '002008.SZ'   # 大族激光
+- 002747.SZ
+- 002580.SZ
+- 002008.SZ
+factor_model:
+  weights:
+    ts_momentum_5m: 0.15
+    ts_acceleration: 0.08
+    xs_amount_surge: 0.12
+    xs_sector_strength: 0.12
+    micro_imbalance: 0.08
+    micro_imbalance_weighted: 0.04
+    ladder_position: 0.12
+    quality_gp: 0.08
+    ts_reversal_open: 0.06
+    xs_lhb_broker_rank: 0.05
+    micro_order_imbalance: 0.05
+    ts_volatility_regime: 0.05

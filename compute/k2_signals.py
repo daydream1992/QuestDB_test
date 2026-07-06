@@ -35,6 +35,7 @@
 import os
 import sys
 import json
+from datetime import datetime
 
 import pandas as pd
 
@@ -73,13 +74,22 @@ BREAK_PRESSURE = 'break_pressure'
 BREAK_SUPPORT = 'break_support'
 
 
+# 模块级: 上次已处理的指标时间戳 (watermark)
+_LAST_WATERMARK = None
+
+
 def fetch_indicators(con) -> pd.DataFrame:
-    """读最近 3 天的指标, 按 code, calc_time 排序 (避免全表扫拖慢性能)"""
+    """读指标数据 (增量模式: 首次 3 天, 后续仅新增)"""
+    global _LAST_WATERMARK
+    if _LAST_WATERMARK is None:
+        since = cutoff(days=3)
+    else:
+        since = _LAST_WATERMARK.strftime('%Y-%m-%dT%H:%M:%S.%f')
     sql = (
         f"SELECT code, calc_time, close, "
         f"macd_dif, macd_dea, macd_hist, pressure_high, support_low "
         f"FROM {SRC} "
-        f"WHERE calc_time > '{cutoff(days=3)}' "
+        f"WHERE calc_time > '{since}' "
         f"ORDER BY code, calc_time"
     )
     return query_df(con, sql)
@@ -181,6 +191,7 @@ def run(con=None):
     Args:
         con: psycopg2 连接, None 则自建 (用完关闭)
     """
+    global _LAST_WATERMARK
     logger.info('▶ k2 原子信号检测开始')
     own = con is None
     if own:
@@ -188,7 +199,7 @@ def run(con=None):
     try:
         df = fetch_indicators(con)
         if df.empty:
-            logger.warning('qd_indicators 无数据, 跳过')
+            logger.debug('k2 无新指标 (watermark={})', _LAST_WATERMARK)
             return
         logger.info('读到 {} 行指标, code 数={}', len(df), df['code'].nunique())
 
@@ -201,6 +212,7 @@ def run(con=None):
 
         n = executemany_batch(con, DST, INSERT_COLUMNS, all_rows)
         logger.info('✓ k2 入库 {} 条信号', n)
+        _LAST_WATERMARK = datetime.now()
     finally:
         if own:
             con.close()

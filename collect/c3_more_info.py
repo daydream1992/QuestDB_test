@@ -1,7 +1,7 @@
 """c3: 88 字段 more_info 采集 (日级 + 盘中高频)
 
 脚本路径: K:\QuestDB_test\\collect\\c3_more_info.py
-用途: 逐个 get_more_info 采集 88 字段, 按 route_type 分流到 daily / snapshot 表
+用途: 逐个 get_more_info 采集 88 字段, 按 route_type 分流到 daily / intraday 表
 数据源: tqcenter get_more_info(stock_code, field_list=[])
 入库表:
   daily 模式:
@@ -9,9 +9,10 @@
     - qd_sector_daily (板块日级, 15 字段)
     - qd_index_daily  (指数日级, 10 字段)
   intraday 模式:
-    - qd_stock_snapshot  (个股盘中高频, 15 字段, merge)
+    - qd_stock_intraday  (个股盘中高频, 15 字段)
     - qd_sector_snapshot (板块盘中高频, merge)
     - qd_index_snapshot  (指数盘中高频, merge)
+  (C8 拆表后 stock intraday 写 qd_stock_intraday, 非 qd_stock_snapshot)
 频率: 全场 60s/轮, 重点 10s/轮
 字段映射来源: config/fields.py 的
   STOCK_DAILY_FIELDS / SECTOR_DAILY_FIELDS / INDEX_DAILY_FIELDS / STOCK_INTRADAY_FIELDS
@@ -146,7 +147,7 @@ def _fetch_one(code):
 
 
 def _write_daily(con, buckets):
-    """daily 模式写入 3 张 daily 表"""
+    """daily 模式写入 3 张 daily 表 (逐表 try/except, 单表失败不影响其他)"""
     counts = {}
     # stock
     rows = []
@@ -155,7 +156,14 @@ def _write_daily(con, buckets):
             rows.append(_build_daily_row(code, data, STOCK_DAILY_FIELDS))
         except Exception as e:
             logger.warning('构建 stock daily 行失败 code={}: {}', code, e)
-    counts['qd_stock_daily'] = executemany_batch(con, 'qd_stock_daily', STOCK_DAILY_COLS, rows)
+    if rows:
+        try:
+            counts['qd_stock_daily'] = executemany_batch(con, 'qd_stock_daily', STOCK_DAILY_COLS, rows)
+        except Exception as e:
+            logger.error('写入 qd_stock_daily 失败: {}', e)
+            counts['qd_stock_daily'] = 0
+    else:
+        counts['qd_stock_daily'] = 0
 
     # sector
     rows = []
@@ -164,7 +172,14 @@ def _write_daily(con, buckets):
             rows.append(_build_daily_row(code, data, SECTOR_DAILY_FIELDS))
         except Exception as e:
             logger.warning('构建 sector daily 行失败 code={}: {}', code, e)
-    counts['qd_sector_daily'] = executemany_batch(con, 'qd_sector_daily', SECTOR_DAILY_COLS, rows)
+    if rows:
+        try:
+            counts['qd_sector_daily'] = executemany_batch(con, 'qd_sector_daily', SECTOR_DAILY_COLS, rows)
+        except Exception as e:
+            logger.error('写入 qd_sector_daily 失败: {}', e)
+            counts['qd_sector_daily'] = 0
+    else:
+        counts['qd_sector_daily'] = 0
 
     # index
     rows = []
@@ -173,7 +188,14 @@ def _write_daily(con, buckets):
             rows.append(_build_daily_row(code, data, INDEX_DAILY_FIELDS))
         except Exception as e:
             logger.warning('构建 index daily 行失败 code={}: {}', code, e)
-    counts['qd_index_daily'] = executemany_batch(con, 'qd_index_daily', INDEX_DAILY_COLS, rows)
+    if rows:
+        try:
+            counts['qd_index_daily'] = executemany_batch(con, 'qd_index_daily', INDEX_DAILY_COLS, rows)
+        except Exception as e:
+            logger.error('写入 qd_index_daily 失败: {}', e)
+            counts['qd_index_daily'] = 0
+    else:
+        counts['qd_index_daily'] = 0
     return counts
 
 

@@ -17,10 +17,7 @@ from strategy.registry import StrategyRegistry
 
 
 def _safe_float(v, default=0.0) -> float:
-    try:
-        return float(v)
-    except (TypeError, ValueError):
-        return default
+    return StrategyBase.safe_float(v, default)
 
 
 @StrategyRegistry.register

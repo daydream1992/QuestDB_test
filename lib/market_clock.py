@@ -86,13 +86,14 @@ def get_trading_dates(year: int, count: int = -1, start: str = '', end: str = ''
         if dates is None:
             dates = []
         dates = [str(d) for d in dates]
-        # 写缓存
-        try:
-            with open(cache_file, 'w', encoding='utf-8') as f:
-                json.dump(dates, f, ensure_ascii=False, indent=2)
-            logger.info('交易日历缓存已写入 {} ({} 个交易日)', cache_file, len(dates))
-        except Exception as e:
-            logger.warning('交易日历缓存写入失败 {}: {}', cache_file, e)
+        # 空结果不写缓存 (避免 tqcenter 未初始化时清空有效缓存)
+        if dates:
+            try:
+                with open(cache_file, 'w', encoding='utf-8') as f:
+                    json.dump(dates, f, ensure_ascii=False, indent=2)
+                logger.info('交易日历缓存已写入 {} ({} 个交易日)', cache_file, len(dates))
+            except Exception as e:
+                logger.warning('交易日历缓存写入失败 {}: {}', cache_file, e)
         return dates
     except Exception as e:
         logger.error('get_trading_dates 失败 (tqcenter 未初始化/999999 未下载?): {}', e)

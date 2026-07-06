@@ -29,6 +29,7 @@ if _TQCENTER_PATH and _TQCENTER_PATH not in sys.path:
     sys.path.insert(0, _TQCENTER_PATH)
 
 from tqcenter import tq
+from lib.tq_client import safe_call
 from lib.qdb import connect, executemany_batch
 from loguru import logger
 
@@ -65,6 +66,9 @@ class Subscriber:
         self._targets: dict[str, str] = {}  # code → name
         self._exit_flag = False
         signal.signal(signal.SIGINT, self._signal_handler)
+        if os.name == 'nt':
+            signal.signal(signal.SIGBREAK, self._signal_handler)
+        signal.signal(signal.SIGTERM, self._signal_handler)
 
     def add(self, code: str, name: str = ''):
         """添加订阅标的"""
@@ -107,16 +111,12 @@ class Subscriber:
                 return
 
             # 取最新完整行情 (get_market_snapshot 无字段过滤)
-            tick = tq.get_market_snapshot(stock_code=code, field_list=[])
+            tick = safe_call(tq.get_market_snapshot, stock_code=code, field_list=[])
             if not tick:
                 return
 
             # 补取主力字段 (get_more_info intraday 模式)
-            more = {}
-            try:
-                more = tq.get_more_info(stock_code=code, field_list=[])
-            except Exception:
-                pass
+            more = safe_call(tq.get_more_info, stock_code=code, field_list=[]) or {}
 
             ts = datetime.now()
             name = self._targets.get(code, code)
@@ -132,7 +132,7 @@ class Subscriber:
                         tick.get('Volume'), tick.get('Buyv1'), tick.get('Sellv1'),
                         more.get('Zjl'), more.get('FCAmo'))
 
-            # 写 qd_stock_snapshot (关键字段)
+            # 写 qd_stock_snapshot + qd_stock_intraday (共用一次连接)
             con = connect()
             try:
                 snap_row = (
@@ -146,12 +146,7 @@ class Subscriber:
                     tick.get('ZAF'), tick.get('ItemNum'),
                 )
                 executemany_batch(con, 'qd_stock_snapshot', _SNAP_COLS, [snap_row])
-            finally:
-                con.close()
 
-            # 写 qd_stock_intraday (主力资金字段)
-            con = connect()
-            try:
                 intra_row = (
                     ts, code,
                     more.get('ZAF'), more.get('ZTPrice'), more.get('DTPrice'),

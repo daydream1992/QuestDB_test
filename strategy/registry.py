@@ -19,32 +19,71 @@ from loguru import logger
 
 
 class StrategyRegistry:
-    _strategies = {}  # name → class
+    _strategies = {}  # {scope: {name: class}}  默认 scope='default'
 
     @classmethod
-    def register(cls, strategy_class):
-        cls._strategies[strategy_class.name] = strategy_class
-        logger.debug('注册策略: {} ({})', strategy_class.name,
-                     getattr(strategy_class, 'version', '?'))
-        return strategy_class
+    def register(cls, strategy_class=None, *, scope='default'):
+        """注册策略类
+
+        支持两种用法:
+          @StrategyRegistry.register                        # 无参, scope='default'
+          @StrategyRegistry.register(scope='cross_section') # 指定 scope
+
+        Args:
+            strategy_class: 装饰器直接用法传入的 class
+            scope: 策略分组 (默认 'default', cross_section 等)
+        """
+        def _wrap(sc):
+            if scope not in cls._strategies:
+                cls._strategies[scope] = {}
+            cls._strategies[scope][sc.name] = sc
+            logger.debug('注册策略: {} ({}) scope={}', sc.name,
+                         getattr(sc, 'version', '?'), scope)
+            return sc
+
+        if strategy_class is not None:
+            # 装饰器无参直接调用: @StrategyRegistry.register
+            return _wrap(strategy_class)
+        # 装饰器带参调用: @StrategyRegistry.register(scope='...')
+        return _wrap
 
     @classmethod
-    def get_all(cls):
-        return {n: c for n, c in cls._strategies.items() if c.enabled}
+    def get_all(cls, scope=None):
+        """获取已启用的策略
+
+        Args:
+            scope: None = 所有 scope, 'default' = 仅该 scope
+
+        Returns:
+            dict: {name: class}
+        """
+        result = {}
+        for scp, strats in cls._strategies.items():
+            if scope is not None and scp != scope:
+                continue
+            for n, c in strats.items():
+                if c.enabled:
+                    result[n] = c
+        return result
 
     @classmethod
-    def get(cls, name):
-        return cls._strategies.get(name)
+    def get_by_scope(cls, scope):
+        """获取指定 scope 的已启用策略"""
+        return cls.get_all(scope=scope)
 
     @classmethod
-    def enable(cls, name):
-        if name in cls._strategies:
-            cls._strategies[name].enabled = True
+    def get(cls, name, scope='default'):
+        return cls._strategies.get(scope, {}).get(name)
 
     @classmethod
-    def disable(cls, name):
-        if name in cls._strategies:
-            cls._strategies[name].enabled = False
+    def enable(cls, name, scope='default'):
+        if name in cls._strategies.get(scope, {}):
+            cls._strategies[scope][name].enabled = True
+
+    @classmethod
+    def disable(cls, name, scope='default'):
+        if name in cls._strategies.get(scope, {}):
+            cls._strategies[scope][name].enabled = False
 
     @classmethod
     def load_config(cls, yaml_path):
@@ -61,7 +100,7 @@ class StrategyRegistry:
             else:
                 cls.disable(name)
         logger.info('策略配置加载完成: 启用={}, 已注册={}',
-                    len(cls.get_all()), len(cls._strategies))
+                    len(cls.get_all()), sum(len(v) for v in cls._strategies.values()))
 
     @classmethod
     def load_plugins(cls, plugins_dir):
@@ -102,7 +141,7 @@ class StrategyRegistry:
                 except Exception:
                     pass
         missing = []
-        for name, strat_cls in cls._strategies.items():
+        for name, strat_cls in cls.get_all(scope=None).items():
             if not strat_cls.enabled:
                 continue
             try:

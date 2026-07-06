@@ -20,10 +20,7 @@ _HUGE_LEVELS = {'huge', 'super'}
 
 
 def _safe_float(v, default=0.0) -> float:
-    try:
-        return float(v)
-    except (TypeError, ValueError):
-        return default
+    return StrategyBase.safe_float(v, default)
 
 
 def _is_huge_buy(row) -> bool:
@@ -75,6 +72,8 @@ class BigOrderPulseStrategy(StrategyBase):
         zjl_map = {}
         mf = ctx.money_flow_df
         if mf is not None and not mf.empty and 'code' in mf.columns and 'main_net' in mf.columns:
+            if 'snapshot_time' in mf.columns:
+                mf = mf.sort_values('snapshot_time')
             for c, g in mf.groupby('code'):
                 zjl_map[c] = _safe_float(g.iloc[-1]['main_net'])
 

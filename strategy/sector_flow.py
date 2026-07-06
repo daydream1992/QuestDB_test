@@ -144,8 +144,9 @@ def flow_divergence(block_code, context) -> dict:
         divergence ∈ {'top_divergence', 'bottom_divergence', None}
     """
     price_change = 0.0
-    if context.pricevol_df is not None and not context.pricevol_df.empty:
-        row = context.pricevol_df[context.pricevol_df['code'] == block_code]
+    # 从 index_snapshot 取板块行情 (pricevol_df 不含板块代码)
+    if context.index_snapshot is not None and not context.index_snapshot.empty:
+        row = context.index_snapshot[context.index_snapshot['code'] == block_code]
         if not row.empty:
             r = row.iloc[0]
             price_change = _change_pct(r.get('Now'), r.get('LastClose'))

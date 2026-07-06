@@ -42,3 +42,29 @@ class StrategyBase(ABC):
     def required_fields(self) -> list:
         """声明依赖字段"""
         return []
+
+    @staticmethod
+    def safe_float(v, default=0.0) -> float:
+        """安全转浮点, 失败返回 default"""
+        try:
+            return float(v)
+        except (TypeError, ValueError):
+            return default
+
+    @staticmethod
+    def normalize_score(score, min_val=0.0, max_val=100.0) -> float:
+        """将任意范围的 score 归一化到 0-100
+
+        Args:
+            score: 原始评分
+            min_val: 该策略理论最低分
+            max_val: 该策略理论最高分
+
+        Returns:
+            float: 0-100 归一化评分
+        """
+        if score is None:
+            return 50.0
+        if max_val <= min_val:
+            return 50.0
+        return max(0.0, min(100.0, (float(score) - min_val) / (max_val - min_val) * 100))

@@ -54,7 +54,7 @@ PERIOD_TABLE = {
     '5m': 'qd_kline_5m',
 }
 
-KLINE_COLS = ['code', 'kline_time', 'open', 'high', 'low', 'close', 'volume', 'amount']
+KLINE_COLS = ['code', 'kline_time', 'Open', 'High', 'Low', 'Close', 'Volume', 'Amount']
 
 # 字段名候选 (兼容大小写)
 _FIELD_CANDIDATES = {
@@ -64,6 +64,12 @@ _FIELD_CANDIDATES = {
     'close':  ['close', 'Close', 'CLOSE'],
     'volume': ['volume', 'Volume', 'VOLUME'],
     'amount': ['amount', 'Amount', 'AMOUNT'],
+    'Open':   ['Open', 'open', 'OPEN'],
+    'High':   ['High', 'high', 'HIGH'],
+    'Low':    ['Low', 'low', 'LOW'],
+    'Close':  ['Close', 'close', 'CLOSE'],
+    'Volume': ['Volume', 'volume', 'VOLUME'],
+    'Amount': ['Amount', 'amount', 'AMOUNT'],
 }
 
 

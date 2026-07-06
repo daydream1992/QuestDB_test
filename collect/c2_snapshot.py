@@ -7,7 +7,7 @@
   - qd_stock_snapshot  (个股, 43 列含 5 档买卖盘)
   - qd_sector_snapshot (板块, 23 列无 5 档)
   - qd_index_snapshot  (指数, 13 列无 5 档/内外盘)
-频率: 重点标的 10s/轮 + 全场轮换 60s/轮
+频率: focus 全采 + all_codes 全量 (非轮换, runner 层面控频)
 字段映射来源: config/fields.py 的 STOCK_SNAPSHOT_FIELDS / SECTOR_SNAPSHOT_FIELDS
 5 档映射:
   Buyp[5]  → Buyp1..Buyp5

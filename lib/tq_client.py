@@ -47,6 +47,9 @@ def init(path=None):
     """
     global _initialized
     with _lock:
+        if _initialized:
+            logger.debug('tqcenter 已初始化, 跳过重复 init')
+            return
         if path is None:
             path = TQCENTER_PATH
         tq.initialize(path)

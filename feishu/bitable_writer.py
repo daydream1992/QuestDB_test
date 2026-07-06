@@ -300,12 +300,12 @@ def _signal_to_record(signal: dict) -> dict:
     }
 
 
-def _safe_num(v) -> float:
-    """安全转数字, 失败返回 0"""
+def _safe_num(v) -> float | None:
+    """安全转数字, 失败返回 None (区别于 0, 避免写入脏数据)"""
     try:
         return float(v)
     except (TypeError, ValueError):
-        return 0
+        return None
 
 
 def _set_public_permission(app_token: str):

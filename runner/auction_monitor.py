@@ -27,6 +27,18 @@ if _PROJ_ROOT not in sys.path:
 from loguru import logger  # noqa: E402
 
 from lib.qdb import connect, query_df, executemany_batch, cutoff  # noqa: E402
+
+
+def _write_heartbeat(name):
+    """写入心跳文件 (logs/heartbeats/{name}.ts)"""
+    import os as _os
+    hb_dir = _os.path.join(_PROJ_ROOT, 'logs', 'heartbeats')
+    _os.makedirs(hb_dir, exist_ok=True)
+    try:
+        with _os.path.join(hb_dir, f'{name}.ts'), 'w') as f:
+            f.write(str(time.time()))
+    except Exception:
+        pass
 from lib.tq_client import safe_call, init, close  # noqa: E402
 import importlib as _il
 _feishu = _il.import_module('feishu')  # noqa: E402
@@ -191,6 +203,10 @@ def run(con=None):
             if now.time() > dtime(15, 0):
                 logger.info('15:00 后, 退出')
                 break
+            # 09:30-14:57 非竞价时段, 退出让位给 intraday_loop (避免争 COM)
+            if dtime(9, 30) <= now.time() < dtime(14, 57):
+                logger.info('竞价结束 (09:30-14:57), 退出让位给盘中主循环')
+                break
 
             # 非竞价时段, 短暂等待
             if not is_auction_time(now):
@@ -238,7 +254,10 @@ def run(con=None):
             # 4. 写决策 + 飞书推送
             _process_decisions(con, decisions)
 
-            # 5. 控频: 撮合阶段/收盘竞价 5s, 其余 3s
+            # 5. 心跳: 每轮刷新时间戳
+            _write_heartbeat('auction_monitor')
+
+            # 6. 控频: 撮合阶段/收盘竞价 5s, 其余 3s
             sleep_s = 5 if phase in ('open', 'pre_close') else 3
             elapsed = time.time() - t0
             time.sleep(max(0.5, sleep_s - elapsed))
@@ -251,6 +270,15 @@ def run(con=None):
 
 
 def main():
+    import signal
+
+    def _graceful_exit(signum, frame):
+        raise KeyboardInterrupt
+
+    if os.name == 'nt':
+        signal.signal(signal.SIGBREAK, _graceful_exit)
+    signal.signal(signal.SIGTERM, _graceful_exit)
+
     init()
     try:
         run()

@@ -34,7 +34,7 @@ DOC_ID = os.getenv('LARK_DOC_ID', '')           # 飞书文档 ID
 SHEET_TOKEN = os.getenv('LARK_SHEET_TOKEN', '')  # 电子表格 token
 SHEET_ID = os.getenv('LARK_SHEET_ID', '')        # 子 sheet ID
 BITABLE_TOKEN = os.getenv('LARK_BITABLE_TOKEN', '')  # 多维表格 token
-FOLDER_TOKEN = os.getenv('LARK_FOLDER_TOKEN', 'Le3af8zGMlOIDXde5QecCJ1lnZg')  # 默认文件夹
+FOLDER_TOKEN = os.getenv('LARK_FOLDER_TOKEN', '')  # 飞书文件夹 token (必配, 否则自动创建文档在根目录)
 
 # ── API 基地址 ─────────────────────────────────────────────
 BASE_URL = 'https://open.feishu.cn/open-apis'
@@ -42,6 +42,9 @@ BASE_URL = 'https://open.feishu.cn/open-apis'
 # ── 频控默认值 ─────────────────────────────────────────────
 SIGNAL_COOLDOWN_SEC = 300   # 同 code+signal_type 5 分钟内只推一次
 BATCH_FLUSH_SEC = 60        # 攒批写入间隔 (秒)
+
+# ── Dry-Run 模式 (CLAUDE.md §9) ────────────────────────────
+DRY_RUN = os.getenv('FEISHU_DRY_RUN', 'false').lower() in ('1', 'true', 'yes')
 
 
 def has_app_credentials() -> bool:

@@ -127,6 +127,10 @@ def executemany_batch(con, table, columns, rows, batch_size=500):
     """
     if not rows:
         return 0
+    # 表名校验 (防止 SQL 注入)
+    if not re.match(r'^qd_[a-z_]+$', table):
+        logger.error('executemany_batch 非法表名: {}', table)
+        return 0
     cols = ', '.join(columns)
     placeholders = ', '.join(['%s'] * len(columns))
     sql = 'INSERT INTO {table} ({cols}) VALUES ({ph})'.format(

@@ -31,6 +31,19 @@ import collect.c5_mapping as c5  # noqa: E402
 import collect.c3_more_info as c3  # noqa: E402
 import collect.c4_kline as c4  # noqa: E402
 
+
+def _c4_with_retry(codes, period, count, con, retries=3):
+    """K 线预拉带重试"""
+    import time
+    for i in range(retries):
+        try:
+            return c4.run(codes, period=period, count=count, con=con)
+        except Exception as e:
+            logger.warning('c4 {} 第{}次失败: {}', period, i + 1, e)
+            if i < retries - 1:
+                time.sleep(2)
+    return 0
+
 # 日志配置
 _LOG_DIR = os.path.join(_PROJ_ROOT, 'logs')
 os.makedirs(_LOG_DIR, exist_ok=True)
@@ -64,9 +77,9 @@ def run(con=None):
         logger.info('c3_more_info daily 完成: {}', n3)
 
         # 4. 预拉 K 线 (供盘中 k1 指标计算用, 必须 9:25 拉足量)
-        n4_1m = c4.run(codes, period='1m', count=48, con=con)
+        n4_1m = _c4_with_retry(codes, '1m', 240, con)
         logger.info('c4_kline 1m 完成: {} 行', n4_1m)
-        n4_5m = c4.run(codes, period='5m', count=48, con=con)
+        n4_5m = _c4_with_retry(codes, '5m', 240, con)
         logger.info('c4_kline 5m 完成: {} 行', n4_5m)
 
         # 5. 飞书汇报
@@ -85,6 +98,15 @@ def run(con=None):
 
 
 def main():
+    import signal
+
+    def _graceful_exit(signum, frame):
+        raise KeyboardInterrupt
+
+    if os.name == 'nt':
+        signal.signal(signal.SIGBREAK, _graceful_exit)
+    signal.signal(signal.SIGTERM, _graceful_exit)
+
     init()
     try:
         run()

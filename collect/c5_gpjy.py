@@ -133,49 +133,51 @@ def run(codes=None, start_time='', end_time='', con=None):
     own = con is None
     if own:
         con = connect()
-    if codes is None:
-        from lib.qdb import query_df
-        codes = query_df(con, "SELECT code FROM qd_code_registry WHERE code_type='stock'")['code'].tolist()
-    if not start_time:
-        # 近 7 天, 减少历史返回 (只取最新)
-        from datetime import datetime, timedelta
-        start_time = (datetime.now() - timedelta(days=7)).strftime('%Y%m%d')
-    logger.info('共 {} 只, start={} end={}', len(codes), start_time, end_time)
+    try:
+        if codes is None:
+            from lib.qdb import query_df
+            codes = query_df(con, "SELECT code FROM qd_code_registry WHERE code_type='stock'")['code'].tolist()
+        if not start_time:
+            # 近 7 天, 减少历史返回 (只取最新)
+            from datetime import datetime, timedelta
+            start_time = (datetime.now() - timedelta(days=7)).strftime('%Y%m%d')
+        logger.info('共 {} 只, start={} end={}', len(codes), start_time, end_time)
 
-    rows = []
-    err = 0
-    for i in range(0, len(codes), _BATCH_SIZE):
-        batch = codes[i:i + _BATCH_SIZE]
-        try:
-            result = safe_call(tq.get_gpjy_value, stock_list=batch,
-                               field_list=GP_FIELDS, start_time=start_time, end_time=end_time)
-        except Exception as e:
-            logger.warning('get_gpjy_value 批次 {} 失败: {}', i, e)
-            err += len(batch)
-            continue
-        if not isinstance(result, dict):
-            continue
-        for code, data in result.items():
-            parsed = _parse_code(code, data)
-            if not parsed:
+        rows = []
+        err = 0
+        for i in range(0, len(codes), _BATCH_SIZE):
+            batch = codes[i:i + _BATCH_SIZE]
+            try:
+                result = safe_call(tq.get_gpjy_value, stock_list=batch,
+                                   field_list=GP_FIELDS, start_time=start_time, end_time=end_time)
+            except Exception as e:
+                logger.warning('get_gpjy_value 批次 {} 失败: {}', i, e)
+                err += len(batch)
                 continue
-            ts = _date_to_ts(parsed['date'])
-            if not ts:
+            if not isinstance(result, dict):
                 continue
-            rows.append((
-                code, ts,
-                parsed['gp15_status'], parsed['gp15_seal'],
-                parsed['gp14_zt_amo'], parsed['gp14_break_cnt'],
-                parsed['gp38_zt_cnt'], parsed['gp38_premium_cnt'],
-                parsed['gp39_first_seal_rate'], parsed['gp39_next_red_rate'],
-                parsed['gp40_lb_rate'], parsed['gp40_last_zt_time'],
-                parsed['gp09_inst_cnt'], parsed['gp09_inst_amo'],
-            ))
-    n = executemany_batch(con, DST, INSERT_COLUMNS, rows) if rows else 0
-    logger.info('✓ c5 入库 {} 行 GP 数据 ({} 个 code, 错误 {} 只)', n, len(rows), err)
-    if own:
-        con.close()
-    return n
+            for code, data in result.items():
+                parsed = _parse_code(code, data)
+                if not parsed:
+                    continue
+                ts = _date_to_ts(parsed['date'])
+                if not ts:
+                    continue
+                rows.append((
+                    code, ts,
+                    parsed['gp15_status'], parsed['gp15_seal'],
+                    parsed['gp14_zt_amo'], parsed['gp14_break_cnt'],
+                    parsed['gp38_zt_cnt'], parsed['gp38_premium_cnt'],
+                    parsed['gp39_first_seal_rate'], parsed['gp39_next_red_rate'],
+                    parsed['gp40_lb_rate'], parsed['gp40_last_zt_time'],
+                    parsed['gp09_inst_cnt'], parsed['gp09_inst_amo'],
+                ))
+        n = executemany_batch(con, DST, INSERT_COLUMNS, rows) if rows else 0
+        logger.info('✓ c5 入库 {} 行 GP 数据 ({} 个 code, 错误 {} 只)', n, len(rows), err)
+        return n
+    finally:
+        if own:
+            con.close()
 
 
 if __name__ == '__main__':

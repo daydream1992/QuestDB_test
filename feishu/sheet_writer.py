@@ -217,6 +217,10 @@ def _ensure_spreadsheet() -> str:
     global _auto_sheet_token
     if _auto_sheet_token:
         return _auto_sheet_token
+    # 检查 config 中是否已有 token (其他进程已创建)
+    if _cfg.SHEET_TOKEN:
+        _auto_sheet_token = _cfg.SHEET_TOKEN
+        return _auto_sheet_token
     folder = _cfg.FOLDER_TOKEN
     body = {'title': '量化信号日志'}
     if folder:

@@ -48,6 +48,8 @@ DDL_FILES = [
     '18_sentiment_deep.sql',
     '19_sector_heatmap.sql',
     '20_ladder_tracker.sql',
+    '22_alpha_score.sql',
+    '23_positions_v2.sql',
 ]
 
 def main():
@@ -61,6 +63,10 @@ def main():
     cur = con.cursor()
 
     # 先 DROP 所有 qd_ 开头的表 (强制重建, 避免 IF NOT EXISTS 跳过旧结构)
+    confirm = input(f'确认 DROP {len(old_tables)} 张 qd_ 表? [y/N] ').strip().lower()
+    if confirm != 'y' and confirm != 'yes':
+        logger.info('用户取消 DROP')
+        return
     cur.execute("SELECT table_name FROM tables() WHERE table_name LIKE 'qd_%'")
     old_tables = [r[0] for r in cur.fetchall()]
     if old_tables:

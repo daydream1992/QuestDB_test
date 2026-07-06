@@ -65,7 +65,7 @@ logger.add(os.path.join(_LOG_DIR, 'runner_scheduler_{time:YYYYMMDD}.log'),
            rotation='1 day', retention='30 days', encoding='utf-8')
 
 # 主循环间隔 (秒)
-_POLL_INTERVAL = 30
+_POLL_INTERVAL = 10
 # 非交易日等待间隔 (秒)
 _IDLE_INTERVAL = 300
 
@@ -121,6 +121,19 @@ def _stop_proc(proc, name):
         except (ValueError, OSError) as e:
             # 进程可能已经退出 / 权限问题 → 忽略走 terminate
             logger.debug('CTRL_BREAK 失败, 降级 terminate: {} ({})', name, e)
+    else:
+        # Linux/POSIX: 先发 SIGTERM (子进程 SIGTERM handler → KeyboardInterrupt → finally)
+        try:
+            proc.send_signal(signal.SIGTERM)
+            logger.info('已发 SIGTERM 给 {} pid={}', name, proc.pid)
+            try:
+                proc.wait(timeout=5)
+                logger.info('子进程优雅退出: {} pid={}', name, proc.pid)
+                return
+            except subprocess.TimeoutExpired:
+                logger.warning('SIGTERM 5s 未退出, 降级 terminate: {} pid={}', name, proc.pid)
+        except (ValueError, OSError) as e:
+            logger.debug('SIGTERM 失败, 降级 terminate: {} ({})', name, e)
     # 兜底: terminate (TerminateProcess) → kill
     proc.terminate()
     try:
@@ -129,6 +142,31 @@ def _stop_proc(proc, name):
     except subprocess.TimeoutExpired:
         proc.kill()
         logger.warning('子进程 terminate 超时, 已 kill: {} pid={}', name, proc.pid)
+
+
+def _ensure_running(proc, script, name, phase_ok):
+    """确保子进程存活，已崩溃则在运行时段内自动重启。
+
+    Args:
+        proc: subprocess.Popen 或 None
+        script: 脚本绝对路径
+        name: 进程名（日志用）
+        phase_ok: bool — 当前是否在该进程应运行的时段
+
+    Returns:
+        subprocess.Popen 或 None
+    """
+    if not phase_ok:
+        if proc is not None and proc.poll() is not None:
+            logger.info('{} 子进程已退出 (非运行时段, code={})', name, proc.returncode)
+        return proc
+    if proc is None or proc.poll() is not None:
+        if proc is not None:
+            logger.error('{} 子进程已崩溃 (code={}), 自动重启', name, proc.returncode)
+        else:
+            logger.warning('{} 子进程未启动, 补启动', name)
+        return _start_proc(script)
+    return proc
 
 
 def _attach_if_running(script_name):
@@ -141,7 +179,7 @@ def _attach_if_running(script_name):
             if proc.pid == my_pid:
                 continue  # 不杀 scheduler 本身
             cmdline = proc.info.get('cmdline') or []
-            if any(script_basename in str(c) for c in cmdline):
+            if any(str(c).endswith(script_basename) for c in cmdline if isinstance(c, str)):
                 logger.warning('杀掉旧子进程 {} pid={}', script_basename, proc.pid)
                 # H7: 优先 CTRL_BREAK (Windows), 让子进程 finally 跑 close()
                 if os.name == 'nt':
@@ -193,9 +231,13 @@ def run():
     # 避免模块级 import 触发 tqcenter 初始化, 保证 `from runner.scheduler import run` 可用
     import runner.daily_init as daily_init
     import runner.daily_close as daily_close
+    from lib.tq_client import init, close as tq_close
     from lib.market_clock import (
         seconds_until, should_prestart, countdown_seconds, format_countdown
     )
+
+    # scheduler 进程自身也需 tqcenter init (因直接调 daily_init.run/daily_close.run)
+    init()
 
     # 阶段完成标记 (避免重复执行)
     flags = {'daily_init': False, 'daily_close': False, 'verify_tables': False}
@@ -301,9 +343,10 @@ def run():
                             summary.run()
                         except Exception as e:
                             logger.error('复盘汇总失败: {}', e)
+                        flags['daily_close'] = True
                     except Exception as e:
-                        logger.error('daily_close 失败: {}', e)
-                    flags['daily_close'] = True
+                        logger.error('daily_close 失败, 将重试: {}', e)
+                        # 不置 flags, 下次循环重试
                 # 16:00 后跑 DDL 表结构校验 (一次性, 防列名漂移; 不通过仅日志告警不阻断)
                 if now.time() >= dtime(16, 0) and not flags['verify_tables']:
                     try:
@@ -328,7 +371,20 @@ def run():
                 time.sleep(_IDLE_INTERVAL)
                 continue
 
-            # lunch / pre_close 阶段: intraday 子进程自行处理, scheduler 不操作
+            # 存活检查: 子进程在运行时段内崩溃则自动重启
+            # (should_prestart 只在 8 分钟窗口内启动，过后崩溃无人拉起)
+            in_auction = phase in ('auction',)
+            in_intraday = phase in ('morning', 'afternoon', 'lunch', 'pre_close')
+
+            auction_proc = _ensure_running(
+                auction_proc, _AUCTION_SCRIPT, 'auction_monitor', in_auction)
+            intraday_proc = _ensure_running(
+                intraday_proc, _INTRADAY_SCRIPT, 'intraday_loop', in_intraday)
+            subscribe_proc = _ensure_running(
+                subscribe_proc, _SUBSCRIBE_SCRIPT, 'subscribe', in_intraday)
+            overseer_proc = _ensure_running(
+                overseer_proc, _OVERSEER_SCRIPT, 'overseer', in_intraday)
+
             time.sleep(_POLL_INTERVAL)
 
     except KeyboardInterrupt:
@@ -338,6 +394,7 @@ def run():
         _stop_proc(intraday_proc, 'intraday_loop')
         _stop_proc(subscribe_proc, 'subscribe')
         _stop_proc(overseer_proc, 'overseer')
+        tq_close()
         logger.info('===== scheduler 退出 =====')
 
 

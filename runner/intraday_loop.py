@@ -93,6 +93,10 @@ _MONEY_FLOW_COLS = ['code', 'flow_time', 'main_net', 'big_order_diff',
 _BIG_ORDER_COLS = ['code', 'order_time', 'order_type', 'price', 'volume',
                    'amount', 'order_level', 'broker']
 
+# 模块级缓存: 注册表代码列表 (每 300s 刷新)
+_CACHED_CODES = None
+_CACHED_TS = 0.0
+
 # 板块资金流历史 (per block_code 保留最近 _SECTOR_FLOW_HISTORY_LEN 期, 供 _run_rotation detect 用)
 _SECTOR_FLOW_HISTORY: dict = {}  # block_code → list[{block_code, net_flow, flow_strength, avg_change, flow_time}]
 _SECTOR_FLOW_HISTORY_LEN = 5
@@ -103,6 +107,18 @@ def _safe_float(v, default=0.0):
         return float(v)
     except (TypeError, ValueError):
         return default
+
+
+def _write_heartbeat(name):
+    """写入心跳文件 (logs/heartbeats/{name}.ts)"""
+    import os
+    hb_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'logs', 'heartbeats')
+    os.makedirs(hb_dir, exist_ok=True)
+    try:
+        with open(os.path.join(hb_dir, f'{name}.ts'), 'w') as f:
+            f.write(str(time.time()))
+    except Exception:
+        pass
 
 
 def _load_yaml():
@@ -117,11 +133,19 @@ def _load_yaml():
 
 
 def _get_all_stock_codes(con):
-    """从注册表取所有股票代码 + 板块代码 + 指数代码"""
+    """从注册表取所有股票代码 + 板块代码 + 指数代码
+
+    结果缓存 _CACHED_CODES, 每 300s 刷新一次 (避免每轮查 DB)。
+    """
+    now = time.time()
+    if _CACHED_CODES is not None and now - _CACHED_TS < 300:
+        return _CACHED_CODES
     try:
         df = query_df(con, "SELECT code FROM qd_code_registry WHERE code_type IN ('stock', 'sector', 'index')")
         if not df.empty:
-            return df['code'].tolist()
+            _CACHED_CODES = df['code'].tolist()
+            _CACHED_TS = now
+            return _CACHED_CODES
     except Exception as e:
         logger.warning('查询注册表失败: {}', e)
     return []
@@ -293,13 +317,21 @@ def _process_decisions(con, decisions, risk, ctx=None):
     # 构造信号列表供 log_signals 批量写入飞书
     feishu_signals = []
     for d in decisions:
-        # buy: 仓位风控 (情绪不再拦截 — 系统定位是"呈现事实", 不是替用户决策;
-        #   情绪作为 p17 的建议呈现, 不阻断策略)
+        # buy: 仓位风控 + 持仓管理
         if d.action == 'buy':
-            if not risk.can_open(d.position_pct):
+            if not risk.can_open(d.code, d.position_pct):
                 logger.info('风控拦截 buy {} {} (仓位 {}%)',
                             d.code, d.strategy, d.position_pct)
                 continue
+            risk.add_position({
+                'code': d.code, 'entry_price': d.price,
+                'position_pct': d.position_pct,
+                'stop_loss': d.stop_loss or 5,
+                'stop_profit': d.stop_profit or 10,
+            }, con=con)
+        # sell: 移除持仓
+        if d.action == 'sell':
+            risk.remove_position(d.code, con=con)
         reason = d.reason
         if d.score:
             reason = '{} [评分{:.0f}]'.format(reason, d.score)
@@ -607,6 +639,10 @@ def run(con=None, max_rounds=None, force=False):
                 if now.time() >= dtime(15, 0):
                     logger.info('15:00 后, 退出主循环')
                     break
+                # 14:57 退出让位给收盘竞价 auction_monitor (避免争 COM)
+                if now.time() >= dtime(14, 57):
+                    logger.info('14:57 收盘竞价, 退出让位给 auction_monitor')
+                    break
                 # 非交易时段 (午间休市等), 短暂等待
                 if not is_trading_time(now):
                     time.sleep(interval)
@@ -725,6 +761,8 @@ def run(con=None, max_rounds=None, force=False):
                         k4_ladder.run(con, ctx)
                     except Exception as e:
                         logger.error('k4 打板梯队失败: {}', e)
+                # 共振分析 (先于策略评估, 确保 ctx.resonance_df 为本轮数据)
+                _run_resonance(con, ctx)
                 # 遍历策略
                 decisions = []
                 for name, cls in StrategyRegistry.get_all().items():
@@ -736,10 +774,34 @@ def run(con=None, max_rounds=None, force=False):
                         logger.error('策略 {} 评估失败: {}', name, e)
                 if decisions:
                     logger.info('策略产出 {} 条决策', len(decisions))
-                # 风控 + 情绪门控 + 飞书推送
+                # 止损止盈出场检查 (遍历持仓)
+                for pos in list(risk.positions):
+                    try:
+                        price = _safe_float(pos.get('current_price', pos.get('cost_price')))
+                        if price <= 0:
+                            from lib.qdb import query_one
+                            row = query_one(con,
+                                "SELECT Now FROM qd_pricevol WHERE code = %s "
+                                "ORDER BY snapshot_time DESC LIMIT 1",
+                                (pos.get('code', ''),))
+                            if row:
+                                price = _safe_float(row.get('Now'))
+                        exit_signal = risk.check_exit(pos, price)
+                        if exit_signal:
+                            action, reason = exit_signal
+                            decisions.append(Decision(
+                                action='sell', code=pos.get('code', ''),
+                                strategy='risk_manager',
+                                reason=reason, price=price, score=80.0,
+                            ))
+                    except Exception as e:
+                        logger.warning('止损止盈检查失败 {}: {}', pos.get('code'), e)
+
+                # 风控 + 飞书推送
                 _process_decisions(con, decisions, risk, ctx)
-                # 共振分析（不依赖 p05；写 qd_resonance 即可，顺序无要求）
-                _run_resonance(con, ctx)
+
+            # 心跳: 主循环每轮刷新时间戳
+            _write_heartbeat('intraday_loop')
 
             # 轮次计数放在最后 (确保 k4%6 在本轮开始时正确判定)
             round_idx += 1
@@ -762,6 +824,15 @@ def run(con=None, max_rounds=None, force=False):
 
 
 def main():
+    import signal
+
+    def _graceful_exit(signum, frame):
+        raise KeyboardInterrupt
+
+    if os.name == 'nt':
+        signal.signal(signal.SIGBREAK, _graceful_exit)
+    signal.signal(signal.SIGTERM, _graceful_exit)
+
     init()
     try:
         # 盘后端到端验证: EOD_FORCE=1 EOD_MAX_ROUNDS=1 python runner/intraday_loop.py

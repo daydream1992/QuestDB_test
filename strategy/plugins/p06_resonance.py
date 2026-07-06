@@ -23,10 +23,7 @@ _STOCK_CHANGE_MIN = 2.0    # 个股涨幅阈值，从 3% 降到 2%
 
 
 def _safe_float(v, default=0.0) -> float:
-    try:
-        return float(v)
-    except (TypeError, ValueError):
-        return default
+    return StrategyBase.safe_float(v, default)
 
 
 def _change_pct(now, lastclose) -> float:

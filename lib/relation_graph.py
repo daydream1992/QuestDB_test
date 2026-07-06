@@ -24,7 +24,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 # JSON 默认目录
-DEFAULT_JSON_DIR = r'K:\QuestDB_test\data\market_data\市场数据'
+from config.paths import MARKET_DATA_JSON_DIR as DEFAULT_JSON_DIR
 
 # ---------------- 内存映射 ----------------
 # 板块元数据: {block_code: {sector_name, sector_type, stock_count}}
@@ -68,8 +68,12 @@ _CATEGORY_TYPE_MAP = {
 def _load_json(path):
     if not path or not os.path.exists(path):
         return {}
-    with open(path, 'r', encoding='utf-8') as f:
-        return json.load(f)
+    try:
+        with open(path, 'r', encoding='utf-8') as f:
+            return json.load(f)
+    except json.JSONDecodeError as e:
+        logger.warning('JSON 解析失败 {}: {}', path, e)
+        return {}
 
 
 def _flatten_industry_tree(nodes):

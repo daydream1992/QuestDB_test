@@ -62,7 +62,7 @@ def _eval_strategies(con):
         rows = []
         for _, r in df.iterrows():
             rows.append((now, r['strategy_name'], int(r['cnt']),
-                         0, 0, 0.0, 0.0, 0.0, 0.0))
+                         None, None, None, None, None, None))
         n = executemany_batch(con, 'qd_strategy_eval', _EVAL_COLS, rows)
         logger.info('写入 qd_strategy_eval: {} 行', n)
         return n
@@ -146,6 +146,15 @@ def run(con=None):
 
 
 def main():
+    import signal
+
+    def _graceful_exit(signum, frame):
+        raise KeyboardInterrupt
+
+    if os.name == 'nt':
+        signal.signal(signal.SIGBREAK, _graceful_exit)
+    signal.signal(signal.SIGTERM, _graceful_exit)
+
     init()
     try:
         run()

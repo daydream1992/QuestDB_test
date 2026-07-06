@@ -32,6 +32,7 @@
 import os
 import sys
 import time
+import json
 from datetime import datetime, time as dtime
 
 # 确保项目根在 sys.path
@@ -133,6 +134,27 @@ def _find_process(script_name):
     return None
 
 
+def _heartbeat_ok(name, now_ts, timeout=120):
+    """检查心跳文件是否在 timeout 秒内更新
+
+    Args:
+        name: 进程名 (heartbeat_{name}.ts)
+        now_ts: 当前时间戳
+        timeout: 超时秒数 (默认 120s)
+
+    Returns:
+        bool: True=心跳正常, False=超时假死
+    """
+    hb_path = os.path.join(_PROJ_ROOT, 'logs', 'heartbeats', f'{name}.ts')
+    try:
+        if not os.path.exists(hb_path):
+            return False
+        mtime = os.path.getmtime(hb_path)
+        return (now_ts - mtime) < timeout
+    except (OSError, IOError):
+        return True  # IO 错误不误判
+
+
 # ══════════════════════════════════════════════════════════════
 # Overseer 主类
 # ══════════════════════════════════════════════════════════════
@@ -221,7 +243,8 @@ class Overseer:
 
         # 频控
         if level in ('WARN', 'ERROR'):
-            key = str(hash(message))[-12:]
+            import hashlib
+            key = hashlib.md5(message.encode()).hexdigest()[:12]
             last = self._last_push[level].get(key)
             if last and (now - last).total_seconds() < _COOLDOWN[level]:
                 return
@@ -390,11 +413,14 @@ class Overseer:
     # ════════════════════════════════════════════════════
 
     def _check_process_health(self):
-        """盘中/竞价进程存活检查"""
+        """盘中/竞价进程存活检查 (进程名 + 心跳文件)"""
+        now_ts = time.time()
         if self.phase in ('morning', 'afternoon'):
             for name in ('intraday_loop', 'subscribe'):
                 if not _find_process(name):
                     self._notify(f'盘中进程缺失: {name}', 'ERROR')
+                elif not _heartbeat_ok(name, now_ts):
+                    self._notify(f'{name} 进程假死 (心跳超120s)', 'WARN')
         elif self.phase == 'auction':
             if not _find_process('auction_monitor'):
                 self._notify(f'竞价进程缺失: auction_monitor', 'ERROR')
@@ -558,6 +584,15 @@ class Overseer:
 
 
 def main():
+    import signal
+
+    def _graceful_exit(signum, frame):
+        raise KeyboardInterrupt
+
+    if os.name == 'nt':
+        signal.signal(signal.SIGBREAK, _graceful_exit)
+    signal.signal(signal.SIGTERM, _graceful_exit)
+
     __doc__ = __doc__ or ''
     overseer = Overseer()
     try:
@@ -565,6 +600,11 @@ def main():
     except KeyboardInterrupt:
         logger.info('Ctrl+C 退出监工')
     finally:
+        if overseer.con:
+            try:
+                overseer.con.close()
+            except Exception:
+                pass
         _feishu.push_text('[监工] 监工已退出')
         logger.info('===== 监工退出 =====')
 

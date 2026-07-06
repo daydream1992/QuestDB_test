@@ -28,6 +28,7 @@ from collections import deque
 from dataclasses import dataclass
 
 import pandas as pd
+import numpy as np
 
 # 确保项目根在 sys.path
 _PROJ_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -128,7 +129,7 @@ def rate_emotion(zt_cnt, fbl, max_lb, udr):
 
 
 def _calc_market_breadth(pricevol_df):
-    """全场涨跌家数 + 涨跌比 (udr) — pricevol 全场口径"""
+    """全场涨跌家数 + 涨跌比 (udr) — pricevol 全场口径 (向量化)"""
     if pricevol_df is None or pricevol_df.empty:
         return 0, 0, 0.0
     df = pricevol_df
@@ -136,98 +137,119 @@ def _calc_market_breadth(pricevol_df):
         df = df.sort_values('snapshot_time').groupby('code', as_index=False).last()
     else:
         df = df.groupby('code', as_index=False).last()
-    up = down = 0
-    for _, r in df.iterrows():
-        now = _safe_float(r.get('Now'))
-        lc = _safe_float(r.get('LastClose'))
-        if lc <= 0:
-            continue
-        if now > lc:
-            up += 1
-        elif now < lc:
-            down += 1
+    lc = pd.to_numeric(df['LastClose'], errors='coerce')
+    nw = pd.to_numeric(df['Now'], errors='coerce')
+    valid = lc > 0
+    up = int(((nw > lc) & valid).sum())
+    down = int(((nw < lc) & valid).sum())
     udr = (up / down) if down > 0 else (float('inf') if up > 0 else 1.0)
-    udr = min(udr, 99.0)  # 截断 inf 便于落库/比较
+    udr = min(udr, 99.0)
     return up, down, udr
 
 
-def _calc_seal_stats(merged_df):
-    """从合并后的 snapshot 算 涨停/跌停/炸板数 + 封板率 + 最高连板"""
-    zt = dt = brk = 0
-    max_lb = 0
+def _calc_seal_stats(merged_df, _cls=None, lb_series=None):
+    """从合并后的 snapshot 算 涨停/跌停/炸板数 + 封板率 + 最高连板 (向量化)"""
     if merged_df is None or merged_df.empty:
-        return zt, dt, brk, 0.0, max_lb
-    for _, r in merged_df.iterrows():
-        cls = classify_stock(r.get('FCAmo'), r.get('Max'), r.get('ZTPrice'))
-        if cls == 'zt':
-            zt += 1
-        elif cls == 'dt':
-            dt += 1
-        elif cls == 'break':
-            brk += 1
-        lb = int(_safe_float(r.get('fLianB') or r.get('EverZTCount')))
-        if lb > max_lb:
-            max_lb = lb
+        return 0, 0, 0, 0.0, 0
+    if _cls is None:
+        fcamo = pd.to_numeric(merged_df['FCAmo'], errors='coerce').fillna(0)
+        mx = pd.to_numeric(merged_df['Max'], errors='coerce').fillna(0)
+        ztp = pd.to_numeric(merged_df['ZTPrice'], errors='coerce').fillna(0)
+        _cls = np.select(
+            [fcamo > 0, fcamo < 0, (fcamo == 0) & (mx >= ztp * 0.999)],
+            ['zt', 'dt', 'break'], default='normal')
+    if lb_series is None:
+        lb_series = pd.to_numeric(
+            merged_df['fLianB'].fillna(merged_df['EverZTCount']),
+            errors='coerce').fillna(0).astype(int)
+    zt = int((_cls == 'zt').sum())
+    dt = int((_cls == 'dt').sum())
+    brk = int((_cls == 'break').sum())
+    max_lb = int(lb_series.max())
     sealed = zt + brk
     fbl = (zt / sealed * 100) if sealed > 0 else 0.0
     return zt, dt, brk, fbl, max_lb
 
 
-def build_pools(merged_df):
-    """6 池分类: 连板/首板/龙头/炸板/易炸/A杀 → dict[code_list]"""
+def build_pools(merged_df, cls_arr=None, lb_arr=None,
+                fcamo_arr=None, fcb_arr=None, chg_arr=None):
+    """6 池分类: 连板/首板/龙头/炸板/易炸/A杀 → dict[code_list] (向量化)"""
     pools = {'lianban': [], 'shouban': [], 'leader': [], 'break': [],
              'easy_break': [], 'a_sha': []}
     if merged_df is None or merged_df.empty:
         return pools
-    leaders = []
-    for _, r in merged_df.iterrows():
-        code = r.get('code')
-        if not code:
-            continue
-        cls = classify_stock(r.get('FCAmo'), r.get('Max'), r.get('ZTPrice'))
-        lb = int(_safe_float(r.get('fLianB') or r.get('EverZTCount')))
-        fcamo = _safe_float(r.get('FCAmo'))
-        fcb = _safe_float(r.get('FCb'))
-        last_start_zt = r.get('LastStartZT')  # 昨涨停标志
-        # 连板 / 首板
-        if lb >= 2:
-            pools['lianban'].append(code)
-        elif lb == 1:
-            pools['shouban'].append(code)
-        # 龙头 (连板中封单额 Top + 达标)
-        if lb >= 2 and fcamo >= TH.LEADER_AMO_MIN:
-            leaders.append((code, fcamo))
-        # 炸板
-        if cls == 'break':
-            pools['break'].append(code)
-        # 易炸 (涨停但封单弱)
-        if cls == 'zt' and (fcb < TH.EASY_BREAK_FCB or fcamo < TH.EASY_BREAK_AMO):
-            pools['easy_break'].append(code)
-        # A杀 (昨涨停今跌停/大跌)
-        now = _safe_float(r.get('Now'))
-        lc = _safe_float(r.get('LastClose'))
-        chg = ((now - lc) / lc * 100) if lc > 0 else 0.0
-        if last_start_zt and (cls == 'dt' or chg <= TH.A_SHA_DROP_PCT):
-            pools['a_sha'].append(code)
-    # 龙头按封单额排序
-    pools['leader'] = [c for c, _ in sorted(leaders, key=lambda x: -x[1])[:20]]
+    # 预计算向量列 (若调用方未提供)
+    codes = merged_df['code'].tolist()
+    if cls_arr is None:
+        fcamo_v = pd.to_numeric(merged_df['FCAmo'], errors='coerce').fillna(0)
+        mx_v = pd.to_numeric(merged_df['Max'], errors='coerce').fillna(0)
+        ztp_v = pd.to_numeric(merged_df['ZTPrice'], errors='coerce').fillna(0)
+        cls_arr = np.select([fcamo_v > 0, fcamo_v < 0, (fcamo_v == 0) & (mx_v >= ztp_v * 0.999)],
+                            ['zt', 'dt', 'break'], default='normal')
+    else:
+        fcamo_v = fcamo_arr
+    if lb_arr is None:
+        lb_arr = pd.to_numeric(merged_df['fLianB'].fillna(merged_df['EverZTCount']),
+                               errors='coerce').fillna(0).astype(int)
+    if fcb_arr is None:
+        fcb_arr = pd.to_numeric(merged_df['FCb'], errors='coerce').fillna(0)
+    if fcamo_arr is None:
+        fcamo_arr = pd.to_numeric(merged_df['FCAmo'], errors='coerce').fillna(0)
+    if chg_arr is None:
+        nw_v = pd.to_numeric(merged_df['Now'], errors='coerce').fillna(0)
+        lc_v = pd.to_numeric(merged_df['LastClose'], errors='coerce').fillna(0)
+        chg_arr = np.where(lc_v > 0, (nw_v - lc_v) / lc_v * 100, 0.0)
+
+    last_start_zt = merged_df['LastStartZT'].fillna('').astype(bool)
+
+    # 布尔掩码 → code 列表
+    mask_lb2 = lb_arr >= 2
+    mask_lb1 = lb_arr == 1
+    pools['lianban'] = [c for c, m in zip(codes, mask_lb2) if m]
+    pools['shouban'] = [c for c, m in zip(codes, mask_lb1) if m]
+
+    leader_mask = mask_lb2 & (fcamo_arr >= TH.LEADER_AMO_MIN)
+    if leader_mask.any():
+        leader_df = merged_df[leader_mask].copy()
+        leader_df['_fcamo'] = fcamo_arr[leader_mask]
+        pools['leader'] = leader_df.sort_values('_fcamo', ascending=False)['code'].head(20).tolist()
+
+    break_mask = cls_arr == 'break'
+    pools['break'] = [c for c, m in zip(codes, break_mask) if m]
+
+    easy_break_mask = (cls_arr == 'zt') & ((fcb_arr < TH.EASY_BREAK_FCB) | (fcamo_arr < TH.EASY_BREAK_AMO))
+    pools['easy_break'] = [c for c, m in zip(codes, easy_break_mask) if m]
+
+    a_sha_mask = last_start_zt & ((cls_arr == 'dt') | (chg_arr <= TH.A_SHA_DROP_PCT))
+    pools['a_sha'] = [c for c, m in zip(codes, a_sha_mask) if m]
     return pools
 
 
-def build_sector_strength(merged_df):
-    """板块强度: 每板块涨停数*3 + 涨幅 + 主力(归一) + 2板数*2 → Top 板块列表"""
+def build_sector_strength(merged_df, cls_arr=None, zaf_arr=None, lb_arr=None, zjl_arr=None):
+    """板块强度: 每板块涨停数*3 + 涨幅 + 主力(归一) + 2板数*2 → Top 板块列表 (部分向量化)"""
     if merged_df is None or merged_df.empty:
         return []
     from lib.relation_graph import get_stock_sectors
-    agg = {}  # block_code → {zt, zaf_sum, lb2, flow, name}
-    for _, r in merged_df.iterrows():
-        code = r.get('code')
+
+    if cls_arr is None:
+        fcamo_v = pd.to_numeric(merged_df['FCAmo'], errors='coerce').fillna(0)
+        mx_v = pd.to_numeric(merged_df['Max'], errors='coerce').fillna(0)
+        ztp_v = pd.to_numeric(merged_df['ZTPrice'], errors='coerce').fillna(0)
+        cls_arr = np.select([fcamo_v > 0, fcamo_v < 0, (fcamo_v == 0) & (mx_v >= ztp_v * 0.999)],
+                            ['zt', 'dt', 'break'], default='normal')
+    if zaf_arr is None:
+        zaf_arr = pd.to_numeric(merged_df['ZAF'], errors='coerce').fillna(0)
+    if lb_arr is None:
+        lb_arr = pd.to_numeric(merged_df['fLianB'].fillna(merged_df['EverZTCount']),
+                               errors='coerce').fillna(0).astype(int)
+    if zjl_arr is None:
+        zjl_arr = pd.to_numeric(merged_df['Zjl'], errors='coerce').fillna(0)
+
+    codes = merged_df['code'].tolist()
+    agg = {}
+    for i, code in enumerate(codes):
         if not code:
             continue
-        cls = classify_stock(r.get('FCAmo'), r.get('Max'), r.get('ZTPrice'))
-        zaf = _safe_float(r.get('ZAF'))
-        lb = int(_safe_float(r.get('fLianB') or r.get('EverZTCount')))
-        zjl = _safe_float(r.get('Zjl'))
         sectors = get_stock_sectors(code) or []
         for s in sectors:
             bc = s.get('block_code')
@@ -235,12 +257,12 @@ def build_sector_strength(merged_df):
                 continue
             a = agg.setdefault(bc, {'name': s.get('block_name', bc),
                                     'zt': 0, 'zaf_sum': 0.0, 'lb2': 0, 'flow': 0.0})
-            if cls == 'zt':
+            if cls_arr[i] == 'zt':
                 a['zt'] += 1
-            a['zaf_sum'] += zaf
-            if lb >= 2:
+            a['zaf_sum'] += zaf_arr[i]
+            if lb_arr[i] >= 2:
                 a['lb2'] += 1
-            a['flow'] += zjl
+            a['flow'] += zjl_arr[i]
     scored = []
     for bc, a in agg.items():
         score = a['zt'] * 3 + a['zaf_sum'] + (1 if a['flow'] > 0 else 0) + a['lb2'] * 2
@@ -344,11 +366,37 @@ def run(con, ctx):
         merged = _sdf.sort_values('snapshot_time').groupby('code', as_index=False).last()
     else:
         merged = _sdf
-    zt_cnt, dt_cnt, break_cnt, fbl, max_lb = _calc_seal_stats(merged)
-    pools = build_pools(merged)
+
+    # 预计算向量列 (一次计算, 3 个函数复用, 避免 iterrows + 重复 classify_stock)
+    _cls = None
+    _lb_series = None
+    _fcamo_arr = None
+    _fcb_arr = None
+    _chg_arr = None
+    _zaf_arr = None
+    _zjl_arr = None
+    if merged is not None and not merged.empty:
+        _fcamo_arr = pd.to_numeric(merged['FCAmo'], errors='coerce').fillna(0)
+        mx_v = pd.to_numeric(merged['Max'], errors='coerce').fillna(0)
+        ztp_v = pd.to_numeric(merged['ZTPrice'], errors='coerce').fillna(0)
+        _cls = np.select([_fcamo_arr > 0, _fcamo_arr < 0,
+                          (_fcamo_arr == 0) & (mx_v >= ztp_v * 0.999)],
+                         ['zt', 'dt', 'break'], default='normal')
+        _lb_series = pd.to_numeric(
+            merged['fLianB'].fillna(merged['EverZTCount']),
+            errors='coerce').fillna(0).astype(int)
+        _fcb_arr = pd.to_numeric(merged['FCb'], errors='coerce').fillna(0)
+        nw_v = pd.to_numeric(merged['Now'], errors='coerce').fillna(0)
+        lc_v = pd.to_numeric(merged['LastClose'], errors='coerce').fillna(0)
+        _chg_arr = np.where(lc_v > 0, (nw_v - lc_v) / lc_v * 100, 0.0)
+        _zaf_arr = pd.to_numeric(merged['ZAF'], errors='coerce').fillna(0)
+        _zjl_arr = pd.to_numeric(merged['Zjl'], errors='coerce').fillna(0)
+
+    zt_cnt, dt_cnt, break_cnt, fbl, max_lb = _calc_seal_stats(merged, _cls, _lb_series)
+    pools = build_pools(merged, _cls, _lb_series, _fcamo_arr, _fcb_arr, _chg_arr)
 
     # 3. 板块强度
-    top_sectors = build_sector_strength(merged)
+    top_sectors = build_sector_strength(merged, _cls, _zaf_arr, _lb_series, _zjl_arr)
 
     # 4. 主指数涨幅
     index_zaf = _main_index_zaf(ctx.index_snapshot)
@@ -388,9 +436,11 @@ def run(con, ctx):
         except Exception as e:
             logger.warning('写 qd_sentiment_event_log 失败: {}', e)
         try:
-            import importlib as _il
-            _feishu = _il.import_module('feishu')
-            _feishu.push_text(msg)
+            from feishu import push_text
+            lines = [f'⚠️ 变盘预警 {now.strftime("%H:%M")}']
+            for e in events:
+                lines.append(f'  · {e["description"]}')
+            push_text('\n'.join(lines))
         except Exception as e:
             logger.warning('情绪变盘飞书推送失败: {}', e)
 

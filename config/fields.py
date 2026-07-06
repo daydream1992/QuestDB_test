@@ -65,7 +65,7 @@ DOUBLE_FIELDS = {
     'TickDiff', 'Jjjz', 'Before5MinNow', 'Zangsu', 'ZAFPre3',
     'Buyp1', 'Buyp2', 'Buyp3', 'Buyp4', 'Buyp5',
     'Sellp1', 'Sellp2', 'Sellp3', 'Sellp4', 'Sellp5',
-    'HqDate', 'ZTPrice', 'DTPrice', 'ZAF', 'ZAFYesterday', 'ZAFPre2D', 'ZAFPre5',
+    'ZTPrice', 'DTPrice', 'ZAF', 'ZAFYesterday', 'ZAFPre2D', 'ZAFPre5',
     'ZAFPre10', 'ZAFPre20', 'ZAFPre30', 'ZAFPre60', 'ZAFYear', 'ZAFPreMyMonth',
     'ZAFPreOneYear', 'Zsz', 'Ltsz', 'DynaPE', 'MorePE', 'StaticPE_TTM', 'DYRatio',
     'PB_MRQ', 'Yield', 'FreeLtgb', 'BetaValue', 'fLianB', 'LastZTHzNum', 'EverZTCount',

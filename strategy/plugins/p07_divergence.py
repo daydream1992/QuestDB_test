@@ -19,14 +19,11 @@ from strategy.base import StrategyBase, Decision
 from strategy.registry import StrategyRegistry
 
 _STOCK_CHANGE_MIN = 3.0      # 个股涨幅阈值 (从1%提到3%, 过滤噪音)
-_MAIN_NET_MIN = -1e6          # 板块主力净流出: < -100万才触发 (单位=元) -- 从0改成有意   # 个股涨幅阈值
+_MAIN_NET_MIN = -5e5          # 板块主力净流出: < -50万才触发 -- 校准: 917板块 p5=-178万
 
 
 def _safe_float(v, default=0.0) -> float:
-    try:
-        return float(v)
-    except (TypeError, ValueError):
-        return default
+    return StrategyBase.safe_float(v, default)
 
 
 def _change_pct(now, lastclose) -> float:

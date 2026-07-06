@@ -16,14 +16,11 @@ from strategy.base import StrategyBase, Decision
 from strategy.registry import StrategyRegistry
 
 _CANCEL_DIFF_MIN = 10.0   # 暗资金异动最小幅度 (撤单差分绝对值) -- 从 50 下调
-_WTB_MIN = 10.0            # 委比最小阈值 -- 从 20 下调
+_WTB_MIN = 1.2             # 委托买卖比最小阈值 (>1 买压占优) -- 从 10 下调
 
 
 def _safe_float(v, default=0.0) -> float:
-    try:
-        return float(v)
-    except (TypeError, ValueError):
-        return default
+    return StrategyBase.safe_float(v, default)
 
 
 @StrategyRegistry.register

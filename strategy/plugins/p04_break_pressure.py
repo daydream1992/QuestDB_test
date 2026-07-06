@@ -20,10 +20,7 @@ _CHANGE_MIN = 3.0
 
 
 def _safe_float(v, default=0.0) -> float:
-    try:
-        return float(v)
-    except (TypeError, ValueError):
-        return default
+    return StrategyBase.safe_float(v, default)
 
 
 def _change_pct(now, lastclose) -> float:
@@ -66,11 +63,15 @@ class BreakPressureStrategy(StrategyBase):
         amt_map = {}
         snap = ctx.snapshot_focus_df
         if snap is not None and not snap.empty and 'Amount' in snap.columns:
+            if 'snapshot_time' in snap.columns:
+                snap = snap.sort_values('snapshot_time')
             for c, g in snap.groupby('code'):
                 amt_map[c] = _safe_float(g.iloc[-1]['Amount'])
         cjj_map = {}
         mi = ctx.more_info_df
         if mi is not None and not mi.empty and 'CJJEPre1' in mi.columns:
+            if 'snapshot_time' in mi.columns:
+                mi = mi.sort_values('snapshot_time')
             for c, g in mi.groupby('code'):
                 cjj_map[c] = _safe_float(g.iloc[-1]['CJJEPre1'])
 

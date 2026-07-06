@@ -261,9 +261,9 @@ def _compute_board_count(stock_code, snap, daily):
     last_start_zt = daily.get('last_start_zt', '') if daily else ''
 
     if con_zaf >= 1:
-        # ConZAFDateNum 含昨日连续涨停天数, 今日继续涨停 → 延续
+        # ConZAFDateNum 含昨日连续涨停天数, 今日继续涨停 → 计今日
         if last_start_zt in ('是', '1', 'TRUE'):
-            return con_zaf  # 维持昨日连续天数 (今日继续)
+            return con_zaf + 1  # 含今日的连续涨停天数 (昨日 + 今日)
         else:
             # ConZAFDateNum 可能来自更早的连续记录, 但昨未涨停
             return 1  # 今首板

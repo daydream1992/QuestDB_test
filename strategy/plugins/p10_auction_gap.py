@@ -22,10 +22,7 @@ _LOW_VOL_MIN = 2.0
 
 
 def _safe_float(v, default=0.0) -> float:
-    try:
-        return float(v)
-    except (TypeError, ValueError):
-        return default
+    return StrategyBase.safe_float(v, default)
 
 
 @StrategyRegistry.register
@@ -56,6 +53,8 @@ class AuctionGapStrategy(StrategyBase):
         cjj_map = {}
         mi = ctx.more_info_df
         if mi is not None and not mi.empty and 'CJJEPre1' in mi.columns:
+            if 'snapshot_time' in mi.columns:
+                mi = mi.sort_values('snapshot_time')
             for c, g in mi.groupby('code'):
                 cjj_map[c] = _safe_float(g.iloc[-1]['CJJEPre1'])
 

@@ -101,11 +101,16 @@ def _norm(v, lo, hi):
 
 
 def _pg_label(pg):
-    for threshold, label in _PG_SIGNALS:
-        if pg >= threshold:
-            continue
-        return label
-    return '狂热'
+    """将恐慌贪婪指数 (0-100) 转为 5 档文字标签"""
+    if pg >= 85:
+        return '狂热'
+    if pg >= 65:
+        return '贪婪'
+    if pg >= 45:
+        return '中性'
+    if pg >= 25:
+        return '恐惧'
+    return '恐慌'
 
 
 def _arrow(v, up='↑', down='↓', flat='→'):
@@ -271,12 +276,13 @@ def _load_prev_pg(con):
 # PG 指数
 # ══════════════════════════════════════════════════════════════
 
-def _calc_pg_index(breadth, cap_flow):
+def _calc_pg_index(breadth, cap_flow, con=None):
     """6 分量加权 → 恐慌/贪婪指数 0-100
 
     Args:
       breadth: 来自 _load_market_breadth()
       cap_flow: 来自 _load_capital_flow()
+      con: 可选 DB 连接 (补充 max_lb 用)
 
     Returns:
       (pg_index, pg_signal)
@@ -291,19 +297,16 @@ def _calc_pg_index(breadth, cap_flow):
         'pressure_diff': 0.0,
     }
 
-    # 从 snapshot_min 读 max_lb
-    try:
-        con_ = connect()
+    # 从 snapshot_min 读 max_lb (用传入的 con, 不自开)
+    if con is not None:
         try:
-            df_s = query_df(con_,
+            df_s = query_df(con,
                 "SELECT max_lb FROM qd_sentiment_snapshot_min "
                 "ORDER BY snapshot_time DESC LIMIT 1")
             if df_s is not None and not df_s.empty:
                 raw['max_lb'] = int(_sf(df_s.iloc[0].get('max_lb')))
-        finally:
-            con_.close()
-    except Exception:
-        pass
+        except Exception:
+            pass
 
     # 检查是否至少 zt_cnt/fbl 有值
     has_signal = raw['zt_cnt'] > 0 or raw['fbl'] > 0
@@ -642,7 +645,7 @@ def run(con, ctx=None):
     cap_flow = _load_capital_flow(con)
 
     # 2. PG 指数
-    pg, sig = _calc_pg_index(breadth, cap_flow)
+    pg, sig = _calc_pg_index(breadth, cap_flow, con)
     prev_pg = _load_prev_pg(con) if pg is not None else None
 
     # 3. 背离 + 拐点

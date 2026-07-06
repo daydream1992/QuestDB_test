@@ -17,10 +17,7 @@ from strategy.registry import StrategyRegistry
 
 
 def _safe_float(v, default=0.0) -> float:
-    try:
-        return float(v)
-    except (TypeError, ValueError):
-        return default
+    return StrategyBase.safe_float(v, default)
 
 
 def _change_pct(now, lastclose) -> float:
@@ -37,7 +34,7 @@ class SectorRotationStrategy(StrategyBase):
     version = '1.0'
 
     def required_fields(self):
-        return ['rotation_signal', 'Now', 'LastClose']
+        return ['Now', 'LastClose']
 
     def evaluate(self, ctx) -> List[Decision]:
         decisions: List[Decision] = []
