@@ -23,6 +23,7 @@
 
 import os
 import sys
+import time
 from datetime import datetime
 
 # 确保项目根在 sys.path
@@ -36,6 +37,10 @@ from lib.tq_client import safe_call, init, close  # noqa: E402
 from lib.tq_utils import fetch_all_codes, to_tdx  # noqa: E402
 from lib.qdb import connect, executemany_batch  # noqa: E402
 from config.fields import PRICEVOL_FIELDS  # noqa: E402
+
+# 代码元数据缓存 (避免每 10s 调 fetch_all_codes, 缓存 600s)
+_CODES_META_CACHE = None
+_CODES_META_TS = 0.0
 
 from tqcenter import tq  # noqa: E402
 
@@ -116,7 +121,14 @@ def run(con=None, limit=None):
 
     try:
         # 1. 拉全市场代码元数据 (fetch_all_codes 修复后返回标准代码 + tdx_code)
-        codes_meta = fetch_all_codes()
+        global _CODES_META_CACHE, _CODES_META_TS
+        now = time.time()
+        if _CODES_META_CACHE is None or now - _CODES_META_TS > 600:
+            codes_meta = fetch_all_codes()
+            _CODES_META_CACHE = codes_meta
+            _CODES_META_TS = now
+        else:
+            codes_meta = _CODES_META_CACHE
         # 仅采集有 tdx_code 的 (股票 + 指数); 板块无 tdx_code 跳过
         valid = [c for c in codes_meta if c.get('tdx_code')]
         if limit:

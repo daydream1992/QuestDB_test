@@ -49,15 +49,14 @@ class SentimentExtremeReversalStrategy(StrategyBase):
                         score=min(100.0, 60.0 + alpha * 30),
                     ))
 
-            # 极端贪婪 (档位 5 = 沸点) - watch 级
+            # 极端贪婪 (档位 5 = 沸点) - watch 级: alpha 跌出 top-100
             if emotion_order >= 4:
-                for _, r in candidates.tail(20).iterrows():
-                    code = r.get('code') or r.name
-                    if not code:
-                        continue
+                all_ranked = alpha_df.sort_values('alpha_score', ascending=False)
+                tail_codes = all_ranked.iloc[100:].index if len(all_ranked) > 100 else []
+                for code in tail_codes[:20]:
                     decisions.append(Decision(
                         action='watch', code=code, strategy=self.name,
-                        reason=f'情绪沸点风险 rank={_safe_float(r.get("rank", 999)):.0f}',
+                        reason=f'情绪沸点风险 alpha跌出top-100',
                         score=50.0,
                     ))
 

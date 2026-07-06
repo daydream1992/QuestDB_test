@@ -43,13 +43,29 @@ class SectorRotationRelayStrategy(StrategyBase):
                 return []
 
             # 在 active 板块内筛 alpha top-10
-            candidates = alpha_df.sort_values('alpha_score', ascending=False).head(10)
+            # 先通过 relation_graph 取板块 -> 个股映射
+            candidates = alpha_df.sort_values('alpha_score', ascending=False).copy()
+            filtered = []
             for _, r in candidates.iterrows():
                 code = r.get('code') or r.name
                 if not code:
                     continue
-                alpha = _safe_float(r.get('alpha_score'))
-                rank = int(_safe_float(r.get('rank', 999)))
+                # 检查该票是否属于 active_sectors
+                from lib.relation_graph import get_stock_sectors
+                sectors = get_stock_sectors(code) or []
+                in_active = any(s.get('block_code') in active_sectors for s in sectors)
+                if not in_active:
+                    continue
+                filtered.append(code)
+                if len(filtered) >= 10:
+                    break
+
+            for code in filtered:
+                arow = alpha_df.loc[code] if code in alpha_df.index else None
+                if arow is None:
+                    continue
+                alpha = _safe_float(arow.get('alpha_score') if isinstance(arow, dict) else arow.get('alpha_score'))
+                rank = int(_safe_float(arow.get('rank', 999)))
 
                 decisions.append(Decision(
                     action='buy', code=code, strategy=self.name,
