@@ -27,40 +27,52 @@ _cache = {'token': '', 'expires_at': 0.0}
 _lock = threading.Lock()
 
 
+_get_lock = threading.Lock()
+
+
 def get_tenant_token() -> str:
     """获取有效的 tenant_access_token, 自动刷新。
 
     Returns:
         str: 有效 token; 凭据未配或获取失败返回空串。
     """
-    with _lock:
+    # Fast path: cache check without lock
+    now = time.time()
+    if _cache['token'] and now < _cache['expires_at'] - 300:
+        return _cache['token']
+
+    if not _cfg.has_app_credentials():
+        logger.debug('飞书应用凭据未配置, 跳过 token 获取')
+        return ''
+
+    # Slow path: lock, double-check, then release lock before HTTP
+    with _get_lock:
         now = time.time()
-        # 缓存未过期 (提前 300s 刷新)
         if _cache['token'] and now < _cache['expires_at'] - 300:
             return _cache['token']
+        # mark that we're going to fetch (prevent other threads)
+        _cache['token'] = ''
 
-        if not _cfg.has_app_credentials():
-            logger.debug('飞书应用凭据未配置, 跳过 token 获取')
+    # NO LOCK during HTTP
+    try:
+        resp = requests.post(
+            f'{_cfg.BASE_URL}/auth/v3/tenant_access_token/internal',
+            json={'app_id': _cfg.APP_ID, 'app_secret': _cfg.APP_SECRET},
+            timeout=10,
+        )
+        data = resp.json()
+        if data.get('code', -1) != 0:
+            logger.error('获取 tenant_access_token 失败: %s', data)
             return ''
-
-        try:
-            resp = requests.post(
-                f'{_cfg.BASE_URL}/auth/v3/tenant_access_token/internal',
-                json={'app_id': _cfg.APP_ID, 'app_secret': _cfg.APP_SECRET},
-                timeout=10,
-            )
-            data = resp.json()
-            if data.get('code', -1) != 0:
-                logger.error('获取 tenant_access_token 失败: %s', data)
-                return ''
+        with _get_lock:
             _cache['token'] = data['tenant_access_token']
             _cache['expires_at'] = now + data.get('expire', 7200)
-            logger.info('飞书 tenant_access_token 已刷新, 有效期 %ds',
-                        data.get('expire', 7200))
-            return _cache['token']
-        except Exception as e:
-            logger.exception('获取 tenant_access_token 异常: %s', e)
-            return ''
+        logger.info('飞书 tenant_access_token 已刷新, 有效期 %ds',
+                    data.get('expire', 7200))
+        return _cache['token']
+    except Exception as e:
+        logger.exception('获取 tenant_access_token 异常: %s', e)
+        return ''
 
 
 def auth_headers() -> dict:
@@ -81,6 +93,6 @@ def auth_headers() -> dict:
 
 def invalidate_token():
     """强制清除缓存, 下次请求重新获取 (用于 token 失效时)"""
-    with _lock:
+    with _get_lock:
         _cache['token'] = ''
         _cache['expires_at'] = 0.0

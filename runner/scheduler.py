@@ -75,7 +75,7 @@ _IDLE_INTERVAL = 300
 MAX_CONSECUTIVE_CRASHES = 10
 
 # 子进程崩溃统计 (用于 _ensure_running 指数退避)
-_crash_count = {}
+_crash_count_lock = threading.Lock()
 
 # H4: 退避线程化 — 不阻塞主循环
 # {name: threading.Thread} 记录待执行的退避重启动作
@@ -181,7 +181,8 @@ def _ensure_running(proc, script, name, phase_ok):
     if not phase_ok:
         if proc is not None and proc.poll() is not None:
             logger.info('{} 子进程已退出 (非运行时段, code={})', name, proc.returncode)
-            _crash_count.pop(name, None)
+            with _crash_count_lock:
+                _crash_count.pop(name, None)
             _pending_backoff_threads.pop(name, None)
         return proc
 
@@ -189,7 +190,8 @@ def _ensure_running(proc, script, name, phase_ok):
     new_proc = _restarted_procs.pop(name, None)
     if new_proc is not None:
         logger.info('{} 收到退避线程启动的新进程 pid={}', name, new_proc.pid)
-        _crash_count.pop(name, None)
+        with _crash_count_lock:
+            _crash_count.pop(name, None)
         _pending_backoff_threads.pop(name, None)
         return new_proc
 
@@ -206,8 +208,9 @@ def _ensure_running(proc, script, name, phase_ok):
 
     if proc is None or proc.poll() is not None:
         if proc is not None:
-            cnt = _crash_count.get(name, 0) + 1
-            _crash_count[name] = cnt
+            with _crash_count_lock:
+                cnt = _crash_count.get(name, 0) + 1
+                _crash_count[name] = cnt
             if cnt >= MAX_CONSECUTIVE_CRASHES:
                 logger.critical('{} 子进程累计崩溃 {} 次, 停止重启', name, cnt)
                 return proc
@@ -234,7 +237,8 @@ def _ensure_running(proc, script, name, phase_ok):
             return _start_proc(script)
 
     # 进程正常运行 → 清掉崩溃计数
-    _crash_count.pop(name, None)
+    with _crash_count_lock:
+        _crash_count.pop(name, None)
     return proc
 
 
@@ -461,15 +465,11 @@ def run():
                 )
                 if need_run:
                     should_start = True
-                    # 不管上一次 k4_runner 是否还活着, 都无条件拉新进程
-                    # 5min 节流只靠 _last_k4_run (上次启动时间), 与进程存活无关
-                    # 如果上次进程还在, 自然结束 (k4_runner 跑完就退, 不会卡死)
                     if k4_runner_proc is not None:
                         try:
                             if k4_runner_proc.poll() is None:
-                                # 上次进程还在跑 (异常), 跳过本轮启动, 但不下 continue — 其余进程仍需健康检查
-                                logger.warning('k4_runner 上次进程仍存活 (pid={}), 跳过本轮', k4_runner_proc.pid)
-                                should_start = False
+                                logger.warning('k4_runner 上次进程仍在运行 (pid={}), 先停止再重启', k4_runner_proc.pid)
+                                _stop_proc(k4_runner_proc, 'k4_runner')
                         except Exception:
                             pass
                     if should_start:

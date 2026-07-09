@@ -145,6 +145,7 @@ class _FocusCache:
         self._focus_stocks = None   # list | None
         self._ts = 0.0              # 上次写入时间戳
         self._degrade_count = 0     # 连续退化次数
+        self._last_degrade_reset = 0.0  # 上次重置退化计数的时间戳
 
     def set(self, focus_all, focus_stocks):
         with self._lock:
@@ -160,6 +161,10 @@ class _FocusCache:
             # 缓存超过 10 分钟视为过时
             if time.time() - self._ts > 600:
                 return None
+            # 退化计数超过 300s 自动复位, 避免 DB 临时故障导致永久跳过
+            if time.time() - self._last_degrade_reset > 300:
+                self._degrade_count = 0
+                self._last_degrade_reset = time.time()
             if self._degrade_count >= 3:
                 logger.error('选股器连续退化 3 次, 放弃缓存, 跳过本轮')
                 return None
@@ -302,7 +307,7 @@ def _build_context(con, graph):
     ctx.graph = graph
     try:
         ctx.pricevol_df = query_df(
-            con, f"SELECT * FROM qd_pricevol "
+            con, f"SELECT code, Now, LastClose, Volume, snapshot_time FROM qd_pricevol "
                  f"WHERE snapshot_time >= '{cutoff(minutes=5)}'")
     except Exception:
         pass
@@ -324,7 +329,7 @@ def _build_context(con, graph):
     # GP 日级数据 (连板率/次日红盘率/机构等, 盘前/盘后用): 每 code 最新 date
     try:
         ctx.gp_df = query_df(con, f"SELECT * FROM qd_stock_gpjy "
-                              f"WHERE date >= '{cutoff(days=30)}'")
+                              f"WHERE date >= '{cutoff(days=5)}'")
     except Exception as e:
         logger.warning('GP 加载失败: {}', e)
     # 龙虎榜 (T+1, p13/p14 用): 从 qd_lhb_detail 聚合每 code 最新一日席位 → ctx.lhb_data
@@ -337,7 +342,7 @@ def _build_context(con, graph):
         # c3 daily 写 qd_stock_daily (含 ZTPrice/fLianB/CJJEPre1 等日级字段)
         # c3 intraday 写 qd_stock_snapshot (含 ZAF/fHSL/Zjl 等实时字段, 由 snapshot_focus_df 承载)
         ctx.more_info_df = query_df(
-            con, f"SELECT * FROM qd_stock_daily "
+            con, f"SELECT code, date, LastZTHzNum, LastStartZT, EverZTCount, OpenAmo, OpenZTBuy FROM qd_stock_daily "
                  f"WHERE date >= '{cutoff(days=2)}'")
     except Exception:
         pass

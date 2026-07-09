@@ -89,10 +89,10 @@ def fetch_indicators(con) -> pd.DataFrame:
         f"SELECT code, calc_time, close, "
         f"macd_dif, macd_dea, macd_hist, pressure_high, support_low "
         f"FROM {SRC} "
-        f"WHERE calc_time > '{since}' "
-        f"ORDER BY code, calc_time"
+        "WHERE calc_time > %s "
+        "ORDER BY code, calc_time"
     )
-    return query_df(con, sql)
+    return query_df(con, sql, params=(since,))
 
 
 def _to_dt(v):

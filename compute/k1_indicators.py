@@ -116,6 +116,10 @@ def fetch_kline(con, rows_per_code=KLINE_ROWS_PER_CODE, since_ts=None) -> pd.Dat
         if updated_codes_df.empty:
             return updated_codes_df  # 空 DataFrame
         updated_codes = updated_codes_df['code'].tolist()
+        # Validate stock codes to prevent SQL injection
+        import re
+        for c in updated_codes:
+            assert re.match(r'^\d{6}\.(SZ|SH|BJ)$', c), f"Invalid stock code: {c}"
         # 再对这些 code 拉最近 rows_per_code 根
         codes_lit = "','".join(updated_codes)
         sql = (
@@ -123,6 +127,7 @@ def fetch_kline(con, rows_per_code=KLINE_ROWS_PER_CODE, since_ts=None) -> pd.Dat
             f"  SELECT code, kline_time, open, high, low, close, "
             f"         row_number() OVER (PARTITION BY code ORDER BY kline_time DESC) AS rn "
             f"  FROM {SRC_KLINE} WHERE code IN ('{codes_lit}')"
+            f"    AND kline_time > '{cutoff(days=30)}'"
             f") WHERE rn <= {rows_per_code} ORDER BY code, kline_time"
         )
         return query_df(con, sql)

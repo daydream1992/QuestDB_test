@@ -226,7 +226,12 @@ def executemany_batch(con, table, columns, rows, batch_size=500):
     native_rows = [tuple(_native(v) for v in row) for row in rows]
     # H5: 重连后重试一次 (DEDUP UPSERT 幂等, 重写无副作用)
     try:
-        n = _exec_with_reconnect(con, lambda c: _do_executemany(c, sql, native_rows, batch_size))
+        # 用 list-ref 包装 con, 使 _do_executemany 重连后传播新连接
+        con_ref = [con]
+        def _exec_with_ref(c):
+            con_ref[0] = c  # 传播 _exec_with_reconnect 重连的连接
+            return _do_executemany(con_ref, sql, native_rows, batch_size)
+        n = _exec_with_reconnect(con, _exec_with_ref)
         # parquet 双写 (不阻断主流程, 每批直写)
         _write_parquet_backup(table, columns, native_rows)
         return n
@@ -235,11 +240,14 @@ def executemany_batch(con, table, columns, rows, batch_size=500):
         raise
 
 
-def _do_executemany(con, sql, rows, batch_size):
+def _do_executemany(con_ref, sql, rows, batch_size):
     """executemany_batch 实际执行, 每批故障时自动重连并重试
 
     解决场景: QuestDB 重启/断连导致 mid-batch 失败, 后续批次全部写不进。
+
+    con_ref: list[connection] — 可变容器, 重连后更新回到调用方。
     """
+    con = con_ref[0]
     cur = con.cursor()
     total = 0
     try:
@@ -254,6 +262,7 @@ def _do_executemany(con, sql, rows, batch_size):
                 cur.close()
                 time.sleep(0.5)
                 con = _ensure_alive(con)
+                con_ref[0] = con  # 传播新连接回调用方
                 cur = con.cursor()
                 cur.executemany(sql, batch)
                 total += len(batch)

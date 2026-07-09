@@ -12,6 +12,7 @@ import json
 import os
 import signal
 import sys
+import threading
 import time
 from datetime import datetime
 from typing import Optional
@@ -64,6 +65,7 @@ class Subscriber:
 
     def __init__(self):
         self._targets: dict[str, str] = {}  # code → name
+        self._lock = threading.Lock()  # 保护 _con 和 _con_mtime
         self._exit_flag = False
         # 连接复用: 每 tick 新建连接耗尽资源，改用复用连接 + 按需重建
         self._con = None
@@ -92,19 +94,20 @@ class Subscriber:
 
     def _get_con(self):
         """获取复用连接（自动按需重建，防止 idle timeout）"""
-        now = time.time()
-        if self._con is not None:
-            # 检查空闲超时
-            if now - self._con_mtime > self._CON_MAX_IDLE:
-                try:
-                    self._con.close()
-                except Exception:
-                    pass
-                self._con = None
-        if self._con is None:
-            self._con = connect()
-            self._con_mtime = now
-        return self._con
+        with self._lock:
+            now = time.time()
+            if self._con is not None:
+                # 检查空闲超时
+                if now - self._con_mtime > self._CON_MAX_IDLE:
+                    try:
+                        self._con.close()
+                    except Exception:
+                        pass
+                    self._con = None
+            if self._con is None:
+                self._con = connect()
+                self._con_mtime = now
+            return self._con
 
     def _signal_handler(self, signum, frame):
         logger.info('收到退出信号, 清理订阅...')
@@ -178,19 +181,21 @@ class Subscriber:
                 )
                 executemany_batch(con, 'qd_stock_intraday', _INTRA_COLS, [intra_row])
             finally:
-                self._con_mtime = time.time()
+                with self._lock:
+                    self._con_mtime = time.time()
 
         except Exception as e:
             logger.warning('订阅回调异常: {}', e)
 
     def _cleanup(self):
         """退出时关闭复用连接"""
-        if self._con is not None:
-            try:
-                self._con.close()
-            except Exception:
-                pass
-            self._con = None
+        with self._lock:
+            if self._con is not None:
+                try:
+                    self._con.close()
+                except Exception:
+                    pass
+                self._con = None
 
     def start(self):
         """启动订阅, 阻塞运行"""

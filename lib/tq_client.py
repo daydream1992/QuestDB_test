@@ -134,7 +134,9 @@ def safe_call(func, *args, **kwargs):
     """
     last_exc = None
     for attempt in range(3):
-        with _lock:
+        if not _lock.acquire(timeout=30):
+            raise TimeoutError('tqcenter safe_call 等待锁超时 (30s)')
+        try:
             _ensure_init()
             try:
                 return func(*args, **kwargs)
@@ -144,4 +146,6 @@ def safe_call(func, *args, **kwargs):
                 if attempt < 2:  # 不是最后一次重试，添加退避
                     delay = min(_RETRY_BASE_DELAY * (2 ** attempt), _RETRY_MAX_DELAY)
                     _time.sleep(delay)
+        finally:
+            _lock.release()
     raise last_exc

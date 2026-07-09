@@ -419,22 +419,23 @@ def push_signal(signal, chat_id=None):
     code = signal.get('code', '')
     signal_type = signal.get('signal_type', '')
 
-    # 频控检查 + 日志在进程内锁保护 (避免 _allow_push 与 _log_freq 之间插入)
+    # 频控检查 (DB 查询) 在锁外, 避免锁住 I/O
     from lib.qdb import connect
     con = connect()
     try:
-        with _freq_lock:
-            allowed = _allow_push(con, code, signal_type)
-            if not allowed:
-                logger.info('信号频控拦截: %s|%s', code, signal_type)
-                return False
+        allowed = _allow_push(con, code, signal_type)
+        if not allowed:
+            logger.info('信号频控拦截: %s|%s', code, signal_type)
+            return False
 
-            card = _build_signal_card(signal)
+        card = _build_signal_card(signal)
+
+        # 锁只保护发送 + 频控日志写入 (原子 check-and-log)
+        with _freq_lock:
             ok = _send(
                 {'msg_type': 'interactive', 'card': card},
                 chat_id=chat_id,
             )
-
             _log_freq(con, code, signal_type, ok)
     finally:
         con.close()
@@ -456,30 +457,33 @@ def push_decision(decision, chat_id=None):
     # 单标的大类频控 (复用信号频控逻辑, code+action 每 60s 1 次)
     code = decision.get('code', '')
     action = decision.get('action', '')
-    from lib.qdb import connect
+    key = f'dec_{code}|{action}'
+
+    # DB 查询在锁外进行
+    from lib.qdb import connect, query_one
     con = connect()
     try:
+        row = query_one(
+            con,
+            "SELECT last_push_time FROM qd_signal_log "
+            "WHERE strategy_name = %s ORDER BY log_time DESC LIMIT 1",
+            (key,),
+        )
+        if row:
+            last = row.get('last_push_time')
+            if last:
+                if isinstance(last, str):
+                    try:
+                        last = datetime.fromisoformat(last.replace('Z', ''))
+                    except Exception:
+                        last = None
+                if last and (datetime.now() - last).total_seconds() < 60:
+                    logger.info('决策频控拦截: %s|%s', code, action)
+                    return False
+        card = _build_decision_card(decision)
+
+        # 锁只保护发送 + 频控日志写入 (原子 check-and-log)
         with _freq_lock:
-            from lib.qdb import query_one
-            key = f'dec_{code}|{action}'
-            row = query_one(
-                con,
-                "SELECT last_push_time FROM qd_signal_log "
-                "WHERE strategy_name = %s ORDER BY log_time DESC LIMIT 1",
-                (key,),
-            )
-            if row:
-                last = row.get('last_push_time')
-                if last:
-                    if isinstance(last, str):
-                        try:
-                            last = datetime.fromisoformat(last.replace('Z', ''))
-                        except Exception:
-                            last = None
-                    if last and (datetime.now() - last).total_seconds() < 60:
-                        logger.info('决策频控拦截: %s|%s', code, action)
-                        return False
-            card = _build_decision_card(decision)
             ok = _send(
                 {'msg_type': 'interactive', 'card': card},
                 chat_id=chat_id,

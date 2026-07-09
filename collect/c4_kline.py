@@ -113,7 +113,10 @@ def parse_kline(data):
     # 以第一个为基准, 逐个 left merge
     _, merged = long_frames[0]
     for key, frame in long_frames[1:]:
-        merged = merged.merge(frame, on=['kline_time', 'code'], how='outer')
+        df_temp = merged.merge(frame, on=['kline_time', 'code'], how='outer')
+        del merged  # help GC free intermediate
+        merged = df_temp
+    gc.collect()
 
     rows = [
         (

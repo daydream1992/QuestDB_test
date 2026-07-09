@@ -147,25 +147,25 @@ def run(date=None, con=None, dry_run=False):
         # 1. 连接 QMT sqlite
         conn = sqlite3.connect(QMT_LHB_PATH)
         conn.text_factory = lambda b: b.decode('utf-8', errors='ignore')
+        try:
+            # 2. 查询 longhubang 表
+            df_lhb = pd.read_sql(
+                "SELECT * FROM longhubang WHERE trade_date = ?", conn, params=(date_str,)
+            )
+            if df_lhb.empty:
+                logger.warning('longhubang 无数据, date={}', date_str)
+                return {'qd_lhb_detail': 0, 'qd_lhb_broker': 0}
 
-        # 2. 查询 longhubang 表
-        df_lhb = pd.read_sql(
-            "SELECT * FROM longhubang WHERE trade_date = ?", conn, params=(date_str,)
-        )
-        if df_lhb.empty:
-            logger.warning('longhubang 无数据, date={}', date_str)
+            logger.info('longhubang {} 条', len(df_lhb))
+
+            # 3. 查询 trader_booth 表
+            df_booth = pd.read_sql(
+                "SELECT * FROM trader_booth WHERE trade_date = ?", conn, params=(date_str,)
+            )
+
+            logger.info('trader_booth {} 条', len(df_booth))
+        finally:
             conn.close()
-            return {'qd_lhb_detail': 0, 'qd_lhb_broker': 0}
-
-        logger.info('longhubang {} 条', len(df_lhb))
-
-        # 3. 查询 trader_booth 表
-        df_booth = pd.read_sql(
-            "SELECT * FROM trader_booth WHERE trade_date = ?", conn, params=(date_str,)
-        )
-        conn.close()
-
-        logger.info('trader_booth {} 条', len(df_booth))
 
         # dry_run 模式只查询不写入
         if dry_run:
