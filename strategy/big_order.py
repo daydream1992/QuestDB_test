@@ -20,10 +20,10 @@
 
 from loguru import logger
 
-# 大单阈值 (元)
-BIG_THRESHOLD = 1_000_000      # 100 万
-HUGE_THRESHOLD = 5_000_000     # 500 万
-SUPER_THRESHOLD = 10_000_000   # 1000 万
+# 大单阈值 (元) - 保守模式
+BIG_THRESHOLD = 5_000_000      # 500万
+HUGE_THRESHOLD = 20_000_000    # 2000万
+SUPER_THRESHOLD = 50_000_000   # 5000万
 
 
 def _safe_float(v, default=0.0) -> float:
