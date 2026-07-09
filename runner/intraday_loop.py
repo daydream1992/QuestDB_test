@@ -60,6 +60,7 @@ import strategy.intraday_engine as intraday_engine  # noqa: E402
 # from strategy import dark_money  # ⚠️ 已禁用
 from strategy import big_order  # noqa: E402
 from strategy import sector_flow as sector_flow_mod  # noqa: E402
+from strategy import volume_price_divergence as vpd  # noqa: E402
 
 from strategy.registry import StrategyRegistry  # noqa: E402
 from strategy.context import StrategyContext  # noqa: E402
@@ -100,6 +101,10 @@ _MONEY_FLOW_COLS = ['code', 'flow_time', 'main_net', 'big_order_diff',
 # qd_big_order 列顺序 (与 DDL 11_big_order.sql 一致)
 _BIG_ORDER_COLS = ['code', 'order_time', 'order_type', 'price', 'volume',
                    'amount', 'order_level', 'broker']
+
+# qd_divergence 列顺序
+_DIVERGENCE_COLS = ['code', 'divergence_time', 'direction', 'price_change',
+                    'volume_change', 'signal', 'reason']
 
 # 模块级缓存: 注册表代码列表 + code_type 映射 (每 300s 刷新)
 _CACHED_CODES = None
@@ -660,6 +665,47 @@ def _run_big_order(con, ctx):
     except Exception as e:
         logger.warning('大单检测失败: {}', e)
 
+def _run_divergence(con, ctx):
+    """量价背离检测 → qd_divergence (60s/轮)
+
+    检测顶背离（价涨量缩）和底背离（价跌量缩）
+    """
+    snap = ctx.snapshot_focus_df
+    if snap is None or snap.empty:
+        return
+    try:
+        # 获取最近 N 帧数据用于计算背离
+        if 'snapshot_time' not in snap.columns:
+            return
+        df = snap.copy().sort_values(['code', 'snapshot_time'])
+
+        # 检测所有股票的量价背离
+        signals = vpd.detect_all(df)
+        if not signals:
+            return
+
+        # 写入数据库
+        rows = []
+        for sig in signals:
+            rows.append((
+                sig['code'],
+                datetime.now(),
+                sig.get('direction'),
+                sig.get('price_change', 0),
+                sig.get('volume_change', 0),
+                sig.get('signal'),
+                sig.get('reason', ''),
+            ))
+
+        executemany_batch(con, 'qd_divergence', _DIVERGENCE_COLS, rows)
+
+        # 刷新 ctx
+        import pandas as _pd
+        ctx.divergence_df = _pd.DataFrame(rows, columns=_DIVERGENCE_COLS)
+        logger.info('写入 qd_divergence: {} 行', len(rows))
+    except Exception as e:
+        logger.warning('量价背离检测失败: {}', e)
+
 def _run_money_flow(con, ctx):
     """个股明暗资金 → qd_money_flow (60s/轮), 并刷新 ctx.money_flow_df 供 p08/p12 当轮读取
 
@@ -876,6 +922,8 @@ def run(con=None, max_rounds=None, force=False):
                 ctx = _build_context(_reader, graph)
                 # 大单检测 (写)
                 _run_big_order(_writer, ctx)
+                # 量价背离检测 (写)
+                _run_divergence(_writer, ctx)
                 # 个股明暗资金 (写)
                 _run_money_flow(_writer, ctx)
                 # 板块资金流 (写)
