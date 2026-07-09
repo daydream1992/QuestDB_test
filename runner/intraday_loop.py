@@ -27,8 +27,12 @@ import sys
 import time
 import threading
 from datetime import datetime, time as dtime
+from dotenv import load_dotenv
 
 import pandas as pd
+
+# 加载 .env
+load_dotenv(os.path.join(os.path.dirname(__file__), '..', '.env'))
 
 # 确保项目根在 sys.path
 _PROJ_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -711,6 +715,14 @@ def run(con=None, max_rounds=None, force=False):
     kline_every = max(1, kline_interval // interval)
 
     watchlist = cfg.get('watchlist', []) or []
+
+    # 从环境变量读取 watchlist（逗号分隔）
+    env_watchlist = os.environ.get('WATCHLIST', '').strip()
+    if env_watchlist:
+        env_codes = [c.strip() for c in env_watchlist.split(',') if c.strip()]
+        watchlist = list(set(watchlist + env_codes))  # 合并去重
+        logger.info('watchlist 合并: yaml={} + env={} = {} 只',
+                    len(cfg.get('watchlist', [])), len(env_codes), len(watchlist))
 
     risk_cfg = cfg.get('risk', {})
     risk = RiskManager(
