@@ -570,8 +570,20 @@ GROUP BY strategy_name;
 | API | 用途 | 调用方式 | 频率 | 返回字段数 | 覆盖范围 | 入库表 |
 |-----|------|----------|------|-----------|----------|--------|
 | `get_pricevol` | 全场批量价量 | 1 次拿全场 (传 stock_list) | 10s/轮 | 3 (LastClose/Now/Volume) | 股票 + 指数 | qd_pricevol |
-| `get_market_snapshot` | 单只实时快照 | 逐只调用 (传 stock_code) | 重点 10s + 全场 60s | 个股 43 / 板块 23 / 指数 13 | 全标的 (按 route_type 分流) | qd_*_snapshot |
+| `get_market_snapshot` | 单只实时快照 | 逐只调用 (传 stock_code) | **全场 ~43s/轮** | 个股 43 / 板块 23 / 指数 13 | 全标的 (按 route_type 分流) | qd_*_snapshot |
 | `get_more_info` | 单只 88 字段详情 | 逐只调用 (传 stock_code) | 重点 10s + 全场 60s | 日级 50/15/10, 盘中 16 | 全标的 (按 route_type 分流) | qd_*_daily / qd_*_snapshot |
+
+### c2 采集性能约束 (2026-07-08 实测)
+
+| 采集数量 | 耗时 |
+|---------|------|
+| 100 只 | ~0.6 秒 |
+| 1,000 只 | ~5 秒 |
+| 5,000 只 | ~23 秒 |
+| 全场 ~6,162 只 | **~43 秒** |
+
+- 写入量：约 5,534 只个股 + 588 板块 + 35 指数 = **6,157 只/轮**
+- tqcenter COM 单进程串行，实测稳定，无积压风险
 
 ### 辅助 API
 

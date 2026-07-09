@@ -190,6 +190,22 @@ def append_records(app_token: str, table_id: str, records: list) -> bool:
         created = data.get('data', {}).get('records', [])
         logger.info('追加 %d 条记录到多维表格 %s/%s', len(created), app_token, table_id)
         return True
+
+    # failed — retry with unknown fields removed
+    if data is None and records:
+        try:
+            existing = _list_fields(app_token, table_id)
+            if existing:
+                known = {f['field_name'] for f in existing}
+                cleaned = [{k: v for k, v in r.items() if k in known} for r in records]
+                if cleaned:
+                    body2 = {'records': [{'fields': r} for r in cleaned]}
+                    data2 = _api('POST', f'/bitable/v1/apps/{app_token}/tables/{table_id}/records/batch_create', body=body2)
+                    if data2:
+                        logger.info('追加 %d 条(字段裁剪后)到多维表格 %s/%s', len(cleaned), app_token, table_id)
+                        return True
+        except Exception as e:
+            logger.warning('字段裁剪重试失败: %s', e)
     return False
 
 
@@ -522,12 +538,12 @@ def _notify_link(res_type: str, name: str, app_token: str):
 PANORAMA_FIELDS = [
     {'field_name': '时间', 'type': 5},            # 5=日期时间 (升级)
     {'field_name': 'PG指数', 'type': 2},
-    {'field_name': 'PG信号', 'type': 3, 'options': [   # 3=单选 (升级, 原为 1 文本)
-        {'name': '冰点', 'color': 1},
-        {'name': '冷', 'color': 4},
-        {'name': '温', 'color': 3},
-        {'name': '热', 'color': 2},
-        {'name': '沸腾', 'color': 0},
+    {'field_name': 'PG信号', 'type': 3, 'options': [   # 3=单选 (与 k4_sentiment._pg_label 一致)
+        {'name': '恐慌', 'color': 1},
+        {'name': '恐惧', 'color': 4},
+        {'name': '中性', 'color': 3},
+        {'name': '贪婪', 'color': 2},
+        {'name': '狂热', 'color': 0},
     ]},
     {'field_name': '涨停数', 'type': 2},
     {'field_name': '跌停数', 'type': 2},
@@ -538,6 +554,10 @@ PANORAMA_FIELDS = [
     {'field_name': '主力净流(亿)', 'type': 2},
     {'field_name': '背离数', 'type': 2},
     {'field_name': '拐点信号', 'type': 1},
+    {'field_name': '上证涨幅', 'type': 2},
+    {'field_name': '深证涨幅', 'type': 2},
+    {'field_name': '创业板涨幅', 'type': 2},
+    {'field_name': '科创50涨幅', 'type': 2},
 ]
 
 # 板块梯队表字段
@@ -546,6 +566,12 @@ HEATMAP_FIELDS = [
     {'field_name': '行业Top1', 'type': 1},
     {'field_name': '行业Top1涨幅', 'type': 2},
     {'field_name': '行业Top1涨停', 'type': 2},
+    {'field_name': '行业二级Top1', 'type': 1},
+    {'field_name': '行业二级Top1涨幅', 'type': 2},
+    {'field_name': '行业二级Top1涨停', 'type': 2},
+    {'field_name': '行业三级Top1', 'type': 1},
+    {'field_name': '行业三级Top1涨幅', 'type': 2},
+    {'field_name': '行业三级Top1涨停', 'type': 2},
     {'field_name': '概念Top1', 'type': 1},
     {'field_name': '概念Top1涨幅', 'type': 2},
     {'field_name': '最强个股', 'type': 1},
@@ -564,6 +590,11 @@ LADDER_FIELDS = [
     {'field_name': '候选2进3', 'type': 2},
     {'field_name': '最强标的', 'type': 1},
     {'field_name': '晋级评分', 'type': 2},
+    {'field_name': '候选股票', 'type': 1},
+    {'field_name': '封单额', 'type': 2},
+    {'field_name': '封成比', 'type': 2},
+    {'field_name': '连板率', 'type': 2},
+    {'field_name': '板块强度', 'type': 2},
 ]
 
 _PANORAMA_TABLE_NAMES = {
@@ -628,14 +659,25 @@ def write_panorama_row(app_token: str, result: dict) -> bool:
     pg = result.get('pg_index')
     sig = result.get('pg_signal', '')
     b = result.get('breadth', {})
-    cf = result.get('capital_flow', {})
-    mn = _safe_num(cf.get('main_net')) / 1e8
-    turn = result.get('turning_point')
-    turn_str = f'{turn["type"]}: {turn["action"]}' if turn else ''
+    cf = result.get('capital_flow', {}) or {}
+    mn_raw = cf.get('main_net')
+    mn = (_safe_num(mn_raw) or 0) / 1e8
+    turn = result.get('turning_point') or {}
+    turn_str = f'{turn.get("type", "")}: {turn.get("action", "")}' if turn else ''
+
+    # 四大指数
+    idx = result.get('index_readings', {}) or {}
+    index_map = {
+        '000001.SH': '上证涨幅',
+        '399001.SZ': '深证涨幅',
+        '399006.SZ': '创业板涨幅',
+        '000688.SH': '科创50涨幅',
+    }
+
     record = {
         '时间': ts_ms,
         'PG指数': _safe_num(pg),
-        'PG信号': sig,
+        'PG信号': sig if sig else None,  # 空字符串不写入单选字段，避免 option 不匹配
         '涨停数': _safe_num(b.get('zt_cnt')),
         '跌停数': _safe_num(b.get('dt_cnt')),
         '封板率': _safe_num(b.get('fbl')),
@@ -646,6 +688,10 @@ def write_panorama_row(app_token: str, result: dict) -> bool:
         '背离数': _safe_num(result.get('divergence_count')),
         '拐点信号': turn_str,
     }
+    # 四大指数
+    for code, field_name in index_map.items():
+        v = idx.get(code, {}) or {}
+        record[field_name] = _safe_num(v.get('zaf'))
     return append_records(app_token, table_id, [record])
 
 
@@ -656,8 +702,13 @@ def write_heatmap_row(app_token: str, result: dict) -> bool:
         return False
     ts_ms = _parse_time_to_ms(datetime.now().strftime('%H:%M'))
 
-    l1 = (result.get('industry_l1_ranking') or [{}])[0]
-    concept = (result.get('concept_ranking') or [{}])[0]
+    def _top1(ranking):
+        return (ranking or [{}])[0]
+
+    l1 = _top1(result.get('industry_l1_ranking'))
+    l2 = _top1(result.get('industry_l2_ranking'))
+    l3 = _top1(result.get('industry_l3_ranking'))
+    concept = _top1(result.get('concept_ranking'))
     # 最强个股: 行业一级最强板块的个股梯队 Top1
     l1_stocks = result.get('industry_l1_stocks') or []
     best_stock = l1_stocks[0] if l1_stocks else {}
@@ -667,6 +718,12 @@ def write_heatmap_row(app_token: str, result: dict) -> bool:
         '行业Top1': l1.get('name', ''),
         '行业Top1涨幅': _safe_num(l1.get('zaf')),
         '行业Top1涨停': _safe_num(l1.get('zt_count')),
+        '行业二级Top1': l2.get('name', ''),
+        '行业二级Top1涨幅': _safe_num(l2.get('zaf')),
+        '行业二级Top1涨停': _safe_num(l2.get('zt_count')),
+        '行业三级Top1': l3.get('name', ''),
+        '行业三级Top1涨幅': _safe_num(l3.get('zaf')),
+        '行业三级Top1涨停': _safe_num(l3.get('zt_count')),
         '概念Top1': concept.get('name', ''),
         '概念Top1涨幅': _safe_num(concept.get('zaf')),
         '最强个股': best_stock.get('name', ''),
@@ -685,6 +742,7 @@ def write_ladder_row(app_token: str, result: dict) -> bool:
     stats = result.get('stats', {})
     candidates = result.get('promotion_rankings', [])
     best = candidates[0] if candidates else {}
+    best_detail = best.get('detail', {}) if best else {}
 
     record = {
         '时间': ts_ms,
@@ -696,6 +754,11 @@ def write_ladder_row(app_token: str, result: dict) -> bool:
         '候选2进3': _safe_num(stats.get('candidates_2to3')),
         '最强标的': best.get('name', ''),
         '晋级评分': _safe_num(best.get('total_score')),
+        '候选股票': best.get('name', ''),
+        '封单额': _safe_num(best_detail.get('fcamo_score')),
+        '封成比': _safe_num(best_detail.get('fcb_score')),
+        '连板率': _safe_num(best_detail.get('lb_rate_score')),
+        '板块强度': _safe_num(best_detail.get('sector_score')),
     }
     return append_records(app_token, table_id, [record])
 
@@ -777,6 +840,14 @@ def create_signal_views(app_token: str, table_id: str) -> bool:
             all_ok = False
 
     return all_ok
+
+
+def _list_fields(app_token: str, table_id: str) -> list:
+    """查询数据表的所有字段"""
+    data = _api('GET', f'/bitable/v1/apps/{app_token}/tables/{table_id}/fields')
+    if not data:
+        return []
+    return data.get('data', {}).get('items', [])
 
 
 def _list_views(app_token: str, table_id: str) -> list:

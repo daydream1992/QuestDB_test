@@ -87,6 +87,26 @@ def _global_rate_allow() -> bool:
         _global_history.append(now)
         return True
 
+_TEXT_LOCK = threading.Lock()
+_TEXT_HISTORY: list[float] = []
+_TEXT_MAX_PER_MIN = 10
+
+
+def _text_rate_allow() -> bool:
+    """文字推送令牌桶: 每分钟最多 _TEXT_MAX_PER_MIN 条。
+
+    Returns:
+        bool: True = 允许推送
+    """
+    with _TEXT_LOCK:
+        now = time.time()
+        _TEXT_HISTORY[:] = [t for t in _TEXT_HISTORY if now - t < 60]
+        if len(_TEXT_HISTORY) >= _TEXT_MAX_PER_MIN:
+            return False
+        _TEXT_HISTORY.append(now)
+        return True
+
+
 # ── 卡片颜色映射 ──────────────────────────────────────────
 _COLOR_MAP = {
     'buy': 'green',
@@ -109,9 +129,10 @@ _COLOR_MAP = {
 
 
 def _get_price_color(stype, reason):
-    """根据信号类型推断价格颜色"""
+    """根据信号类型/动作推断价格颜色"""
     green_types = {'buy', 'stop_profit', 'surge_up', 'limit_seal', 'capital_in'}
     red_types = {'sell', 'stop_loss', 'surge_down', 'limit_break', 'capital_out'}
+    # 决策 action 映射
     if stype in green_types:
         return 'green'
     if stype in red_types:
@@ -120,15 +141,19 @@ def _get_price_color(stype, reason):
 
 
 def _price_change_md(stype, reason):
-    """生成涨跌幅描述 (从 reason 中提取或根据 stype 推断)"""
+    """生成涨跌幅描述 (从 reason 中提取正负号)"""
     if stype in ('limit_seal', 'surge_up'):
         return '<font color="green">+涨停</font>'
     if stype in ('limit_break', 'surge_down'):
         return '<font color="red">-跌停</font>'
-    if stype == 'buy':
-        return '<font color="green">↑ 买入信号</font>'
-    if stype == 'sell':
-        return '<font color="red">↓ 卖出信号</font>'
+    # 尝试从 reason 提取价格变动
+    if reason:
+        import re as _re
+        m = _re.search(r'[+-]\d+\.?\d*%', reason)
+        if m:
+            v = float(m.group().rstrip('%'))
+            c = 'green' if v > 0 else 'red' if v < 0 else 'grey'
+            return f'<font color="{c}">{m.group()}</font>'
     return ''
 
 
@@ -294,12 +319,13 @@ def _post_api(chat_id, msg_type, content, _retry=True, _retries=3):
     return False
 
 
-def _send(payload, chat_id=None):
+def _send(payload, chat_id=None, critical=False):
     """统一发送: Webhook 优先, 降级 API。
 
     Args:
         payload: Webhook 消息体 (msg_type + content/card)
         chat_id: 可选, 指定群聊 ID (API 通道用)
+        critical: 聚合桶和 focus 池等非人类推送跳过全局频控
     Returns:
         bool: 是否成功
     """
@@ -309,13 +335,13 @@ def _send(payload, chat_id=None):
         _stats_inc('dry_run')
         return True
     # 全局频控 (进程内滑动窗口)
-    if not _global_rate_allow():
+    if not critical and not _global_rate_allow():
         logger.warning('全局频控拦截 (≤{}条/分钟)', _GLOBAL_MAX_PER_MIN)
         _stats_inc('rate_limited')
         return False
     # 跨进程频控: 查 qd_signal_log 最近 60s 推送数 (多进程合计 ≤2条/分钟)
     try:
-        from lib.qdb import connect, query_one
+        from lib.qdb import connect, query_one, cutoff
         _qcon = connect()
         try:
             row = query_one(_qcon,
@@ -366,9 +392,13 @@ def push_text(text, chat_id=None):
     Returns:
         bool: 是否成功
     """
+    if not _text_rate_allow():
+        logger.warning('push_text 频控拦截 (≤{}条/分钟)', _TEXT_MAX_PER_MIN)
+        _stats_inc('rate_limited')
+        return False
     return _send(
         {'msg_type': 'text', 'content': {'text': text}},
-        chat_id=chat_id,
+        chat_id=chat_id, critical=False
     )
 
 
@@ -482,6 +512,63 @@ def send_to_chat(chat_id, msg_type, content):
         bool: 是否成功
     """
     return _post_api(chat_id, msg_type, content)
+
+
+def push_focus_pool(pool_df, chat_id=None):
+    """推送 focus 池到飞书 (表格卡片)。
+
+    Args:
+        pool_df: DataFrame, 包含 code/Now/Volume/LastClose 等字段
+        chat_id: 可选群聊 ID
+
+    Returns:
+        bool: 是否成功
+    """
+    if pool_df is None or pool_df.empty:
+        return False
+
+    rows = []
+    for _, r in pool_df.iterrows():
+        code = r.get('code', '')
+        name = r.get('name', r.get('stock_name', ''))
+        # change_pct 计算: 如果传入的只有 pricevol 表 (只有 Now/LastClose)
+        now = r.get('Now', 0)
+        lc = r.get('LastClose', 0)
+        try:
+            now_v = float(now)
+            lc_v = float(lc)
+            chg = ((now_v - lc_v) / lc_v * 100) if lc_v > 0 else 0.0
+        except (TypeError, ValueError):
+            chg = 0.0
+        volume = r.get('Volume', 0)
+        color = 'green' if chg > 0 else 'red' if chg < 0 else 'grey'
+        change_md = f'<font color="{color}">{chg:+.2f}%</font>'
+
+        rows.append([
+            {'tag': 'div', 'text': {'tag': 'lark_md', 'content': f'**{code}**'}},
+            {'tag': 'div', 'text': {'tag': 'lark_md', 'content': name[:8]}},
+            {'tag': 'div', 'text': {'tag': 'lark_md', 'content': change_md}},
+        ])
+
+    card = {
+        'header': {
+            'title': {'tag': 'lark_md', 'content': f'📊 Focus 池 ({len(rows)} 只)'},
+            'template': 'blue',
+        },
+        'elements': [
+            {
+                'tag': 'table',
+                'columns': [
+                    {'tag': 'div', 'text': {'tag': 'lark_md', 'content': '代码'}},
+                    {'tag': 'div', 'text': {'tag': 'lark_md', 'content': '名称'}},
+                    {'tag': 'div', 'text': {'tag': 'lark_md', 'content': '涨幅'}},
+                ],
+                'elements': rows[:50],
+            },
+        ]
+    }
+
+    return _send({'msg_type': 'interactive', 'card': card}, chat_id=chat_id, critical=True)
 
 
 # ══════════════════════════════════════════════════════════
@@ -719,10 +806,14 @@ def push_decision_aggregated(decision: dict, chat_id: str = None) -> bool:
         if not should_flush:
             return False
         bucket = list(_bucket)
-        _bucket.clear()
-        _bucket_start = None
+        # 不清空, success 后锁内清空(避免 send 失败丢数据)
 
-    return _flush_bucket(bucket, chat_id=chat_id)
+    success = _flush_bucket(bucket, chat_id=chat_id)
+    if success:
+        with _bucket_lock:
+            _bucket.clear()
+            _bucket_start = None
+    return success
 
 
 def flush_pending_bucket(chat_id: str = None) -> bool:
@@ -737,9 +828,13 @@ def flush_pending_bucket(chat_id: str = None) -> bool:
         if not _bucket:
             return False
         bucket = list(_bucket)
-        _bucket.clear()
-        _bucket_start = None
-    return _flush_bucket(bucket, chat_id=chat_id)
+        # 失败不清空
+    success = _flush_bucket(bucket, chat_id=chat_id)
+    if success:
+        with _bucket_lock:
+            _bucket.clear()
+            _bucket_start = None
+    return success
 
 
 def _flush_bucket(bucket: list, chat_id: str = None) -> bool:
@@ -762,7 +857,37 @@ def _flush_bucket(bucket: list, chat_id: str = None) -> bool:
     top = bucket[:_BUCKET_TOP_N]
 
     card = _build_aggregate_card(top, total=len(bucket))
-    return _send({'msg_type': 'interactive', 'card': card}, chat_id=chat_id)
+    ok = _send({'msg_type': 'interactive', 'card': card}, chat_id=chat_id, critical=True)
+
+    # 写入频控日志 (每条决策一条, strategy_name = 'agg|action')
+    if ok:
+        _log_bucket_to_signal_log(bucket)
+    return ok
+
+
+_SIGNAL_LOG_COLS = ['log_time', 'strategy_name', 'signal_count',
+                    'last_push_time', 'cooldown_sec', 'pushed']
+
+
+def _log_bucket_to_signal_log(bucket: list):
+    """flush 成功后，把桶内每条决策写入 qd_signal_log (用于跨进程频控)"""
+    from lib.qdb import connect, executemany_batch
+    now = datetime.now()
+    rows = []
+    for d in bucket:
+        action = d.get('action', '')
+        key = f'agg|{action}'
+        rows.append((now, key, 1, now, _BUCKET_WINDOW, True))
+    if not rows:
+        return
+    try:
+        con = connect()
+        try:
+            executemany_batch(con, 'qd_signal_log', _SIGNAL_LOG_COLS, rows)
+        finally:
+            con.close()
+    except Exception:
+        pass  # 不阻断推送
 
 
 def _build_aggregate_card(top: list, total: int) -> dict:
@@ -818,10 +943,12 @@ def _build_aggregate_card(top: list, total: int) -> dict:
         'text': {'tag': 'lark_md', 'content': '\n\n'.join(md_lines)}
     })
 
-    # 3. 尾部: 跳转多维表格链接
+    # 3. 尾部: 跳转多维表格链接 (含 table_id)
     try:
         if _cfg.BITABLE_TOKEN:
-            url = (f'https://bytedance.larkoffice.com/base/{_cfg.BITABLE_TOKEN}')
+            from feishu.bitable_writer import get_bitable_url, auto_daily_table
+            tid = auto_daily_table(_cfg.BITABLE_TOKEN)
+            url = get_bitable_url(_cfg.BITABLE_TOKEN, tid)
             elements.append({'tag': 'hr'})
             elements.append({
                 'tag': 'div',
@@ -845,8 +972,8 @@ def _build_aggregate_card(top: list, total: int) -> dict:
 # T4 收盘复盘卡片
 # ══════════════════════════════════════════════════════════
 
-def build_review_card(sections: dict) -> dict:
-    """T4 收盘复盘卡片 (4 块分区: 情绪/数据/策略/异常)
+def build_review_card(sections: dict, k4_data: dict = None) -> dict:
+    """T4 收盘复盘卡片 (4 块分区: 情绪/数据/策略/异常 + 可选 k4 板块热力/打板梯队)
 
     Args:
         sections: dict, 4 个分区的 Markdown 内容
@@ -855,6 +982,12 @@ def build_review_card(sections: dict) -> dict:
                 'data':     '── 数据入库 ──\\n  快照: 12345 行\\n  ...',
                 'strategy': '── 策略产出 ──\\n  dark_money: buy × 12\\n  ...',
                 'alert':    '── 异常告警 ──\\n  日志错误: 0 ERROR',
+            }
+        k4_data: dict, 可选 k4 深度数据
+            {
+                'sentiment': '┄ PG指数: 52 中性 ┄\\n  4大指数: ...',
+                'heatmap': '┄ 最强板块 ┄\\n  行业一级: 银行 +2.3%...',
+                'ladder': '┄ 打板梯队 ┄\\n  首板: 23家 2板: 8家...',
             }
 
     Returns:
@@ -866,7 +999,11 @@ def build_review_card(sections: dict) -> dict:
         'data': '💾',
         'strategy': '🎯',
         'alert': '⚠️',
+        'sentiment': '🧠',
+        'heatmap': '🔥',
+        'ladder': '🪜',
     }
+    # 基础 4 分区
     for key in ('emotion', 'data', 'strategy', 'alert'):
         content = sections.get(key, '')
         if not content:
@@ -886,6 +1023,26 @@ def build_review_card(sections: dict) -> dict:
                 'text': {'tag': 'lark_md', 'content': rest},
             })
         elements.append({'tag': 'hr'})
+
+    # k4 扩展分区
+    if k4_data:
+        for key in ('sentiment', 'heatmap', 'ladder'):
+            content = k4_data.get(key, '')
+            if not content:
+                continue
+            emoji = section_emoji.get(key, '🧠')
+            lines = content.strip().split(chr(10))
+            elements.append({
+                'tag': 'div',
+                'text': {'tag': 'lark_md', 'content': f'{emoji} {lines[0]}'},
+            })
+            rest = '\n'.join(lines[1:])
+            if rest.strip():
+                elements.append({
+                    'tag': 'div',
+                    'text': {'tag': 'lark_md', 'content': rest},
+                })
+            elements.append({'tag': 'hr'})
 
     # 去掉末尾多余的 hr
     if elements and elements[-1].get('tag') == 'hr':

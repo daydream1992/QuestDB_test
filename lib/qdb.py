@@ -28,6 +28,7 @@ from dotenv import load_dotenv
 from loguru import logger
 
 
+
 def cutoff(seconds=0, minutes=0, hours=0, days=0):
     """本地 now 倒推的 ISO 时间字符串 (供 SQL WHERE timestamp > '...' 用)
 
@@ -49,41 +50,115 @@ QDB_USER = os.getenv('QDB_USER', 'admin')
 QDB_PASSWORD = os.getenv('QDB_PASSWORD', 'quest')
 QDB_DBNAME = os.getenv('QDB_DBNAME', 'qdb')
 
-# —— parquet 双写备份 (DuckDB) ——
-# executemany_batch 写入高频表后同步写 parquet, 每批直写, 按天合并
-# 不缓存: 短脚本退出不会丢数据
-_BACKUP_ENABLED = True
+# —— parquet 双写备份 (批次分片, O(1) 写入) ——
+# 每批写独立小文件 (today/NNNNNN.parquet), 不读不拼不合并。
+# 读取时用 pyarrow/duckdb 读目录下所有分片 (收盘后可通过 force_flush_backup 合并)。
+# 每批 I/O = 写当前批次, O(1), 不随当日数据量增长。
+#
+# 熔断器: 连续 3 次写入延迟 > 500ms 或 5 次异常 → 自动禁用当天备份, 保主线不崩。
+# 开关: .env 中 BACKUP_ENABLED=true/false 或直接改下面常量; 重启后重置。
+_BACKUP_ENABLED = os.getenv('BACKUP_ENABLED', 'false').lower() in ('true', '1', 'yes')
 _BACKUP_DIR = r'D:\dbshujubeifen'
 _BACKUP_HIGH_FREQ = {
     'qd_pricevol', 'qd_kline_1m', 'qd_kline_5m',
     'qd_stock_snapshot', 'qd_money_flow', 'qd_big_order',
 }
+_BACKUP_SEQ: dict[str, int] = {}  # table → batch_seq
+
+# — 熔断器状态 —
+_BACKUP_CIRCUIT_BROKEN = False       # True 后当天不再备份
+_BACKUP_SLOW_COUNT = 0               # 连续慢写入计数
+_BACKUP_FAIL_COUNT = 0               # 连续失败计数
+_BACKUP_MAX_SLOW = 3                 # 连续超过 _SLOW_THRESHOLD_MS 则熔断
+_BACKUP_MAX_FAIL = 5                 # 连续失败 5 次则熔断
+_BACKUP_SLOW_THRESHOLD_MS = 500     # 单次写入超过此值视为慢
 
 
 def _write_parquet_backup(table, columns, rows):
-    """每批直写 parquet (按天合并, 不阻塞主流程)"""
-    if not _BACKUP_ENABLED:
+    """每批直写 parquet (批次分片, O(1), 不读不拼不合并)
+
+    内置熔断器: 连续慢/失败 → 自动禁用当天备份, 保主线不崩。
+
+    Args:
+        table: 表名
+        columns: 列名列表
+        rows: 行数据 (list of tuple)
+    """
+    global _BACKUP_CIRCUIT_BROKEN, _BACKUP_SLOW_COUNT, _BACKUP_FAIL_COUNT
+    if _BACKUP_CIRCUIT_BROKEN or not _BACKUP_ENABLED:
         return
     if not rows or table not in _BACKUP_HIGH_FREQ:
         return
+    import time as _time
+    _t0 = _time.time()
     try:
         today = datetime.now().strftime('%Y-%m-%d')
-        table_dir = os.path.join(_BACKUP_DIR, table)
+        table_dir = os.path.join(_BACKUP_DIR, table, today)
         os.makedirs(table_dir, exist_ok=True)
-        dst = os.path.join(table_dir, f'{today}.parquet')
+        # 批次序号 (每表每日自增, key 含日期防跨日溢出)
+        seq_key = f'{table}:{today}'
+        seq = _BACKUP_SEQ.setdefault(seq_key, 0) + 1
+        _BACKUP_SEQ[seq_key] = seq
+        dst = os.path.join(table_dir, f'{seq:06d}.parquet')
         df = pd.DataFrame(rows, columns=columns)
-        # 如果已有今天文件, 合并后覆盖 (按天合并, 避免碎片)
-        if os.path.exists(dst):
-            existing = pd.read_parquet(dst)
-            df = pd.concat([existing, df], ignore_index=True)
         df.to_parquet(dst, index=False)
+        # —— 熔断检测: 写入超过阈值 ——
+        _elapsed = (_time.time() - _t0) * 1000
+        if _elapsed > _BACKUP_SLOW_THRESHOLD_MS:
+            _BACKUP_SLOW_COUNT += 1
+            logger.warning('parquet备份写入慢 {table}: {elapsed:.0f}ms (连续{slow}次)',
+                           table=table, elapsed=_elapsed, slow=_BACKUP_SLOW_COUNT)
+            if _BACKUP_SLOW_COUNT >= _BACKUP_MAX_SLOW:
+                _BACKUP_CIRCUIT_BROKEN = True
+                logger.error('parquet备份熔断: 连续 {slow} 次写入超 {th}ms, 当天禁用',
+                              slow=_BACKUP_SLOW_COUNT, th=_BACKUP_SLOW_THRESHOLD_MS)
+        else:
+            _BACKUP_SLOW_COUNT = 0  # 写入正常 → 重置慢计数
+        _BACKUP_FAIL_COUNT = 0      # 写入正常 → 重置失败计数
     except Exception as e:
-        logger.warning('parquet备份失败 {table}: {e}', table=table, e=e)
+        _BACKUP_FAIL_COUNT += 1
+        logger.warning('parquet备份失败 {table} (连续{count}次): {e}',
+                        table=table, count=_BACKUP_FAIL_COUNT, e=e)
+        if _BACKUP_FAIL_COUNT >= _BACKUP_MAX_FAIL:
+            _BACKUP_CIRCUIT_BROKEN = True
+            logger.error('parquet备份熔断: 连续 {count} 次失败, 当天禁用',
+                          count=_BACKUP_FAIL_COUNT)
 
 
 def force_flush_backup():
-    """无操作: parquet 每批直写, 无需 flush"""
-    pass
+    """收盘后合并当天所有分片为单个文件 (可选, 方便归档)
+
+    遍历 _BACKUP_HIGH_FREQ 每张表下今天的日期目录,
+    读所有分片, concat 后写一个合并文件并删除分片。
+    非必调: 查询时可直接读目录下所有分片 (pyarrow/duckdb 原生支持)。
+    """
+    if not _BACKUP_ENABLED:
+        return
+    today = datetime.now().strftime('%Y-%m-%d')
+    for table in _BACKUP_HIGH_FREQ:
+        table_dir = os.path.join(_BACKUP_DIR, table, today)
+        if not os.path.isdir(table_dir):
+            continue
+        try:
+            parts = sorted([p for p in os.listdir(table_dir) if p.endswith('.parquet')])
+            if not parts:
+                continue
+            if len(parts) == 1:
+                # 唯一文件, 移到父目录
+                src = os.path.join(table_dir, parts[0])
+                dst = os.path.join(_BACKUP_DIR, table, f'{today}.parquet')
+                os.rename(src, dst)
+            else:
+                dfs = [pd.read_parquet(os.path.join(table_dir, p)) for p in parts]
+                merged = pd.concat(dfs, ignore_index=True)
+                dst = os.path.join(_BACKUP_DIR, table, f'{today}.parquet')
+                merged.to_parquet(dst, index=False)
+                # 删除分片
+                for p in parts:
+                    os.remove(os.path.join(table_dir, p))
+            os.rmdir(table_dir)
+        except Exception as e:
+            logger.warning('parquet 合并失败 {table}: {e}', table=table, e=e)
 
 
 def connect():
@@ -196,16 +271,34 @@ def executemany_batch(con, table, columns, rows, batch_size=500):
 
 
 def _do_executemany(con, sql, rows, batch_size):
-    """executemany_batch 实际执行 (分离出来便于 _ensure_alive 重试)"""
+    """executemany_batch 实际执行, 每批故障时自动重连并重试
+
+    解决场景: QuestDB 重启/断连导致 mid-batch 失败, 后续批次全部写不进。
+    """
     cur = con.cursor()
     total = 0
     try:
         for i in range(0, len(rows), batch_size):
             batch = rows[i:i + batch_size]
-            cur.executemany(sql, batch)
-            total += len(batch)
+            try:
+                cur.executemany(sql, batch)
+                total += len(batch)
+            except (OperationalError, InterfaceError) as e:
+                # 本批断连: 自动重连后创建新 cursor, 重试本批
+                from loguru import logger
+                logger.warning('executemany 批次连接断, 自动重连重试 (已写 {} 行, 失败在 {})', total, i)
+                cur.close()
+                import time
+                time.sleep(0.5)
+                con = _ensure_alive(con)
+                cur = con.cursor()
+                cur.executemany(sql, batch)
+                total += len(batch)
     finally:
-        cur.close()
+        try:
+            cur.close()
+        except Exception:
+            pass
     return total
 
 

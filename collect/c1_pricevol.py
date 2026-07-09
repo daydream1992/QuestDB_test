@@ -33,7 +33,7 @@ if _PROJ_ROOT not in sys.path:
 
 from loguru import logger  # noqa: E402
 
-from lib.tq_client import safe_call, init, close  # noqa: E402
+from lib.tq_client import safe_call, init  # noqa: E402
 from lib.tq_utils import fetch_all_codes, to_tdx  # noqa: E402
 from lib.qdb import connect, executemany_batch  # noqa: E402
 from config.fields import PRICEVOL_FIELDS  # noqa: E402
@@ -48,11 +48,10 @@ from tqcenter import tq  # noqa: E402
 _LOG_DIR = os.path.join(_PROJ_ROOT, 'logs')
 os.makedirs(_LOG_DIR, exist_ok=True)
 logger.add(os.path.join(_LOG_DIR, 'c1_pricevol_{time:YYYYMMDD}.log'),
-           rotation='1 day', retention='30 days', encoding='utf-8')
+           rotation='50 MB', retention='30 days', encoding='utf-8')
 
 # 入库列: code + snapshot_time + 价量字段 (顺序与 rows tuple 一致, 与 DDL 03 一致)
 _PRICEVOL_COLS = ['code', 'snapshot_time'] + PRICEVOL_FIELDS
-
 
 def _to_float(v):
     """转 float, 失败返回 None (tqcenter 返回字符串值)"""
@@ -63,7 +62,6 @@ def _to_float(v):
     except (TypeError, ValueError):
         return None
 
-
 def _to_int(v):
     """转 int, 失败返回 None"""
     if v is None or v == '':
@@ -72,7 +70,6 @@ def _to_int(v):
         return int(float(v))
     except (TypeError, ValueError):
         return None
-
 
 def parse_pricevol(data, snapshot_time):
     """解析 get_pricevol 返回的 dict → rows
@@ -103,7 +100,6 @@ def parse_pricevol(data, snapshot_time):
     if skipped:
         logger.debug('价量解析跳过 {} 条', skipped)
     return rows
-
 
 def run(con=None, limit=None):
     """采集全场价量并写入 qd_pricevol
@@ -161,19 +157,13 @@ def run(con=None, limit=None):
         if own_con:
             con.close()
 
-
 def main():
     import argparse
     parser = argparse.ArgumentParser(description='c1 全市场价量采集')
     parser.add_argument('--limit', type=int, default=None, help='限制采集数量 (测试用)')
     args = parser.parse_args()
 
-    init()
-    try:
-        run(limit=args.limit)
-    finally:
-        close()
-
+    run(limit=args.limit)
 
 if __name__ == '__main__':
     main()

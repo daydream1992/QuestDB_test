@@ -25,6 +25,7 @@
   - tqcenter COM 单进程串行, 用 safe_call 包装
 """
 
+import gc
 import os
 import sys
 from datetime import datetime
@@ -37,7 +38,7 @@ if _PROJ_ROOT not in sys.path:
 
 from loguru import logger  # noqa: E402
 
-from lib.tq_client import safe_call, init, close  # noqa: E402
+from lib.tq_client import safe_call, init  # noqa: E402
 from lib.tq_utils import fetch_all_codes  # noqa: E402
 from lib.qdb import connect, executemany_batch  # noqa: E402
 
@@ -46,7 +47,7 @@ from tqcenter import tq  # noqa: E402
 _LOG_DIR = os.path.join(_PROJ_ROOT, 'logs')
 os.makedirs(_LOG_DIR, exist_ok=True)
 logger.add(os.path.join(_LOG_DIR, 'c4_kline_{time:YYYYMMDD}.log'),
-           rotation='1 day', retention='30 days', encoding='utf-8')
+           rotation='50 MB', retention='30 days', encoding='utf-8')
 
 # period → 表名
 PERIOD_TABLE = {
@@ -114,9 +115,8 @@ def parse_kline(data):
     for key, frame in long_frames[1:]:
         merged = merged.merge(frame, on=['kline_time', 'code'], how='outer')
 
-    rows = []
-    for _, r in merged.iterrows():
-        rows.append((
+    rows = [
+        (
             r['code'],
             r['kline_time'],
             r.get('open'),
@@ -125,8 +125,25 @@ def parse_kline(data):
             r.get('close'),
             r.get('volume'),
             r.get('amount'),
-        ))
+        )
+        for r in merged.to_dict('records')
+    ]
     return rows
+
+
+# 最大股票上限 (超过此值可能是退化未拦截, 跳过不采集)
+MAX_C4_STOCKS = 800
+# 分批采集大小 (减小批次降低峰值内存)
+_CHUNK_SIZE = 100
+
+
+def _merge_kline_chunks(chunks):
+    """合并多批 K 线解析结果"""
+    all_rows = []
+    for rows in chunks:
+        if rows:
+            all_rows.extend(rows)
+    return all_rows
 
 
 def run(codes, period='1m', count=1, con=None):
@@ -136,7 +153,7 @@ def run(codes, period='1m', count=1, con=None):
         codes:  待采集代码列表 (标准代码)
         period: '1m' / '5m'
         count:  K 线根数
-        con:    psycopg2 连接, None 则自建
+        con:    忽略——c4 自建连接 (调用者传入的连接可能因采集耗时长而超时)
 
     Returns:
         int: 写入行数
@@ -144,37 +161,56 @@ def run(codes, period='1m', count=1, con=None):
     if period not in PERIOD_TABLE:
         raise ValueError("period 必须是 {} 之一, 实际: {}".format(list(PERIOD_TABLE), period))
 
-    own_con = con is None
-    if own_con:
-        con = connect()
+    # === 硬防御 1：代码数量上限 ===
+    if not codes:
+        logger.warning('codes 为空, 退出')
+        return 0
+    if len(codes) > MAX_C4_STOCKS:
+        logger.error('codes 数量 {} 超过上限 {}, 疑似退化未拦截, 跳过本轮', len(codes), MAX_C4_STOCKS)
+        return 0
+
+    con = connect()  # 自建连接, 避免 intraday_loop 传入的 con 因 c2/c3 长时间采集而超时
 
     try:
-        if not codes:
-            logger.warning('codes 为空, 退出')
-            return 0
 
         logger.info('K 线采集 period={} count={} 共 {} 只', period, count, len(codes))
 
-        # 调用 get_market_data (直接传标准代码, tqcenter 不接受 tdx 格式)
-        data = safe_call(tq.get_market_data, stock_list=codes, period=period, count=count)
-        if not data:
-            logger.warning('get_market_data 返回空')
-            return 0
+        # === 硬防御 2：分批采集 ===
+        # 一次性拉 5500 只的 get_market_data 也会构造大 DataFrame,
+        # 分批拉降低峰值内存, 单批失败不阻塞其他批次
+        all_rows = []
+        for i in range(0, len(codes), _CHUNK_SIZE):
+            batch = codes[i:i + _CHUNK_SIZE]
+            try:
+                data = safe_call(tq.get_market_data, stock_list=batch, period=period, count=count)
+                if not data:
+                    logger.warning('批次 {}-{} get_market_data 返回空', i, i + len(batch))
+                    continue
+                rows = parse_kline(data)
+                if rows:
+                    all_rows.extend(rows)
+                logger.debug('批次 {}-{}: {} 行', i, i + len(batch), len(rows))
+            except Exception as e:
+                logger.warning('批次 {}-{} 采集失败: {}', i, i + len(batch), e)
+                continue
 
-        # 解析 → rows
-        rows = parse_kline(data)
-        logger.info('解析得到 {} 行 K 线', len(rows))
-        if not rows:
+        logger.info('解析得到 {} 行 K 线', len(all_rows))
+        if not all_rows:
             return 0
 
         # 写入对应表
         table = PERIOD_TABLE[period]
-        n = executemany_batch(con, table, KLINE_COLS, rows)
+        n = executemany_batch(con, table, KLINE_COLS, all_rows)
         logger.info('写入 {}: {} 行', table, n)
+        # 释放内存
+        del all_rows
+        gc.collect()
         return n
     finally:
-        if own_con:
+        try:
             con.close()
+        except Exception:
+            pass
 
 
 def main():
@@ -186,14 +222,11 @@ def main():
     args = parser.parse_args()
 
     init()
-    try:
-        meta = fetch_all_codes()
-        codes = [c['code'] for c in meta if c.get('tdx_code')]
-        if args.limit:
-            codes = codes[:args.limit]
-        run(codes, period=args.period, count=args.count)
-    finally:
-        close()
+    meta = fetch_all_codes()
+    codes = [c['code'] for c in meta if c.get('tdx_code')]
+    if args.limit:
+        codes = codes[:args.limit]
+    run(codes, period=args.period, count=args.count)
 
 
 if __name__ == '__main__':

@@ -143,7 +143,7 @@ def is_auction_time(now=None):
     if not is_trading_day(now):
         return False
     t = now.time()
-    return (time(9, 15) <= t <= time(9, 25)) or (time(14, 57) <= t <= time(15, 0))
+    return (time(9, 15) <= t < time(9, 25)) or (time(14, 57) <= t < time(15, 0))
 
 
 def get_phase(now=None):

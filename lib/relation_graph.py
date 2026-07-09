@@ -361,6 +361,10 @@ def sync_to_db(con):
 
     注: 行业板块-个股无独立映射表 (通过 qd_stock_industry 三级分类体现)。
 
+    幂等策略: 使用 TRUNCATE TABLE 清空后重新插入，
+              避免 DEDUP UPSERT KEYS(update_time, ...) 包含 update_time
+              导致相同业务主键但不同时间戳无法去重的问题。
+
     Args:
         con: psycopg2 连接 (autocommit=True)
     Returns:
@@ -371,6 +375,14 @@ def sync_to_db(con):
 
     now = datetime.now()
     counts = {}
+
+    # 幂等: 先清空 7 张关系表，再重新插入
+    cur = con.cursor()
+    for table in ['qd_map_index_stock', 'qd_map_style_stock',
+                  'qd_map_region_stock', 'qd_map_concept_stock',
+                  'qd_map_industry_stock', 'qd_stock_industry', 'qd_sector_meta']:
+        cur.execute("TRUNCATE TABLE %s" % table)
+    cur.close()
 
     # 1. qd_sector_meta
     rows = []
@@ -392,7 +404,7 @@ def sync_to_db(con):
         con, 'qd_stock_industry',
         ['code', 'update_time', 'industry_l1', 'industry_l2', 'industry_l3'], rows)
 
-    # 3. qd_map_concept_stock (concept_name ← block_name)
+    # 3. qd_map_concept_stock
     rows = []
     for code, stocks in _map_concept_stock.items():
         name = _sector_meta.get(code, {}).get('sector_name', '')
@@ -402,7 +414,7 @@ def sync_to_db(con):
         con, 'qd_map_concept_stock',
         ['concept_name', 'code', 'update_time', 'weight'], rows)
 
-    # 4. qd_map_region_stock (region ← block_name)
+    # 4. qd_map_region_stock
     rows = []
     for code, stocks in _map_region_stock.items():
         name = _sector_meta.get(code, {}).get('sector_name', '')
@@ -412,7 +424,7 @@ def sync_to_db(con):
         con, 'qd_map_region_stock',
         ['region', 'code', 'update_time'], rows)
 
-    # 5. qd_map_style_stock (style ← block_name)
+    # 5. qd_map_style_stock
     rows = []
     for code, stocks in _map_style_stock.items():
         name = _sector_meta.get(code, {}).get('sector_name', '')
@@ -422,7 +434,7 @@ def sync_to_db(con):
         con, 'qd_map_style_stock',
         ['style', 'code', 'update_time'], rows)
 
-    # 6. qd_map_index_stock (index_code ← block_code)
+    # 6. qd_map_index_stock
     rows = []
     for code, stocks in _map_index_stock.items():
         for s in stocks:
@@ -430,5 +442,17 @@ def sync_to_db(con):
     counts['qd_map_index_stock'] = executemany_batch(
         con, 'qd_map_index_stock',
         ['index_code', 'code', 'update_time', 'weight'], rows)
+
+    # 7. qd_map_industry_stock
+    _RAW_LEVEL_MAP = {'行业一级': 'L1', '行业二级': 'L2', '行业三级': 'L3'}
+    rows = []
+    for code, stocks in _map_industry_stock.items():
+        raw = _sector_raw_type.get(code, '')
+        level = _RAW_LEVEL_MAP.get(raw, '')
+        for s in stocks:
+            rows.append((code, s['code'], now, level, None))
+    counts['qd_map_industry_stock'] = executemany_batch(
+        con, 'qd_map_industry_stock',
+        ['industry_code', 'stock_code', 'update_time', 'industry_level', 'weight'], rows)
 
     return counts

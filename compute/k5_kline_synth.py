@@ -37,9 +37,9 @@ from lib.qdb import connect, query_df, executemany_batch  # noqa: E402
 _LOG_DIR = os.path.join(_PROJ_ROOT, 'logs')
 os.makedirs(_LOG_DIR, exist_ok=True)
 logger.add(os.path.join(_LOG_DIR, 'k5_kline_synth_{time:YYYYMMDD}.log'),
-           rotation='1 day', retention='30 days', encoding='utf-8')
+           rotation='50 MB', retention='30 days', encoding='utf-8')
 
-KLINE_COLS = ['code', 'kline_time', 'open', 'high', 'low', 'close', 'volume', 'amount']
+KLINE_COLS = ['code', 'kline_time', 'Open', 'High', 'Low', 'Close', 'Volume', 'Amount']
 
 # 读近 N 分钟 snapshot (够覆盖当前 + 上一个已收盘周期, 多笔/分钟保证桶内聚合)
 # 6min: 1 个当前 5m 桶 + 1 个上一 5m 桶, 历史由 c4(get_market_data) 提供; 太大会拖慢合成

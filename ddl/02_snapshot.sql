@@ -20,6 +20,7 @@
 -- ------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS qd_stock_snapshot (
     code            VARCHAR,
+    code_type       SYMBOL,
     snapshot_time   TIMESTAMP,
     ItemNum         DOUBLE,
     LastClose       DOUBLE,
@@ -92,6 +93,7 @@ DEDUP UPSERT KEYS(snapshot_time, code);
 -- ------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS qd_sector_snapshot (
     code            VARCHAR,
+    code_type       SYMBOL,
     snapshot_time   TIMESTAMP,
     ItemNum         DOUBLE,
     LastClose       DOUBLE,
@@ -127,6 +129,7 @@ DEDUP UPSERT KEYS(snapshot_time, code);
 -- ------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS qd_index_snapshot (
     code            VARCHAR,
+    code_type       SYMBOL,
     snapshot_time   TIMESTAMP,
     ItemNum         DOUBLE,
     LastClose       DOUBLE,

@@ -52,7 +52,7 @@ from lib.qdb import connect, query_df, executemany_batch, cutoff  # noqa: E402
 _LOG_DIR = os.path.join(_PROJ_ROOT, 'logs')
 os.makedirs(_LOG_DIR, exist_ok=True)
 logger.add(os.path.join(_LOG_DIR, 'k2_signals_{time:YYYYMMDD}.log'),
-           rotation='1 day', retention='30 days', encoding='utf-8')
+           rotation='50 MB', retention='30 days', encoding='utf-8')
 
 # 表名
 SRC = 'qd_indicators'

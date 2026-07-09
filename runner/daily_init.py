@@ -22,7 +22,7 @@ if _PROJ_ROOT not in sys.path:
 from loguru import logger  # noqa: E402
 
 from lib.qdb import connect  # noqa: E402
-from lib.tq_client import init, close  # noqa: E402
+from lib.tq_client import init  # noqa: E402
 from lib.tq_utils import refresh_registry, fetch_all_codes  # noqa: E402
 import importlib as _il
 _feishu = _il.import_module('feishu')  # noqa: E402
@@ -30,7 +30,6 @@ _feishu = _il.import_module('feishu')  # noqa: E402
 import collect.c5_mapping as c5  # noqa: E402
 import collect.c3_more_info as c3  # noqa: E402
 import collect.c4_kline as c4  # noqa: E402
-
 
 def _c4_with_retry(codes, period, count, con, retries=3):
     """K 线预拉带重试"""
@@ -48,8 +47,7 @@ def _c4_with_retry(codes, period, count, con, retries=3):
 _LOG_DIR = os.path.join(_PROJ_ROOT, 'logs')
 os.makedirs(_LOG_DIR, exist_ok=True)
 logger.add(os.path.join(_LOG_DIR, 'runner_daily_init_{time:YYYYMMDD}.log'),
-           rotation='1 day', retention='30 days', encoding='utf-8')
-
+           rotation='50 MB', retention='30 days', encoding='utf-8')
 
 def run(con=None):
     """盘前初始化主流程
@@ -96,7 +94,6 @@ def run(con=None):
         if own_con:
             con.close()
 
-
 def main():
     import signal
 
@@ -107,12 +104,7 @@ def main():
         signal.signal(signal.SIGBREAK, _graceful_exit)
     signal.signal(signal.SIGTERM, _graceful_exit)
 
-    init()
-    try:
-        run()
-    finally:
-        close()
-
+    run()
 
 if __name__ == '__main__':
     main()

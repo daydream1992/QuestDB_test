@@ -61,7 +61,7 @@ _PLUGINS_DIR = os.path.join(_PROJ_ROOT, 'strategy', 'plugins')
 _LOG_DIR = os.path.join(_PROJ_ROOT, 'logs')
 os.makedirs(_LOG_DIR, exist_ok=True)
 logger.add(os.path.join(_LOG_DIR, 'e2e_{time:YYYYMMDD}.log'),
-           rotation='1 day', retention='30 days', encoding='utf-8')
+           rotation='50 MB', retention='30 days', encoding='utf-8')
 
 # 测试样本数
 _FOCUS_N = 5

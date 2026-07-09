@@ -37,6 +37,7 @@
 
 import os
 import sys
+import threading
 from datetime import datetime
 
 _PROJ_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -45,8 +46,8 @@ if _PROJ_ROOT not in sys.path:
 
 from loguru import logger  # noqa: E402
 
-from lib.tq_client import safe_call, init, close  # noqa: E402
-from lib.tq_utils import to_tdx, route_type  # noqa: E402
+from lib.tq_client import safe_call, init  # noqa: E402
+from lib.tq_utils import to_tdx, route_type, classify_code, route_type_to_table  # noqa: E402
 from lib.qdb import connect, executemany_batch  # noqa: E402
 
 from config.fields import (  # noqa: E402
@@ -58,12 +59,12 @@ from tqcenter import tq  # noqa: E402
 _LOG_DIR = os.path.join(_PROJ_ROOT, 'logs')
 os.makedirs(_LOG_DIR, exist_ok=True)
 logger.add(os.path.join(_LOG_DIR, 'c3_more_info_{time:YYYYMMDD}.log'),
-           rotation='1 day', retention='30 days', encoding='utf-8')
+           rotation='50 MB', retention='30 days', encoding='utf-8')
 
-# === daily 表列顺序 (与 DDL 01_daily.sql 严格一致) ===
-STOCK_DAILY_COLS = ['code', 'date'] + STOCK_DAILY_FIELDS
-SECTOR_DAILY_COLS = ['code', 'date'] + SECTOR_DAILY_FIELDS
-INDEX_DAILY_COLS = ['code', 'date'] + INDEX_DAILY_FIELDS
+# === daily 表列顺序 (与 DDL 01_daily.sql 严格一致, 含 code_type) ===
+STOCK_DAILY_COLS = ['code', 'code_type', 'date'] + STOCK_DAILY_FIELDS
+SECTOR_DAILY_COLS = ['code', 'code_type', 'date'] + SECTOR_DAILY_FIELDS
+INDEX_DAILY_COLS = ['code', 'code_type', 'date'] + INDEX_DAILY_FIELDS
 
 # === intraday 写入 (C8 拆表: stock 独立成 qd_stock_intraday, sector/index 写 daily 表) ===
 # 原 c3 写 qd_stock_snapshot 与 c2@T 双形态行冲突, 现拆独立表, 不再 +1s 错开
@@ -73,8 +74,8 @@ _INTRADAY_TABLE = {
     'index': 'qd_index_daily',
 }
 _INTRADAY_COLS = {
-    # stock: snapshot_time + intraday 高频字段 (与新 snapshot DDL 一致)
-    'stock': ['code', 'snapshot_time'] + STOCK_INTRADAY_FIELDS,
+    # stock: code_type + snapshot_time + intraday 高频字段
+    'stock': ['code', 'code_type', 'snapshot_time'] + STOCK_INTRADAY_FIELDS,
     # sector/index: 写 daily 表, date 用 HqDate
     'sector': SECTOR_DAILY_COLS,
     'index': INDEX_DAILY_COLS,
@@ -107,53 +108,69 @@ def _parse_hqdate(hqdate):
         return datetime.now()
 
 
-def _build_daily_row(code, data, fields):
-    """构建 daily 表一行: (code, date, *fields)"""
+def _build_daily_row(code, data, fields, code_type):
+    """构建 daily 表一行: (code, code_type, date, *fields)"""
     hqdate = data.get('HqDate')
     date = _parse_hqdate(hqdate)
     values = [data.get(f) for f in fields]
-    return (code, date, *values)
+    return (code, code_type, date, *values)
 
 
-def _build_intraday_row(code, data, snapshot_time):
-    """构建 stock intraday 行: (code, snapshot_time, *STOCK_INTRADAY_FIELDS)
-
-    intraday 模式写入 qd_stock_snapshot, 用 snapshot_time 作时间戳
-    (snapshot 表为 TIMESTAMP PARTITION BY DAY, DEDUP UPSERT KEYS(snapshot_time, code) 保证幂等)
+def _build_intraday_row(code, data, snapshot_time, code_type):
+    """构建 stock intraday 行: (code, code_type, snapshot_time, *STOCK_INTRADAY_FIELDS)
     """
     values = [data.get(f) for f in STOCK_INTRADAY_FIELDS]
-    return (code, snapshot_time, *values)
+    return (code, code_type, snapshot_time, *values)
 
 
-def _build_sector_intraday_row(code, data, snapshot_time):
+def _build_sector_intraday_row(code, data, snapshot_time, code_type):
     """构建 sector intraday 行"""
     hqdate = data.get('HqDate')
     date = _parse_hqdate(hqdate) if hqdate else snapshot_time
     values = [data.get(f) for f in SECTOR_DAILY_FIELDS]
-    return (code, date, *values)
+    return (code, code_type, date, *values)
 
 
-def _build_index_intraday_row(code, data, snapshot_time):
+def _build_index_intraday_row(code, data, snapshot_time, code_type):
     """构建 index intraday 行"""
     hqdate = data.get('HqDate')
     date = _parse_hqdate(hqdate) if hqdate else snapshot_time
     values = [data.get(f) for f in INDEX_DAILY_FIELDS]
-    return (code, date, *values)
+    return (code, code_type, date, *values)
 
 
 def _fetch_one(code):
-    """调用 get_more_info 单只采集 (直接用标准代码, tqcenter 不接受 tdx 格式)"""
-    return safe_call(tq.get_more_info, stock_code=code, field_list=[])
+    """调用 get_more_info 单只采集 (带 10s 超时, 防卡死整轮)"""
+    _result, _exception = [], []
+
+    def _do():
+        try:
+            _data = safe_call(tq.get_more_info, stock_code=code, field_list=[])
+            _result.append(_data)
+        except Exception as e:
+            _exception.append(e)
+
+    _t = threading.Thread(target=_do, daemon=True)
+    _t.start()
+    _t.join(timeout=10)
+    if _t.is_alive():
+        return None  # 超时 → 跳过
+    if _exception:
+        raise _exception[0]
+    return _result[0] if _result else None
 
 
-def _write_daily(con, buckets):
+def _write_daily(con, buckets, code_type_map=None):
     """daily 模式写入 3 张 daily 表 (逐表 try/except, 单表失败不影响其他)"""
+    if code_type_map is None:
+        code_type_map = {}
     counts = {}
     # stock
     rows = []
     for code, data in buckets.get('stock', []):
         try:
-            rows.append(_build_daily_row(code, data, STOCK_DAILY_FIELDS))
+            ct = code_type_map.get(code, 'stock')
+            rows.append(_build_daily_row(code, data, STOCK_DAILY_FIELDS, ct))
         except Exception as e:
             logger.warning('构建 stock daily 行失败 code={}: {}', code, e)
     if rows:
@@ -169,7 +186,8 @@ def _write_daily(con, buckets):
     rows = []
     for code, data in buckets.get('sector', []):
         try:
-            rows.append(_build_daily_row(code, data, SECTOR_DAILY_FIELDS))
+            ct = code_type_map.get(code, 'sector')
+            rows.append(_build_daily_row(code, data, SECTOR_DAILY_FIELDS, ct))
         except Exception as e:
             logger.warning('构建 sector daily 行失败 code={}: {}', code, e)
     if rows:
@@ -185,7 +203,8 @@ def _write_daily(con, buckets):
     rows = []
     for code, data in buckets.get('index', []):
         try:
-            rows.append(_build_daily_row(code, data, INDEX_DAILY_FIELDS))
+            ct = code_type_map.get(code, 'index')
+            rows.append(_build_daily_row(code, data, INDEX_DAILY_FIELDS, ct))
         except Exception as e:
             logger.warning('构建 index daily 行失败 code={}: {}', code, e)
     if rows:
@@ -206,13 +225,15 @@ _INTRADAY_BUILDERS = {
 }
 
 
-def _write_intraday(con, buckets, snapshot_time):
-    """intraday 模式: stock 写 snapshot 表 (实时时间戳), sector/index 写 daily 表 (HqDate 日期)
+def _write_intraday(con, buckets, snapshot_time, code_type_map=None):
+    """intraday 模式: stock 写 intraday 表, sector/index 写 daily 表 (HqDate 日期)
 
-    stock   → qd_stock_snapshot  (snapshot_time + STOCK_INTRADAY_FIELDS)
+    stock   → qd_stock_intraday  (code_type + snapshot_time + STOCK_INTRADAY_FIELDS)
     sector  → qd_sector_daily  (HqDate → date + SECTOR_DAILY_FIELDS)
     index   → qd_index_daily   (HqDate → date + INDEX_DAILY_FIELDS)
     """
+    if code_type_map is None:
+        code_type_map = {}
     counts = {}
     for ctype, table in _INTRADAY_TABLE.items():
         cols = _INTRADAY_COLS[ctype]
@@ -220,7 +241,8 @@ def _write_intraday(con, buckets, snapshot_time):
         rows = []
         for code, data in buckets.get(ctype, []):
             try:
-                rows.append(builder(code, data, snapshot_time))
+                ct = code_type_map.get(code, ctype)
+                rows.append(builder(code, data, snapshot_time, ct))
             except Exception as e:
                 logger.warning('构建 {} intraday 行失败 code={}: {}', ctype, code, e)
         if not rows:
@@ -235,13 +257,14 @@ def _write_intraday(con, buckets, snapshot_time):
     return counts
 
 
-def run(codes, mode='daily', con=None):
+def run(codes, mode='daily', con=None, code_type_map=None):
     """more_info 采集主入口
 
     Args:
         codes: 待采集代码列表 (标准代码)
         mode:  'daily' 写 daily 表; 'intraday' 写 snapshot 表
         con:   psycopg2 连接, None 则自建
+        code_type_map: dict[str, str] 代码→类型映射
 
     Returns:
         dict: 各表写入行数
@@ -260,20 +283,21 @@ def run(codes, mode='daily', con=None):
 
         logger.info('more_info 采集开始 mode={} 共 {} 只', mode, len(codes))
 
-        # 按 route_type 分桶
+        # 按 classify_code + route_type_to_table 分桶 (etf/kzz/reits → stock 桶)
         buckets = {'stock': [], 'sector': [], 'index': []}
         err = 0
         snapshot_time = datetime.now()
         # C8 拆表后: stock intraday 写独立表 qd_stock_intraday, 不再与 c2 冲突, 无需 +1s 错开
 
         for code in codes:
-            ctype = route_type(code)
+            ctype = classify_code(code, code_type_map)
+            route_to = route_type_to_table(ctype)
             try:
                 data = _fetch_one(code)
                 if not data:
                     err += 1
                     continue
-                buckets[ctype].append((code, data))
+                buckets[route_to].append((code, data))
             except Exception as e:
                 err += 1
                 logger.warning('more_info 采集失败 code={} type={}: {}', code, ctype, e)
@@ -284,9 +308,9 @@ def run(codes, mode='daily', con=None):
                     len(buckets['index']), err)
 
         if mode == 'daily':
-            counts = _write_daily(con, buckets)
+            counts = _write_daily(con, buckets, code_type_map)
         else:
-            counts = _write_intraday(con, buckets, snapshot_time)
+            counts = _write_intraday(con, buckets, snapshot_time, code_type_map)
 
         logger.info('more_info 写入完成 mode={}: {}', mode, counts)
         return counts
@@ -304,15 +328,11 @@ def main():
     args = parser.parse_args()
 
     from lib.tq_utils import fetch_all_codes
-    init()
-    try:
-        meta = fetch_all_codes()
-        codes = [c['code'] for c in meta]
-        if args.limit:
-            codes = codes[:args.limit]
-        run(codes, mode=args.mode)
-    finally:
-        close()
+    meta = fetch_all_codes()
+    codes = [c['code'] for c in meta]
+    if args.limit:
+        codes = codes[:args.limit]
+    run(codes, mode=args.mode)
 
 
 if __name__ == '__main__':

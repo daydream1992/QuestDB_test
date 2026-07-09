@@ -133,3 +133,26 @@ CREATE TABLE IF NOT EXISTS qd_map_index_stock (
     weight       DOUBLE
 ) TIMESTAMP(update_time) PARTITION BY YEAR
 DEDUP UPSERT KEYS(update_time, index_code, code);
+
+
+-- ------------------------------------------------------------
+-- 表名: qd_map_industry_stock
+-- 用途: 行业板块 → 个股映射 (含层级级别)
+-- 数据源: tqcenter get_stock_list_in_sector (industry)
+-- 时间戳: update_time
+-- 字段映射:
+--   industry_code ← 行业板块代码
+--   stock_code    ← 成份股代码
+--   update_time   ← datetime.now()
+--   industry_level ← 行业层级 L1/L2/L3
+--   weight        ← 个股权重 (%)
+-- 去重: (update_time, industry_code, stock_code)
+-- ------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS qd_map_industry_stock (
+    industry_code  VARCHAR,
+    stock_code     VARCHAR,
+    update_time    TIMESTAMP,
+    industry_level VARCHAR,
+    weight         DOUBLE
+) TIMESTAMP(update_time) PARTITION BY YEAR
+DEDUP UPSERT KEYS(update_time, industry_code, stock_code);

@@ -31,6 +31,7 @@ import sys
 import time
 import signal
 import subprocess
+import threading
 import psutil
 from datetime import datetime, time as dtime
 
@@ -54,6 +55,8 @@ _AUCTION_SCRIPT = os.path.join(_PROJ_ROOT, 'runner', 'auction_monitor.py')
 _INTRADAY_SCRIPT = os.path.join(_PROJ_ROOT, 'runner', 'intraday_loop.py')
 _SUBSCRIBE_SCRIPT = os.path.join(_PROJ_ROOT, 'compute', 'subscribe.py')
 _OVERSEER_SCRIPT = os.path.join(_PROJ_ROOT, 'runner', 'overseer.py')
+# k4 深度情绪独立进程 (5min/轮, 由 scheduler 每 5min 启动一次)
+_K4_RUNNER_SCRIPT = os.path.join(_PROJ_ROOT, 'runner', 'k4_runner.py')
 
 # Python 解释器 (与当前进程一致)
 _PY = sys.executable
@@ -62,15 +65,28 @@ _PY = sys.executable
 _LOG_DIR = os.path.join(_PROJ_ROOT, 'logs')
 os.makedirs(_LOG_DIR, exist_ok=True)
 logger.add(os.path.join(_LOG_DIR, 'runner_scheduler_{time:YYYYMMDD}.log'),
-           rotation='1 day', retention='30 days', encoding='utf-8')
+           rotation='50 MB', retention='30 days', encoding='utf-8')
 
 # 主循环间隔 (秒)
 _POLL_INTERVAL = 10
 # 非交易日等待间隔 (秒)
 _IDLE_INTERVAL = 300
 
+MAX_CONSECUTIVE_CRASHES = 10
+
 # 子进程崩溃统计 (用于 _ensure_running 指数退避)
 _crash_count = {}
+
+# H4: 退避线程化 — 不阻塞主循环
+# {name: threading.Thread} 记录待执行的退避重启动作
+_pending_backoff_threads: dict[str, threading.Thread] = {}
+# 退避线程成功启动的新进程句柄 (主循环通过它拿到新进程)
+_restarted_procs: dict[str, subprocess.Popen] = {}
+# 哨兵: 退避线程已完成 (区别于 "无待处理线程" = None)
+_BACKOFF_DONE = object()
+# 过渡阶段禁止重启标记: should_prestart 主动停止某进程后,
+# _ensure_running 不应立即将其重启 (解决 09:22-09:25 auction_monitor 反复起停)
+_transition_stop: set[str] = set()
 
 
 def _start_proc(script):
@@ -144,28 +160,79 @@ def _stop_proc(proc, name):
         logger.info('子进程已 terminate: {} pid={}', name, proc.pid)
     except subprocess.TimeoutExpired:
         proc.kill()
+        try:
+            proc.wait(timeout=5)
+        except subprocess.TimeoutExpired:
+            pass
         logger.warning('子进程 terminate 超时, 已 kill: {} pid={}', name, proc.pid)
 
 
 def _ensure_running(proc, script, name, phase_ok):
-    """确保子进程存活，已崩溃则在运行时段内自动重启（含指数退避）。"""
-    global _crash_count
+    """确保子进程存活，已崩溃则在运行时段内自动重启（含指数退避）。
+
+    H4: 退避等待在线程中执行，不阻塞 scheduler 主循环。
+    """
+    global _crash_count, _pending_backoff_threads, _restarted_procs
+
+    # 过渡阶段主动停止的进程不重启 (see _transition_stop)
+    if name in _transition_stop:
+        return proc
+
     if not phase_ok:
         if proc is not None and proc.poll() is not None:
             logger.info('{} 子进程已退出 (非运行时段, code={})', name, proc.returncode)
             _crash_count.pop(name, None)
+            _pending_backoff_threads.pop(name, None)
         return proc
+
+    # 检查退避线程启动的新进程
+    new_proc = _restarted_procs.pop(name, None)
+    if new_proc is not None:
+        logger.info('{} 收到退避线程启动的新进程 pid={}', name, new_proc.pid)
+        _crash_count.pop(name, None)
+        _pending_backoff_threads.pop(name, None)
+        return new_proc
+
+    # 检查是否有待执行的退避线程
+    pending = _pending_backoff_threads.get(name)
+    if pending is not None:
+        if isinstance(pending, threading.Thread):
+            if pending.is_alive():
+                return proc
+            else:
+                _pending_backoff_threads.pop(name, None)
+        # _BACKOFF_DONE: 清理
+        _pending_backoff_threads.pop(name, None)
+
     if proc is None or proc.poll() is not None:
         if proc is not None:
             cnt = _crash_count.get(name, 0) + 1
             _crash_count[name] = cnt
+            if cnt >= MAX_CONSECUTIVE_CRASHES:
+                logger.critical('{} 子进程累计崩溃 {} 次, 停止重启', name, cnt)
+                return proc
             backoff = min(60, 2 ** cnt)
-            logger.error('{} 子进程已崩溃 (code={}), 第{}次, 等待{}s后重启',
+            logger.error('{} 子进程已崩溃 (code={}), 第{}次, 等待{}s后重启 (线程化)',
                          name, proc.returncode, cnt, backoff)
-            time.sleep(backoff)
+            def _backoff_start(name, script):
+                try:
+                    time.sleep(backoff)
+                    new_proc = _start_proc(script)
+                    # 把新进程句柄存入全局，主循环下一次 _ensure_running 会读到
+                    _restarted_procs[name] = new_proc
+                except Exception as e:
+                    logger.error('退避重启失败 {}: {}', name, e)
+                finally:
+                    _pending_backoff_threads[name] = _BACKOFF_DONE
+
+            t = threading.Thread(target=_backoff_start, args=(name, script), daemon=True, name=f'backoff_{name}')
+            t.start()
+            _pending_backoff_threads[name] = t
+            return proc  # 旧进程已崩溃，返回旧 proc 供下次判断
         else:
             logger.info('{} 子进程未启动, 启动', name)
-        return _start_proc(script)
+            return _start_proc(script)
+
     # 进程正常运行 → 清掉崩溃计数
     _crash_count.pop(name, None)
     return proc
@@ -206,19 +273,86 @@ def _attach_if_running(script_name):
     return None
 
 
+# PID 文件锁: 防止重复启动多个 scheduler
+_LOCK_FILE = os.path.join(_PROJ_ROOT, 'logs', '.scheduler.lock')
+
+
+def _acquire_scheduler_lock():
+    """进程锁: 检查 .scheduler.lock, 若已有运行中的 scheduler 则退出。"""
+    import msvcrt
+    try:
+        lock_fd = open(_LOCK_FILE, 'a+')
+    except OSError:
+        return None
+    try:
+        # 先读出旧 PID 检查进程是否还活着
+        lock_fd.seek(0)
+        old_content = lock_fd.read().strip()
+        if old_content:
+            try:
+                old_pid = int(old_content)
+                if old_pid != os.getpid():
+                    # 进程还活着？→ 真冲突，退出
+                    psutil.Process(old_pid)
+                    logger.error('scheduler 已在运行 (PID={}), 退出', old_pid)
+                    lock_fd.close()
+                    sys.exit(1)
+            except (ValueError, psutil.NoSuchProcess):
+                # PID 无效 → 旧锁文件是僵尸，直接覆盖
+                logger.warning('清理僵尸 scheduler 锁 (old_pid={})', old_content)
+        # 取锁
+        msvcrt.locking(lock_fd.fileno(), msvcrt.LK_NBLCK, 1)
+        lock_fd.seek(0)
+        content = lock_fd.read().strip()
+        if content:
+            try:
+                old_pid = int(content)
+                if old_pid != os.getpid():
+                    psutil.Process(old_pid)
+                    logger.error('scheduler 已在运行 (PID={}), 退出', old_pid)
+                    lock_fd.close()
+                    sys.exit(1)
+            except (ValueError, psutil.NoSuchProcess):
+                pass  # 无效 PID，可继续
+        # 写入当前 PID
+        lock_fd.seek(0)
+        lock_fd.truncate()
+        lock_fd.write(str(os.getpid()))
+        lock_fd.flush()
+        return lock_fd
+    except OSError:
+        # 锁已被占用，说明有其他 scheduler 在跑
+        lock_fd.close()
+        logger.error('scheduler 锁文件被占用，可能有其他实例在运行，退出')
+        sys.exit(1)
+
+
+def _release_scheduler_lock(lock_fd):
+    """释放锁文件"""
+    import msvcrt
+    try:
+        msvcrt.locking(lock_fd.fileno(), msvcrt.LK_UNLCK, 1)
+        lock_fd.close()
+        os.remove(_LOCK_FILE)
+    except Exception:
+        pass
+
+
 def run():
     """总调度主循环
 
     流程:
-      1. 加载策略配置 (load_plugins + load_config)
-      2. while True 轮询 market_clock.get_phase():
+      1. 进程锁检查 (防止重复启动)
+      2. 加载策略配置 (load_plugins + load_config)
+      3. while True 轮询 market_clock.get_phase():
          - auction:    启动 auction_monitor 子进程 (非阻塞)
          - pre_market: 直接调 daily_init.run() (仅一次)
          - morning/afternoon: 停 auction 子进程, 启动 intraday_loop 子进程
          - closed:     停 intraday 子进程, 直接调 daily_close.run() (仅一次)
-      3. Ctrl+C 优雅退出 (终止所有子进程)
-      4. 非交易日跳过, 仅补跑 daily_close 后等待次日
+      4. Ctrl+C 优雅退出 (终止所有子进程)
+      5. 非交易日跳过, 仅补跑 daily_close 后等待次日
     """
+    lock_fd = _acquire_scheduler_lock()
     logger.info('===== scheduler 启动 {} =====', datetime.now())
 
     # 1. 加载策略配置
@@ -248,12 +382,16 @@ def run():
     intraday_proc = None
     subscribe_proc = None
     overseer_proc = None
+    k4_runner_proc = None
+    # k4 5min 节流: 记录上次启动时间, 不依赖 round_idx
+    _last_k4_run = None
 
     # 启动时杀掉已运行的旧子进程，防止重复拉起
     _attach_if_running('auction_monitor')
     _attach_if_running('intraday_loop')
     _attach_if_running('subscribe')
     _attach_if_running('overseer')
+    _attach_if_running('k4_runner')
 
     try:
         while True:
@@ -290,6 +428,7 @@ def run():
             if should_prestart(9, 30):
                 if auction_proc is not None:
                     logger.info('停 auction_monitor, 准备切换到盘中')
+                    _transition_stop.add('auction_monitor')
                     _stop_proc(auction_proc, 'auction_monitor')
                     auction_proc = None
                 if intraday_proc is None:
@@ -316,8 +455,44 @@ def run():
                     logger.info('提前启动 auction_monitor (距收盘竞价约 %s)', format_countdown(14,57))
                     auction_proc = _start_proc(_AUCTION_SCRIPT)
 
+            # k4 深度情绪: 盘中时段 (morning/afternoon/lunch/pre_close) 每 5 分钟启动一次
+            # 用墙钟节流, 不依赖 round_idx, 跨重启自动重置
+            from datetime import timedelta
+            in_intraday = phase in ('morning', 'afternoon', 'lunch', 'pre_close')
+            if in_intraday:
+                need_run = (
+                    _last_k4_run is None
+                    or (now - _last_k4_run) >= timedelta(minutes=5)
+                )
+                if need_run:
+                    should_start = True
+                    # 不管上一次 k4_runner 是否还活着, 都无条件拉新进程
+                    # 5min 节流只靠 _last_k4_run (上次启动时间), 与进程存活无关
+                    # 如果上次进程还在, 自然结束 (k4_runner 跑完就退, 不会卡死)
+                    if k4_runner_proc is not None:
+                        try:
+                            if k4_runner_proc.poll() is None:
+                                # 上次进程还在跑 (异常), 跳过本轮启动, 但不下 continue — 其余进程仍需健康检查
+                                logger.warning('k4_runner 上次进程仍存活 (pid={}), 跳过本轮', k4_runner_proc.pid)
+                                should_start = False
+                        except Exception:
+                            pass
+                    if should_start:
+                        logger.info('启动 k4_runner (距上次 {} 分钟)',
+                                    '?' if _last_k4_run is None else f'{(now - _last_k4_run).total_seconds() / 60:.1f}')
+                        k4_runner_proc = _start_proc(_K4_RUNNER_SCRIPT)
+                        _last_k4_run = now
+            else:
+                # 非盘中时段: 停 k4_runner (如有)
+                if k4_runner_proc is not None and k4_runner_proc.poll() is None:
+                    _stop_proc(k4_runner_proc, 'k4_runner')
+                    logger.info('非盘中时段, 停止 k4_runner')
+                k4_runner_proc = None
+
             # === 原有的 get_phase() 逻辑 (兜底 + 一次性任务) ===
             if phase == 'pre_market':
+                # 过渡期已过 (auction → pre_market), 清除禁止重启标记
+                _transition_stop.discard('auction_monitor')
                 # 09:25-09:30 撮合段: 跑 daily_init (一次性)
                 if not flags['daily_init'] and now.hour == 9 and now.minute >= 25:
                     try:
@@ -377,6 +552,10 @@ def run():
             # (should_prestart 只在 8 分钟窗口内启动，过后崩溃无人拉起)
             in_auction = phase in ('auction',)
             in_intraday = phase in ('morning', 'afternoon', 'lunch', 'pre_close')
+            if in_intraday:
+                # 盘中目标阶段已到, 清除过渡期标记; 若再需要 auction_monitor,
+                # 由 should_prestart(14,57) 正常启动
+                _transition_stop.discard('auction_monitor')
 
             auction_proc = _ensure_running(
                 auction_proc, _AUCTION_SCRIPT, 'auction_monitor', in_auction)
@@ -396,7 +575,12 @@ def run():
         _stop_proc(intraday_proc, 'intraday_loop')
         _stop_proc(subscribe_proc, 'subscribe')
         _stop_proc(overseer_proc, 'overseer')
-        tq_close()
+        _stop_proc(k4_runner_proc, 'k4_runner')
+        try:
+            tq_close()
+        except Exception:
+            pass
+        _release_scheduler_lock(lock_fd)
         logger.info('===== scheduler 退出 =====')
 
 

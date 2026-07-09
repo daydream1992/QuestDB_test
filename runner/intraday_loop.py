@@ -16,14 +16,21 @@
     7. 遍历策略 → decisions
     8. 风控 + 情绪门控 + 飞书推送
     9. 板块资金流 + 共振分析
+
+连接管理: 进程级写/读双连接 (_writer/_reader)。每步通过 _ensure_writer()/_ensure_reader()
+取复用连接 + 保活检查。连接数 = 2, 不再每轮新建/销毁。
+避免 QuestDB idle timeout(60s): _ensure_* 每次调用时 ping, 断开自动重连。
 """
 
 import os
 import sys
 import time
+import threading
+from contextlib import contextmanager
 from datetime import datetime, time as dtime
 
 import pandas as pd
+import psycopg2
 
 # 确保项目根在 sys.path
 _PROJ_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -32,10 +39,10 @@ if _PROJ_ROOT not in sys.path:
 
 from loguru import logger  # noqa: E402
 
-from lib.qdb import connect, query_df, executemany_batch, cutoff  # noqa: E402
-from lib.tq_client import init, close  # noqa: E402
-import importlib as _il
-_feishu = _il.import_module('feishu')  # noqa: E402
+from lib.qdb import connect, query_df, executemany_batch, cutoff, _ensure_alive  # noqa: E402
+from lib.tq_utils import classify_code, route_type_to_table, route_type  # noqa: E402
+from lib.tq_client import init  # noqa: E402
+from feishu import push_decision_aggregated, log_signals  # noqa: E402
 from lib.market_clock import is_trading_time, is_trading_day  # noqa: E402
 
 import collect.c1_pricevol as c1  # noqa: E402
@@ -69,7 +76,7 @@ _PLUGINS_DIR = os.path.join(_PROJ_ROOT, 'strategy', 'plugins')
 _LOG_DIR = os.path.join(_PROJ_ROOT, 'logs')
 os.makedirs(_LOG_DIR, exist_ok=True)
 logger.add(os.path.join(_LOG_DIR, 'runner_intraday_loop_{time:YYYYMMDD}.log'),
-           rotation='1 day', retention='30 days', encoding='utf-8')
+           rotation='50 MB', retention='30 days', encoding='utf-8')
 
 # qd_decisions 列顺序 (与 DDL 06_signals.sql 一致)
 _DECISION_COLS = ['decision_time', 'code', 'strategy_name',
@@ -93,8 +100,9 @@ _MONEY_FLOW_COLS = ['code', 'flow_time', 'main_net', 'big_order_diff',
 _BIG_ORDER_COLS = ['code', 'order_time', 'order_type', 'price', 'volume',
                    'amount', 'order_level', 'broker']
 
-# 模块级缓存: 注册表代码列表 (每 300s 刷新)
+# 模块级缓存: 注册表代码列表 + code_type 映射 (每 300s 刷新)
 _CACHED_CODES = None
+_CACHED_TYPES = None
 _CACHED_TS = 0.0
 
 # 板块资金流历史 (per block_code 保留最近 _SECTOR_FLOW_HISTORY_LEN 期, 供 _run_rotation detect 用)
@@ -104,13 +112,93 @@ _SECTOR_FLOW_HISTORY_LEN = 5
 # Alpha 引擎 (延时初始化, 进程内单例)
 _alpha_engine = None
 
+# ---------- 连接管理 (进程级双连接) ----------
+# _writer: 写连接 (executemany_batch)
+# _reader: 读连接 (query_df / query_one)
+# 连接数 = 2, 不再每轮新建/销毁。_ensure_* 每次调用时 ping, 断开自动重连。
+
+_writer = None
+_reader = None
+
+@contextmanager
+def qdb_conn():
+    """独立连接上下文管理器 (保留兼容, 新代码请使用 _ensure_writer/_ensure_reader)
+
+    每次 yield 一个新 psycopg2 连接, 退出时自动 close。
+    配置 TCP keepalive 缩短空闲超时检测间隔。
+    """
+    con = None
+    try:
+        con = psycopg2.connect(
+            host='127.0.0.1', port=8812, user='admin', password='quest',
+            database='qdb', connect_timeout=5,
+            keepalives=1, keepalives_idle=30,
+            keepalives_interval=10, keepalives_count=3,
+        )
+        yield con
+    finally:
+        if con is not None:
+            try:
+                con.close()
+            except Exception:
+                pass
+
+def _ensure_writer():
+    """获取/保活写连接 (进程级单例)"""
+    global _writer
+    _writer = _ensure_alive(_writer)
+    return _writer
+
+def _ensure_reader():
+    """获取/保活读连接 (进程级单例)"""
+    global _reader
+    _reader = _ensure_alive(_reader)
+    return _reader
+
+# ---------- 选股器缓存 (退化兜底) ----------
+
+class _FocusCache:
+    """线程安全的选股器缓存
+
+    当 DB 查询失败时, 用缓存兜底, 不回退到 all_stocks。
+    连续退化超过 3 次返回 None, 让上层跳过本轮。
+    """
+
+    def __init__(self):
+        self._lock = threading.Lock()
+        self._focus_all = None      # list | None
+        self._focus_stocks = None   # list | None
+        self._ts = 0.0              # 上次写入时间戳
+        self._degrade_count = 0     # 连续退化次数
+
+    def set(self, focus_all, focus_stocks):
+        with self._lock:
+            self._focus_all = list(focus_all) if focus_all else []
+            self._focus_stocks = list(focus_stocks) if focus_stocks else []
+            self._ts = time.time()
+            self._degrade_count = 0  # 写入成功重置退化计数
+
+    def get(self):
+        with self._lock:
+            if self._focus_all is None:
+                return None
+            # 缓存超过 10 分钟视为过时
+            if time.time() - self._ts > 600:
+                return None
+            if self._degrade_count >= 3:
+                logger.error('选股器连续退化 3 次, 放弃缓存, 跳过本轮')
+                return None
+            self._degrade_count += 1
+            logger.warning('选股器缓存兜底 (第{}次退化)', self._degrade_count)
+            return (list(self._focus_all), list(self._focus_stocks))
+
+_FOCUS_CACHE = _FocusCache()
 
 def _safe_float(v, default=0.0):
     try:
         return float(v)
     except (TypeError, ValueError):
         return default
-
 
 def _write_heartbeat(name):
     """写入心跳文件 (logs/heartbeats/{name}.ts)"""
@@ -123,7 +211,6 @@ def _write_heartbeat(name):
     except Exception:
         pass
 
-
 def _load_yaml():
     """读取 strategies.yaml"""
     import yaml
@@ -134,51 +221,85 @@ def _load_yaml():
         logger.warning('读取 {} 失败, 用默认值: {}', _YAML_PATH, e)
         return {}
 
+def _get_all_stock_codes(con, include_slow_types=False):
+    """从注册表取所有代码 + code_type 映射
 
-def _get_all_stock_codes(con):
-    """从注册表取所有股票代码 + 板块代码 + 指数代码
+    主轮 (include_slow_types=False): 个股 + 板块 6 类 + 指数
+    扩展轮 (include_slow_types=True): 额外包含 ETF/可转债/REITs
 
-    结果缓存 _CACHED_CODES, 每 300s 刷新一次 (避免每轮查 DB)。
+    结果缓存 _CACHED_CODES + _CACHED_TYPES, 每 300s 刷新一次。
+
+    Args:
+        con: 读连接
+        include_slow_types: 是否包含 ETF/可转债/REITs
+
+    Returns:
+        tuple: (list[str] codes, dict[str,str] code_type_map)
     """
-    now = time.time()
-    if _CACHED_CODES is not None and now - _CACHED_TS < 300:
-        return _CACHED_CODES
-    try:
-        df = query_df(con, "SELECT code FROM qd_code_registry WHERE code_type IN ('stock', 'sector', 'index')")
-        if not df.empty:
-            _CACHED_CODES = df['code'].tolist()
-            _CACHED_TS = now
-            return _CACHED_CODES
-    except Exception as e:
-        logger.warning('查询注册表失败: {}', e)
-    return []
+    global _CACHED_CODES, _CACHED_TS, _CACHED_TYPES
+    now_ts = time.time()
+    if _CACHED_CODES is not None and now_ts - _CACHED_TS < 300:
+        codes = _CACHED_CODES
+        code_type_map = _CACHED_TYPES or {}
+    else:
+        try:
+            df = query_df(con, "SELECT code, code_type FROM qd_code_registry WHERE is_active = true LATEST ON last_seen PARTITION BY code")
+            if df is not None and not df.empty:
+                _CACHED_CODES = df['code'].tolist()
+                _CACHED_TYPES = dict(zip(df['code'], df['code_type']))
+                _CACHED_TS = now_ts
+                codes = _CACHED_CODES
+                code_type_map = _CACHED_TYPES
+            else:
+                logger.warning('注册表为空')
+                return [], {}
+        except Exception as e:
+            logger.warning('查询注册表失败: {}', e)
+            return [], {}
 
+    # 主轮过滤: 排除 etf/kzz/reits
+    if not include_slow_types:
+        _SLOW_TYPES = {'etf', 'kzz', 'reits'}
+        filtered = [c for c in codes if code_type_map.get(c, '') not in _SLOW_TYPES]
+        return filtered, code_type_map
+    return codes, code_type_map
 
 def _get_focus_codes(con, all_stocks):
-    """动态选重点池, 失败回退全股票"""
+    """动态选重点池, 用缓存兜底
+
+    Returns:
+        tuple: (focus_all, focus_stocks, selector_detail) or ([], [], {}) 表示跳过本轮
+    """
     if not all_stocks:
-        return []
+        return [], [], {}
     try:
         pv = query_df(con,
-                      f"SELECT * FROM qd_pricevol "
-                      f"WHERE snapshot_time > '{cutoff(minutes=5)}'")
+                      f"SELECT code FROM qd_pricevol "
+                      f"WHERE snapshot_time >= '{cutoff(minutes=5)}'")
         mi = query_df(con,
-                      f"SELECT * FROM qd_stock_daily "
+                      f"SELECT code FROM qd_stock_daily "
                       f"WHERE date > '{cutoff(days=2)}'")
-        focus = select_focus_pool(pv, mi)
-        # 把板块/指数也加到 focus 池 (即使不在 pricevol 中)
+        focus_stocks, sel_detail = select_focus_pool(pv, mi) or ([], {})
+        # 把板块/指数也加到 focus_all (c2/c3 需要, c4 K线不需要)
+        focus_all = list(focus_stocks)
         try:
-            sector_codes = query_df(con, "SELECT code FROM qd_code_registry WHERE code_type IN ('sector', 'index')")
+            sector_codes = query_df(con, "SELECT code FROM qd_code_registry WHERE is_active = true AND code_type IN ('sector','index','industry_l1','industry_l2','industry_l3','concept','style','region') LATEST ON last_seen PARTITION BY code")
             if sector_codes is not None and not sector_codes.empty:
-                extra = [c for c in sector_codes['code'].tolist() if c not in focus]
-                focus = focus + extra if focus else extra
+                extra = [c for c in sector_codes['code'].tolist() if c not in focus_all]
+                focus_all = focus_all + extra if focus_all else extra
         except Exception:
             pass
-        return focus if focus else all_stocks
+        result = (focus_all if focus_all else all_stocks,
+                  focus_stocks if focus_stocks else all_stocks)
+        # 写入缓存 (退化时用)
+        _FOCUS_CACHE.set(result[0], result[1])
+        return result[0], result[1], sel_detail
     except Exception as e:
-        logger.warning('选股器失败, 回退全股票: {}', e)
-        return all_stocks
-
+        logger.warning('选股器查询失败: {}', e)
+        cached = _FOCUS_CACHE.get()
+        if cached is not None:
+            return cached[0], cached[1], {}
+        return [], [], {}
 
 def _merge_intraday(snap, intra):
     """C8 拆表后: 把 qd_stock_intraday (每 code 最新) merge 进快照表, 返回完整字段 df
@@ -195,28 +316,32 @@ def _merge_intraday(snap, intra):
     snap2 = snap.drop(columns=[c for c in intra_cols if c in snap.columns])
     return snap2.merge(intra_latest[['code'] + intra_cols], on='code', how='left')
 
-
 def _build_context(con, graph):
-    """构建策略上下文 (一次采集全策略共享)"""
+    """构建策略上下文 (一次采集全策略共享)
+
+    时间查询统一用 >= 避免边界问题：
+    - 原因：c2/c3 采集开始时间 < 采集完成时间，
+      若用 > cutoff，可能漏掉采集开始时刻的数据。
+    """
     ctx = StrategyContext(timestamp=datetime.now(), is_trading=True)
     ctx.graph = graph
     try:
         ctx.pricevol_df = query_df(
             con, f"SELECT * FROM qd_pricevol "
-                 f"WHERE snapshot_time > '{cutoff(minutes=5)}'")
+                 f"WHERE snapshot_time >= '{cutoff(minutes=5)}'")
     except Exception:
         pass
     try:
         ctx.snapshot_focus_df = query_df(
             con, f"SELECT * FROM qd_stock_snapshot "
-                 f"WHERE snapshot_time > '{cutoff(minutes=5)}'")
+                 f"WHERE snapshot_time >= '{cutoff(minutes=5)}'")
     except Exception:
         pass
     # C8 拆表修复: 读 qd_stock_intraday, merge 进 snapshot_focus_df (按 code 取最新)
     try:
         intra = query_df(
             con, f"SELECT * FROM qd_stock_intraday "
-                 f"WHERE snapshot_time > '{cutoff(minutes=5)}'")
+                 f"WHERE snapshot_time >= '{cutoff(minutes=5)}'")
         ctx.intraday_df = intra
         ctx.snapshot_focus_df = _merge_intraday(ctx.snapshot_focus_df, intra)
     except Exception as e:
@@ -224,7 +349,7 @@ def _build_context(con, graph):
     # GP 日级数据 (连板率/次日红盘率/机构等, 盘前/盘后用): 每 code 最新 date
     try:
         ctx.gp_df = query_df(con, f"SELECT * FROM qd_stock_gpjy "
-                              f"WHERE date > '{cutoff(days=30)}'")
+                              f"WHERE date >= '{cutoff(days=30)}'")
     except Exception as e:
         logger.warning('GP 加载失败: {}', e)
     # 龙虎榜 (T+1, p13/p14 用): 从 qd_lhb_detail 聚合每 code 最新一日席位 → ctx.lhb_data
@@ -238,26 +363,26 @@ def _build_context(con, graph):
         # c3 intraday 写 qd_stock_snapshot (含 ZAF/fHSL/Zjl 等实时字段, 由 snapshot_focus_df 承载)
         ctx.more_info_df = query_df(
             con, f"SELECT * FROM qd_stock_daily "
-                 f"WHERE date > '{cutoff(days=2)}'")
+                 f"WHERE date >= '{cutoff(days=2)}'")
     except Exception:
         pass
     try:
         ctx.indicators_df = query_df(
             con, f"SELECT * FROM qd_indicators "
-                 f"WHERE calc_time > '{cutoff(minutes=30)}'")
+                 f"WHERE calc_time >= '{cutoff(minutes=30)}'")
     except Exception:
         pass
     try:
         ctx.signals_df = query_df(
             con, f"SELECT * FROM qd_signals "
-                 f"WHERE signal_time > '{cutoff(minutes=10)}'")
+                 f"WHERE signal_time >= '{cutoff(minutes=10)}'")
     except Exception:
         pass
     # 大盘指数快照
     try:
         idx_df = query_df(
             con, f"SELECT * FROM qd_index_snapshot "
-                 f"WHERE snapshot_time > '{cutoff(minutes=2)}'")
+                 f"WHERE snapshot_time >= '{cutoff(minutes=2)}'")
         if not idx_df.empty:
             idx_df = idx_df.sort_values('snapshot_time') \
                 .groupby('code', as_index=False).last()
@@ -270,39 +395,38 @@ def _build_context(con, graph):
     try:
         ctx.auction_df = query_df(
             con, f"SELECT * FROM qd_auction_snapshot "
-                 f"WHERE auction_time > '{cutoff(minutes=30)}'")
+                 f"WHERE auction_time >= '{cutoff(minutes=30)}'")
     except Exception:
         pass
     # 大单事件 (p12)
     try:
         ctx.big_order_df = query_df(
             con, f"SELECT * FROM qd_big_order "
-                 f"WHERE order_time > '{cutoff(minutes=30)}'")
+                 f"WHERE order_time >= '{cutoff(minutes=30)}'")
     except Exception:
         pass
     # 个股资金流 (p08/p12)
     try:
         ctx.money_flow_df = query_df(
             con, f"SELECT * FROM qd_money_flow "
-                 f"WHERE flow_time > '{cutoff(minutes=10)}'")
+                 f"WHERE flow_time >= '{cutoff(minutes=10)}'")
     except Exception:
         pass
     # 板块资金流 (p07)
     try:
         ctx.sector_flow_df = query_df(
             con, f"SELECT * FROM qd_sector_flow "
-                 f"WHERE flow_time > '{cutoff(minutes=10)}'")
+                 f"WHERE flow_time >= '{cutoff(minutes=10)}'")
     except Exception:
         pass
     # 共振分析 (p06)
     try:
         ctx.resonance_df = query_df(
             con, f"SELECT * FROM qd_resonance "
-                 f"WHERE resonance_time > '{cutoff(minutes=30)}'")
+                 f"WHERE resonance_time >= '{cutoff(minutes=30)}'")
     except Exception:
         pass
     return ctx
-
 
 def _process_decisions(con, decisions, risk, ctx=None):
     """风控过滤 + 情绪门控 + 写 qd_decisions + 飞书推送
@@ -362,15 +486,14 @@ def _process_decisions(con, decisions, risk, ctx=None):
         try:
             # 1. 入桶聚合推送 (5min 一张卡, 解决刷屏)
             for s in feishu_signals:
-                _feishu.push_decision_aggregated(s)
+                push_decision_aggregated(s)
             # 2. 表格写入 (推送=False, 表格=True)
-            _feishu.log_signals(feishu_signals, push=False, sheet=True, bitable=True)
+            log_signals(feishu_signals, push=False, sheet=True, bitable=True)
         except Exception as e:
             logger.warning('飞书写入失败: {}', e)
     if rows:
         n = executemany_batch(con, 'qd_decisions', _DECISION_COLS, rows)
         logger.info('写入 qd_decisions: {} 行', n)
-
 
 def _run_resonance(con, ctx):
     """共振分析 → qd_resonance (60s/轮)"""
@@ -380,7 +503,7 @@ def _run_resonance(con, ctx):
             return
         now = datetime.now()
         rows = []
-        for _, r in df.iterrows():
+        for r in df.to_dict('records'):
             score = _safe_float(r.get('resonance_score'))
             if score >= 80:
                 sig = 'strong_buy'
@@ -396,7 +519,6 @@ def _run_resonance(con, ctx):
         logger.info('写入 qd_resonance: {} 行', len(rows))
     except Exception as e:
         logger.warning('共振分析失败: {}', e)
-
 
 def _run_sector_flow(con, ctx):
     """板块资金流 → qd_sector_flow (60s/轮), 并返回 per-block agg 给 _run_rotation 用
@@ -418,7 +540,7 @@ def _run_sector_flow(con, ctx):
     try:
         mi = sf_src
         sector_agg = {}  # block_code → {main_net, total_flow, count}
-        for _, r in mi.iterrows():
+        for r in mi.to_dict('records'):
             code = r.get('code')
             if not code:
                 continue
@@ -453,7 +575,6 @@ def _run_sector_flow(con, ctx):
     except Exception as e:
         logger.warning('板块资金流失败: {}', e)
         return {}
-
 
 def _run_rotation(sector_agg_now):
     """板块轮动检测 → ctx.rotation_signal (60s/轮)
@@ -506,7 +627,6 @@ def _run_rotation(sector_agg_now):
         logger.warning('板块轮动检测失败: {}', e)
         return None
 
-
 def _run_big_order(con, ctx):
     """大单检测 → qd_big_order (60s/轮), 刷新 ctx.big_order_df 供 p12 当轮读取
 
@@ -556,7 +676,6 @@ def _run_big_order(con, ctx):
     except Exception as e:
         logger.warning('大单检测失败: {}', e)
 
-
 def _run_money_flow(con, ctx):
     """个股明暗资金 → qd_money_flow (60s/轮), 并刷新 ctx.money_flow_df 供 p08/p12 当轮读取
 
@@ -587,21 +706,18 @@ def _run_money_flow(con, ctx):
     except Exception as e:
         logger.warning('个股资金流失败: {}', e)
 
-
 def run(con=None, max_rounds=None, force=False):
     """盘中主循环
 
     Args:
-        con: psycopg2 连接, None 则自建
+        con: (废弃) 保留签名兼容, 内部通过 _ensure_writer()/_ensure_reader() 管理双连接
         max_rounds: 跑完 N 轮后退出 (None=无限, 盘中正常用); 盘后验证给 1
         force: True 时跳过 is_trading_day/is_trading_time/15:00 时间门控
                (盘后端到端验证用; 生产调度不要开)
     """
+    global _writer, _reader
     logger.info('===== intraday_loop 启动 {} max_rounds={} force={} =====',
                 datetime.now(), max_rounds, force)
-    own_con = con is None
-    if own_con:
-        con = connect()
 
     # 加载调度频率 + 风控配置 + 订阅池
     cfg = _load_yaml()
@@ -609,6 +725,7 @@ def run(con=None, max_rounds=None, force=False):
     interval = int(sched.get('pricevol_interval', 10))
     kline_interval = int(sched.get('kline_interval', 60))
     kline_every = max(1, kline_interval // interval)
+
     watchlist = cfg.get('watchlist', []) or []
 
     risk_cfg = cfg.get('risk', {})
@@ -656,123 +773,145 @@ def run(con=None, max_rounds=None, force=False):
                     continue
 
             t0 = time.time()
+            now = datetime.now()
+
             logger.info('--- 第 {} 轮 {} ---',
                         round_idx, now.strftime('%H:%M:%S'))
 
-            # 每轮从数据库重新读取全场代码 (避免内存缓存过期)
-            all_stocks = _get_all_stock_codes(con)
+            # 每轮用读连接获取代码注册表 (扩展轮含 ETF/可转债/REITs)
+            all_stocks, code_type_map = _get_all_stock_codes(_ensure_reader(),
+                include_slow_types=(round_idx % 60 == 0))
 
             # === 10s 采集 + 实盘异动 ===
+            # c1~c3 共读写双连接, 互不影响
+            _writer = _ensure_writer()
             try:
-                c1.run(con=con)
+                c1.run(con=_writer)
             except Exception as e:
                 logger.error('c1 失败: {}', e)
 
-            focus = _get_focus_codes(con, all_stocks)
-
+            # 选股器 (用读连接, 缓存兜底)
+            _reader = _ensure_reader()
+            focus_all, focus_stocks, sel_detail = _get_focus_codes(_reader, all_stocks)
+            # 记录重点池轮次快照 (每轮 1 行, 用于查询和分析)
             try:
-                c2.run(focus_codes=focus, all_codes=all_stocks, con=con)
-            except Exception as e:
-                logger.error('c2 失败: {}', e)
+                import json
+                snap_now = datetime.now()
+                focus_stock_codes_json = json.dumps(focus_stocks[:100] if focus_stocks else [], ensure_ascii=False)
+                focus_all_codes_json = json.dumps(focus_all[:100] if focus_all else [], ensure_ascii=False)
+                sel_detail_json = json.dumps(sel_detail, ensure_ascii=False)
+                executemany_batch(_writer, 'qd_focus_log',
+                    ['snapshot_time', 'focus_stock_count', 'focus_all_count',
+                     'focus_stock_codes', 'focus_all_codes', 'selector_detail'],
+                    [(snap_now,
+                      len(focus_stocks) if focus_stocks else 0,
+                      len(focus_all) if focus_all else 0,
+                      focus_stock_codes_json, focus_all_codes_json, sel_detail_json)])
+            except Exception:
+                pass
+            # 推送 focus 池到飞书 (每 60 轮约 10 分钟推送一次)
+            if focus_all and round_idx > 0 and round_idx % 60 == 0:
+                try:
+                    from feishu.push import push_focus_pool
+                    pv = query_df(_reader, f"SELECT code FROM qd_pricevol "
+                                          f"WHERE snapshot_time >= '{cutoff(minutes=5)}'")
+                    if pv is not None and not pv.empty:
+                        pool_df = pv[pv['code'].isin(focus_all)].head(50)
+                        push_focus_pool(pool_df)
+                except Exception as e:
+                    logger.warning('focus 池推送失败: {}', e)
+            focus = focus_all  # 向下兼容
 
-            try:
-                c3.run(focus, mode='intraday', con=con)
-            except Exception as e:
-                logger.error('c3 失败: {}', e)
+            if focus:
+                # c2 采集: focus + all_codes 全场 (~43s/轮)
+                _writer = _ensure_writer()
+                try:
+                    c2.run(focus_codes=focus, all_codes=all_stocks, code_type_map=code_type_map, con=_writer)
+                except Exception as e:
+                    logger.error('c2 失败: {}', e)
 
-            # 实盘异动检测 (10s, c2+c3 后; MonitorState 跨轮, critical 即时飞书)
-            try:
-                # C8 拆表: 读快照+intraday 两表, 按 code merge 后传给 intraday_engine
-                snap = query_df(con, f"SELECT * FROM qd_stock_snapshot "
-                                    f"WHERE snapshot_time > '{cutoff(seconds=30)}'")
-                intra_snap = query_df(con, f"SELECT * FROM qd_stock_intraday "
-                                     f"WHERE snapshot_time > '{cutoff(seconds=30)}'")
-                snap = _merge_intraday(snap, intra_snap)
-                if snap is not None and not snap.empty:
-                    intraday_engine.run(con, snap, watchlist)
-            except Exception as e:
-                logger.error('intraday_engine 失败: {}', e)
+                # c3 采集: focus 池 intraday
+                try:
+                    c3.run(focus, mode='intraday', code_type_map=code_type_map, con=_writer)
+                except Exception as e:
+                    logger.error('c3 失败: {}', e)
+
+                # 实盘异动检测 (10s, c2+c3 后)
+                _reader = _ensure_reader()
+                try:
+                    snap = query_df(_reader, f"SELECT * FROM qd_stock_snapshot "
+                                            f"WHERE snapshot_time > '{cutoff(seconds=30)}'")
+                    intra_snap = query_df(_reader, f"SELECT * FROM qd_stock_intraday "
+                                                 f"WHERE snapshot_time > '{cutoff(seconds=30)}'")
+                    snap = _merge_intraday(snap, intra_snap)
+                    if snap is not None and not snap.empty:
+                        intraday_engine.run(_writer, snap, watchlist)
+                except Exception as e:
+                    logger.error('intraday_engine 失败: {}', e)
 
             # === 60s 任务: K 线 → 指标 → 信号 → 情绪 → 策略 ===
-            # k4→k1→k2 必须按顺序执行, 因为 k2 依赖 k1 产出 qd_signals
-            # 策略 ctx 也在此块构建, 依赖 k2 的 qd_signals
-            if round_idx % kline_every == 0:
+            if round_idx % kline_every == 0 and focus_stocks:
+                # c4_kline 自建连接, 不复用外部 con
                 try:
-                    c4.run(all_stocks, period='1m', count=1, con=con)
+                    c4.run(focus_stocks, period='1m', count=1)
                 except Exception as e:
                     logger.error('c4 1m 失败: {}', e)
                 try:
-                    c4.run(all_stocks, period='5m', count=1, con=con)
+                    c4.run(focus_stocks, period='5m', count=1)
                 except Exception as e:
                     logger.error('c4 5m 失败: {}', e)
-                # k5 合成当天 K (get_market_data 只给历史, 当天 K 必须本地合成;
-                # 在 k1 之前, 让 k1 读到今天的 5m K)
+
+                # 60s 块: 先取写/读连接
+                _writer = _ensure_writer()
+                # k5/k1/k2 写库
                 try:
-                    k5.run(con=con)
+                    k5.run(con=_writer)
                 except Exception as e:
                     logger.error('k5 合成失败: {}', e)
                 try:
-                    k1.run(con=con)
+                    k1.run(con=_writer)
                 except Exception as e:
                     logger.error('k1 失败: {}', e)
                 try:
-                    k2.run(con=con)
+                    k2.run(con=_writer)
                 except Exception as e:
                     logger.error('k2 失败: {}', e)
-                # 构建 ctx (依赖 qd_signals 已有数据)
-                ctx = _build_context(con, graph)
-                # 大单检测 → qd_big_order + 刷新 ctx.big_order_df (须在策略遍历前, 供 p12)
-                _run_big_order(con, ctx)
-                # 个股明暗资金 → qd_money_flow + 刷新 ctx.money_flow_df (须在策略遍历前, 供 p08/p12)
-                _run_money_flow(con, ctx)
-                # 板块资金流 (前移到策略遍历前; 供 _run_rotation → ctx.rotation_signal 给 p05)
-                sector_agg_now = _run_sector_flow(con, ctx)
-                # 板块轮动检测 → ctx.rotation_signal (依赖 ≥2 期历史)
+                # 构建 ctx (纯读)
+                _reader = _ensure_reader()
+                ctx = _build_context(_reader, graph)
+                # 大单检测 (写)
+                _run_big_order(_writer, ctx)
+                # 个股明暗资金 (写)
+                _run_money_flow(_writer, ctx)
+                # 板块资金流 (写)
+                sector_agg_now = _run_sector_flow(_writer, ctx)
+                # 板块轮动检测 (纯内存)
                 rot_sig = _run_rotation(sector_agg_now)
                 if rot_sig is not None:
                     ctx.rotation_signal = rot_sig
-                # H1 护栏: 首轮校验策略 required_fields 是否在 ctx 列中 (一次性, 暴露字段错配)
+                # H1 护栏: 首轮校验
                 if not fields_checked:
                     missing = StrategyRegistry.validate_required_fields(ctx)
                     if missing:
                         logger.warning('字段护栏: {} 处 required_fields 缺失 (见上文 error 日志)',
                                        len(missing))
                     fields_checked = True
-                # k3 大盘情绪 (挂 ctx.sentiment 供 p17/p18 + buy 门控; 必须在遍历策略前)
+                # k3 大盘情绪 (写 qd_sentiment_*)
                 try:
-                    snt = k3.run(con, ctx)
+                    snt = k3.run(_writer, ctx)
                     ctx.sentiment = snt
                     ctx.emotion_rating = snt.get('emotion_order')
                     ctx.divergence_signals = snt.get('divergences')
                 except Exception as e:
                     logger.error('k3 情绪失败: {}', e)
 
-                # k4 深度情绪 (5min/轮: 每 5 次 60s 块跑一次)
-                _k4_deep_round = getattr(_run_rotation, '_k4_deep_round', 0) + 1
-                _run_rotation._k4_deep_round = _k4_deep_round
-                if _k4_deep_round % 5 == 0:
-                    try:
-                        k4_deep = k4.run(con, ctx)
-                        ctx.sentiment_deep = k4_deep
-                    except Exception as e:
-                        logger.error('k4 深度情绪失败: {}', e)
-
-                    # k4 板块热力图 + 梯队 (同 5min 周期)
-                    try:
-                        k4_heatmap.run(con, ctx)
-                    except Exception as e:
-                        logger.error('k4 板块热力图失败: {}', e)
-
-                    # k4 打板梯队 (同 5min 周期)
-                    try:
-                        k4_ladder.run(con, ctx)
-                    except Exception as e:
-                        logger.error('k4 打板梯队失败: {}', e)
-                # 共振分析 (先于策略评估, 确保 ctx.resonance_df 为本轮数据)
-                _run_resonance(con, ctx)
-                # 因子引擎: AlphaEngine → alpha_df (挂 ctx 供 p20-p26 消费)
+                # k4 已拆出独立进程, 跳过
+                # 共振分析 (写)
+                _run_resonance(_writer, ctx)
+                # 因子引擎 (纯内存)
                 try:
                     from compute.alpha_engine import AlphaEngine
+                    global _alpha_engine
                     if _alpha_engine is None:
                         _alpha_engine = AlphaEngine.from_yaml(_YAML_PATH)
                     if _alpha_engine is not None:
@@ -783,7 +922,7 @@ def run(con=None, max_rounds=None, force=False):
                             ctx.top_candidates = rank_sector_neutral(alpha_df, top_n=50)
                 except Exception as e:
                     logger.error('AlphaEngine 失败: {}', e)
-                # 遍历策略
+                # 遍历策略 (纯内存)
                 decisions = []
                 for name, cls in StrategyRegistry.get_all().items():
                     try:
@@ -794,18 +933,17 @@ def run(con=None, max_rounds=None, force=False):
                         logger.error('策略 {} 评估失败: {}', name, e)
                 if decisions:
                     logger.info('策略产出 {} 条决策', len(decisions))
-                # 止损止盈出场检查 (遍历持仓)
+                # 止损止盈出场检查 (读 qd_pricevol)
                 for pos in list(risk.positions):
                     try:
                         price = _safe_float(pos.get('current_price', pos.get('cost_price')))
                         if price <= 0:
-                            from lib.qdb import query_one
-                            row = query_one(con,
+                            row = query_df(_reader,
                                 "SELECT Now FROM qd_pricevol WHERE code = %s "
                                 "ORDER BY snapshot_time DESC LIMIT 1",
                                 (pos.get('code', ''),))
-                            if row:
-                                price = _safe_float(row.get('Now'))
+                            if row is not None and not row.empty:
+                                price = _safe_float(row.iloc[0].get('Now'))
                         exit_signal = risk.check_exit(pos, price)
                         if exit_signal:
                             action, reason = exit_signal
@@ -817,14 +955,18 @@ def run(con=None, max_rounds=None, force=False):
                     except Exception as e:
                         logger.warning('止损止盈检查失败 {}: {}', pos.get('code'), e)
 
-                # 风控 + 飞书推送
-                _process_decisions(con, decisions, risk, ctx)
+                # 风控 + 飞书推送 (写 qd_decisions)
+                _process_decisions(_writer, decisions, risk, ctx)
 
             # 心跳: 主循环每轮刷新时间戳
             _write_heartbeat('intraday_loop')
 
             # 轮次计数放在最后 (确保 k4%6 在本轮开始时正确判定)
             round_idx += 1
+
+            # 每轮结束释放内存
+            import gc
+            gc.collect()
 
             # 盘后验证: 跑完 max_rounds 轮退出
             if max_rounds is not None and round_idx >= max_rounds:
@@ -838,10 +980,19 @@ def run(con=None, max_rounds=None, force=False):
     except KeyboardInterrupt:
         logger.info('Ctrl+C 退出盘中主循环')
     finally:
+        if _writer is not None:
+            try:
+                _writer.close()
+            except Exception:
+                pass
+            _writer = None
+        if _reader is not None:
+            try:
+                _reader.close()
+            except Exception:
+                pass
+            _reader = None
         logger.info('===== intraday_loop 退出 (共 {} 轮) =====', round_idx)
-        if own_con:
-            con.close()
-
 
 def main():
     import signal
@@ -853,15 +1004,10 @@ def main():
         signal.signal(signal.SIGBREAK, _graceful_exit)
     signal.signal(signal.SIGTERM, _graceful_exit)
 
-    init()
-    try:
-        # 盘后端到端验证: EOD_FORCE=1 EOD_MAX_ROUNDS=1 python runner/intraday_loop.py
-        max_rounds = int(os.environ.get('EOD_MAX_ROUNDS', '0')) or None
-        force = bool(os.environ.get('EOD_FORCE'))
-        run(max_rounds=max_rounds, force=force)
-    finally:
-        close()
-
+    # 盘后端到端验证: EOD_FORCE=1 EOD_MAX_ROUNDS=1 python runner/intraday_loop.py
+    max_rounds = int(os.environ.get('EOD_MAX_ROUNDS', '0')) or None
+    force = bool(os.environ.get('EOD_FORCE'))
+    run(max_rounds=max_rounds, force=force)
 
 if __name__ == '__main__':
     main()

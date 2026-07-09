@@ -45,7 +45,7 @@ from lib.relation_graph import get_stock_sectors, get_sector_raw_type, _sector_m
 _LOG_DIR = os.path.join(_PROJ_ROOT, 'logs')
 os.makedirs(_LOG_DIR, exist_ok=True)
 logger.add(os.path.join(_LOG_DIR, 'k4_ladder_tracker_{time:YYYYMMDD}.log'),
-           rotation='1 day', retention='30 days', encoding='utf-8')
+           rotation='50 MB', retention='30 days', encoding='utf-8')
 
 DST = 'qd_ladder_tracker'
 _COLS = [
@@ -54,15 +54,13 @@ _COLS = [
     'calc_duration_ms',
 ]
 
-# 2进3 评分权重
+# 2进3 评分权重 (知识库规范: FCb/OpenAmo/OpenZTBuy/fHSL/fLianB)
 _W = {
-    'fcamo': 0.30,
-    'fcb': 0.15,
-    'lb_rate': 0.20,
-    'red_rate': 0.10,
-    'hsl': 0.10,
-    'sector': 0.10,
-    'break': 0.05,
+    'fcb': 0.30,
+    'open_amo': 0.25,
+    'open_zt_buy': 0.20,
+    'hsl': 0.15,
+    'flianb': 0.10,
 }
 
 _HEALTH_LABELS = [
@@ -155,15 +153,14 @@ def _load_snapshot_data(con):
 
 
 def _load_daily_data(con):
-    """读日级数据: 最近一天每 code 的 ConZAFDateNum, LastStartZT, EverZTCount
+    """读日级数据: 最近一天每 code 的 LastZTHzNum, LastStartZT, EverZTCount, OpenAmo, OpenZTBuy
 
     返回:
-      dict[stock_code, {con_zaf, last_start_zt, ever_zt}]
+      dict[stock_code, {last_zthz, last_start_zt, ever_zt, open_amo, open_zt_buy}]
     """
     try:
-        # 取最新一天的日级数据
         df = query_df(con,
-            "SELECT code, date, ConZAFDateNum, LastStartZT, EverZTCount "
+            "SELECT code, date, LastZTHzNum, LastStartZT, EverZTCount, OpenAmo, OpenZTBuy "
             "FROM qd_stock_daily "
             f"WHERE date > '{cutoff(days=2)}' "
             "ORDER BY date DESC")
@@ -173,9 +170,11 @@ def _load_daily_data(con):
         result = {}
         for _, r in latest.iterrows():
             result[r['code']] = {
-                'con_zaf': int(_sf(r.get('ConZAFDateNum'))),
+                'last_zthz': int(_sf(r.get('LastZTHzNum'))),
                 'last_start_zt': str(r.get('LastStartZT', '')),
                 'ever_zt': int(_sf(r.get('EverZTCount'))),
+                'open_amo': _sf(r.get('OpenAmo')),
+                'open_zt_buy': _sf(r.get('OpenZTBuy')),
             }
         return result
     except Exception as e:
@@ -241,12 +240,11 @@ def _compute_board_count(stock_code, snap, daily):
       snap: _load_snapshot_data 结果中该股的 dict 或 None
       daily: _load_daily_data 结果中该股的 dict 或 None
 
-    算法:
+    算法 (知识库规范):
       - 今日必须涨停 (FCAmo > 0), 否则不计入梯队
-      - ConZAFDateNum = 连续涨停天数 (含昨日)
-      - 若 ConZAFDateNum >= 2 → 延续连板
-      - 若 ConZAFDateNum < 1 且 FCAmo > 0 → 首板 (lb=1)
-      - 若 ConZAFDateNum < 1 且 FCAmo <= 0 → 未涨停, 不计入
+      - 用 LastZTHzNum (几板) 判定连板数
+      - LastZTHzNum > 0 → 延续连板，连板数 = LastZTHzNum
+      - LastZTHzNum <= 0 且 FCAmo > 0 → 首板 (lb=1)
 
     Returns:
       int: 连板数 (0 = 未涨停或断裂)
@@ -257,19 +255,10 @@ def _compute_board_count(stock_code, snap, daily):
     if fcamo <= 0:
         return 0  # 未涨停, 不计入
 
-    con_zaf = daily.get('con_zaf', 0) if daily else 0
-    last_start_zt = daily.get('last_start_zt', '') if daily else ''
-
-    if con_zaf >= 1:
-        # ConZAFDateNum 含昨日连续涨停天数, 今日继续涨停 → 计今日
-        if last_start_zt in ('是', '1', 'TRUE'):
-            return con_zaf + 1  # 含今日的连续涨停天数 (昨日 + 今日)
-        else:
-            # ConZAFDateNum 可能来自更早的连续记录, 但昨未涨停
-            return 1  # 今首板
-    else:
-        # ConZAFDateNum = 0, 今日突然涨停 → 首板
-        return 1
+    last_zthz = daily.get('last_zthz', 0) if daily else 0
+    if last_zthz > 0:
+        return last_zthz  # 知识库规范: LastZTHzNum = 几板
+    return 1  # 首板
 
 
 def _get_stock_name(stock_code, snap):
@@ -282,26 +271,25 @@ def _get_stock_name(stock_code, snap):
 # 2进3 评分
 # ══════════════════════════════════════════════════════════════
 
-def _score_2to3(stock_code, snap, gp, sector_flow):
-    """对一只 2 连板股进行晋级概率评分
+def _score_2to3(stock_code, snap, daily, sector_flow):
+    """对一只 2 连板股进行晋级概率评分 (知识库规范: FCb/OpenAmo/OpenZTBuy/fHSL/fLianB)
 
     Args:
       stock_code: 股票代码
-      snap: 快照数据 dict
-      gp: GP 股性数据 dict 或 None
+      snap: 快照数据 dict (含 fcamo/fcb/hsl/flianb)
+      daily: 日级数据 dict (含 open_amo/open_zt_buy)
       sector_flow: {block_code: main_net}
 
     Returns:
       (score, health, detail_dict)
     """
-    fcamo = _sf(snap.get('fcamo'))
     fcb = _sf(snap.get('fcb'))
     hsl = _sf(snap.get('hsl'))
-    zaf = _sf(snap.get('zaf'))
+    flianb = _sf(snap.get('flianb'))
+    fcamo = _sf(snap.get('fcamo'))
 
-    lb_rate = _sf(gp.get('lb_rate')) if gp else 0.0
-    red_rate = _sf(gp.get('red_rate')) if gp else 0.0
-    break_cnt = _sf(gp.get('break_cnt')) if gp else 0.0
+    open_amo = _sf(daily.get('open_amo')) if daily else 0.0
+    open_zt_buy = _sf(daily.get('open_zt_buy')) if daily else 0.0
 
     # 板块共振分数 (取所属板块最高主力净流)
     sectors = get_stock_sectors(stock_code) or []
@@ -315,36 +303,42 @@ def _score_2to3(stock_code, snap, gp, sector_flow):
             best_sector = bc
     sector_norm = _sf(_norm(min(sector_score, 1e9), -1e9, 1e9))
 
-    # 各维度评分 [0, 1]
-    fcamo_norm = _norm(fcamo, 0, 5e7)       # 0-5000万
-    fcb_norm = _norm(fcb, 0, 0.5)           # 0-0.5
-    lb_rate_norm = _norm(lb_rate, 0, 40)    # 0-40%
-    red_rate_norm = _norm(red_rate, 0, 80)  # 0-80%
-    hsl_norm = _hsl_score(hsl)               # 0-1, 最优区间
-    break_norm = max(0, 1 - _norm(break_cnt, 0, 5))  # 开板越多越低
+    # 各维度评分 [0, 1] (知识库规范: FCb/OpenAmo/OpenZTBuy/fHSL/fLianB)
+    open_amo_norm = _norm(open_amo, 0, 5e6)    # 0-500万
+    open_zt_buy_norm = _norm(open_zt_buy, 0, 2e6)  # 0-200万
+    fcb_norm = _norm(fcb, 0, 0.5)             # 0-0.5
+    flianb_norm = _norm(flianb, 0, 5)          # 0-5 量比
+    hsl_norm = _hsl_score(hsl)                  # 0-1, 最优区间
 
     total = (
-        fcamo_norm * _W['fcamo'] +
         fcb_norm * _W['fcb'] +
-        lb_rate_norm * _W['lb_rate'] +
-        red_rate_norm * _W['red_rate'] +
+        open_amo_norm * _W['open_amo'] +
+        open_zt_buy_norm * _W['open_zt_buy'] +
         hsl_norm * _W['hsl'] +
-        sector_norm * _W['sector'] +
-        break_norm * _W['break']
+        flianb_norm * _W['flianb']
     ) * 100  # 缩放到 0-100
 
     total = round(max(0, min(100, total)), 1)
     health = _health_label(total)
 
+    # FCb > 0.3 加分, FCb < 0.05 减分
+    if fcb > 0.3:
+        total = min(100, total + 10)
+    elif fcb < 0.05:
+        total = max(0, total - 15)
+
     detail = {
-        'fcamo_score': round(fcamo_norm * _W['fcamo'] * 100, 1),
         'fcb_score': round(fcb_norm * _W['fcb'] * 100, 1),
-        'lb_rate_score': round(lb_rate_norm * _W['lb_rate'] * 100, 1),
-        'red_rate_score': round(red_rate_norm * _W['red_rate'] * 100, 1),
+        'open_amo_score': round(open_amo_norm * _W['open_amo'] * 100, 1),
+        'open_zt_buy_score': round(open_zt_buy_norm * _W['open_zt_buy'] * 100, 1),
         'hsl_score': round(hsl_norm * _W['hsl'] * 100, 1),
-        'sector_score': round(sector_norm * _W['sector'] * 100, 1),
-        'break_score': round(break_norm * _W['break'] * 100, 1),
+        'flianb_score': round(flianb_norm * _W['flianb'] * 100, 1),
     }
+
+    # FCAmo==0 标弱势 (知识库规范)
+    if fcamo <= 0:
+        health = '弱势'
+        total = max(0, total - 30)
 
     return total, health, detail, best_sector
 
@@ -401,7 +395,7 @@ def _compute(con, snap_data, daily_data, gp_data, sector_flow):
         tiers.setdefault(tier_key, []).append(entry)
 
         if lb == 2:
-            score, health, detail, best_sector = _score_2to3(code, snap, gp, sector_flow)
+            score, health, detail, best_sector = _score_2to3(code, snap, daily_data.get(code), sector_flow)
             candidates_2to3.append({
                 'code': code,
                 'name': _get_stock_name(code, snap),
@@ -418,14 +412,16 @@ def _compute(con, snap_data, daily_data, gp_data, sector_flow):
                 'detail': detail,
             })
 
-    # 梯队内按 FCAmo 排序
-    for k in list(tiers.keys()):
-        tiers[k].sort(key=lambda x: -x['fcamo'])
-        tiers[k] = tiers[k][:5]  # 每梯队 Top 5
+    # 全局最强 Top3: 按连板数降序→FCAmo降序 (知识库规范)
+    flat_all = []
+    for k, items in tiers.items():
+        for item in items:
+            flat_all.append((k, item))
+    flat_all.sort(key=lambda x: (-x[0], -x[1]['fcamo']))
+    top3 = flat_all[:3]
 
-    # 2进3 按评分排序 Top 5
+    # 2进3 晋级池: 全局排序 (含评分降序)
     candidates_2to3.sort(key=lambda x: -x['total_score'])
-    candidates_2to3 = candidates_2to3[:_TOP_N_CANDIDATES]
 
     # 统计数据
     stats = {
@@ -456,8 +452,8 @@ def _compute(con, snap_data, daily_data, gp_data, sector_flow):
                 stats['total_4b'], stats['total_5b_plus'], stats['candidates_2to3'])
 
     return {
-        'lb_tiers': tiers,
-        'promotion_rankings': candidates_2to3,
+        'lb_tiers': top3,                # 全局最强 Top3 (知识库规范)
+        'promotion_rankings': candidates_2to3[:5],  # 2进3 Top5
         'sector_resonance': sector_res,
         'stats': stats,
     }
@@ -479,8 +475,6 @@ def push_ladder(result):
         bool
     """
     try:
-        import importlib as _il
-        _feishu = _il.import_module('feishu')
 
         lines = []
         ts = datetime.now().strftime('%H:%M')
@@ -497,23 +491,23 @@ def push_ladder(result):
                      f'5板+: {stats.get("total_5b_plus", 0)}家')
         lines.append('')
 
-        # 最强梯队 Top 3
-        tiers = result.get('lb_tiers', {})
+        # 最强梯队 Top 3 (知识库规范: 全局前3)
+        top3 = result.get('lb_tiers', [])
         lines.append('最强梯队 Top 3:')
-        ordered = ['5+', 4, 3, 2, 1]
-        for k in ordered:
-            stocks = tiers.get(k, [])
-            if not stocks:
+        for i, entry in enumerate(top3[:3]):
+            if isinstance(entry, tuple):
+                s = entry[1] if len(entry) > 1 else {}
+            elif isinstance(entry, dict):
+                s = entry
+            else:
                 continue
-            label = f'{k}板' if k != '5+' else '5板+'
-            s = stocks[0]
             fcamo_yi = _sf(s.get('fcamo')) / 1e8
             mark = ''
             if fcamo_yi >= 0.5:
                 mark = ' ⚡'
             elif fcamo_yi <= 0.05:
                 mark = ' ⚠'
-            lines.append(f'  {label} {s.get("name", s["code"])}  FCAmo{fcamo_yi:.2f}亿{mark}')
+            lines.append(f'  {i+1}. {s.get("name", s.get("code",""))}  FCAmo{fcamo_yi:.2f}亿{mark}')
         lines.append('')
 
         # 2进3 重点
@@ -549,12 +543,10 @@ def push_ladder(result):
         lines.append('k4 打板梯队 | 5min 自动推送')
 
         text = '\n'.join(lines)
-        ok = _feishu.push_text(text)
-        logger.info('打板梯队推送: {}', ok)
-        return ok
+        return text
     except Exception as e:
         logger.warning('打板梯队推送失败: {}', e)
-        return False
+        return ''
 
 
 # ══════════════════════════════════════════════════════════════
@@ -616,14 +608,7 @@ def run(con, ctx=None):
 
     _write_ladder(con, now, result, dur_ms)
 
-    # 有数据就推
     stats = result.get('stats', {})
-    has_lb = stats.get('total_zt', 0) > 0
-    if has_lb:
-        push_ladder(result)
-    else:
-        logger.info('打板梯队: 无连板数据, 不推送')
-
     logger.info('✓ k4 打板梯队完成 ({}ms): 连板={}家 2进3候选={}',
                 dur_ms, stats.get('total_zt', 0), stats.get('candidates_2to3', 0))
 

@@ -2,43 +2,43 @@
 
 脚本路径: K:\QuestDB_test\\collect\\c6_lhb.py
 用途: 盘后拉龙虎榜明细 + 识别知名营业部, 写 qd_lhb_detail + qd_lhb_broker
-数据源: tqcenter get_lhb_data(date)
+数据源: K:\\QTM\\longhubang.db3 (sqlite)
 入库表:
   - qd_lhb_detail  (龙虎榜明细, 按 lhb_date+code+broker_name 粒度)
   - qd_lhb_broker  (营业部画像, 当日聚合)
 频率: 盘后 15:30, 1 次/天
+
 字段映射 (qd_lhb_detail):
-  code          ← 上榜股票代码
-  lhb_date      ← 龙虎榜日期 (date 参数)
-  reason        ← 上榜原因
-  rank          ← 营业部在买5/卖5中的排名 (1-5)
-  buy_amount    ← 营业部买入额
-  sell_amount   ← 营业部卖出额
-  net_amount    ← buy_amount - sell_amount
-  broker_name   ← 营业部名称
-  broker_type   ← FAMOUS_BROKERS 识别 (hot_money_xz/institution/north_sh 等), 未识别为 ''
-  broker_label  ← BROKER_LABELS 标签 (拉萨天团/机构 等), 未识别为 ''
-字段映射 (qd_lhb_broker, 当日聚合):
-  broker_name       ← 营业部名称
-  update_time       ← datetime.now()
-  broker_type       ← FAMOUS_BROKERS 识别
-  broker_label      ← BROKER_LABELS
-  total_buy_30d     ← 当日该营业部累计买入额 (注: 30 日聚合由 compute 模块完成, 这里写当日值)
-  total_sell_30d    ← 当日累计卖出额
-  appear_count_30d  ← 当日上榜次数
-  hot_level         ← 热度评级 1-5 (按当日上榜次数)
+  code          ← stock_code
+  lhb_date      ← trade_date
+  reason        ← reason
+  reason_id     ← reason_id
+  direction     ← direction (B/S)
+  rank          ← rank
+  buy_amount    ← buyin_amount
+  buyin_ratio   ← buyin_ratio
+  sell_amount   ← sellout_amount
+  sellout_ratio ← sellout_ratio
+  net_amount    ← net_amount
+  broker_name   ← business_department
+  stock_name    ← stock_name (新增)
+  close_price   ← close_price (新增)
+  rise_and_fall ← rise_and_fall (新增)
+  broker_type   ← FAMOUS_BROKERS 识别
+  broker_label  ← BROKER_LABELS 标签
 
 说明:
-  - 入库 code 用标准代码 ('000001.SZ')
+  - 数据源从 tqcenter 改为 K:\\QTM\\longhubang.db3 (sqlite)
   - 买5/卖5 营业部逐个展开, 同一 (code, broker_name) 在买卖都出现时聚合 buy/sell
   - 营业部识别用 config/broker_list.py 的 FAMOUS_BROKERS / BROKER_LABELS
-  - qd_lhb_broker 当日画像: 30 日聚合理论上由 compute 模块做, c6 写当日值占位
-  - tqcenter COM 单进程串行, 用 safe_call 包装
 """
 
 import os
+import sqlite3
 import sys
-from datetime import datetime, date
+from datetime import datetime
+
+import pandas as pd
 
 _PROJ_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if _PROJ_ROOT not in sys.path:
@@ -46,22 +46,24 @@ if _PROJ_ROOT not in sys.path:
 
 from loguru import logger  # noqa: E402
 
-from lib.tq_client import safe_call, init, close  # noqa: E402
 from lib.qdb import connect, executemany_batch  # noqa: E402
 
 from config.broker_list import FAMOUS_BROKERS, BROKER_LABELS  # noqa: E402
-from tqcenter import tq  # noqa: E402
 
 _LOG_DIR = os.path.join(_PROJ_ROOT, 'logs')
 os.makedirs(_LOG_DIR, exist_ok=True)
 logger.add(os.path.join(_LOG_DIR, 'c6_lhb_{time:YYYYMMDD}.log'),
-           rotation='1 day', retention='30 days', encoding='utf-8')
+           rotation='50 MB', retention='30 days', encoding='utf-8')
+
+# QMT sqlite 路径
+QMT_LHB_PATH = r'K:\QTM\longhubang.db3'
 
 # qd_lhb_detail 列顺序 (与 DDL 12_lhb.sql 严格一致)
 LHB_DETAIL_COLS = [
-    'code', 'lhb_date', 'reason', 'rank',
-    'buy_amount', 'sell_amount', 'net_amount',
-    'broker_name', 'broker_type', 'broker_label',
+    'code', 'lhb_date', 'stock_name', 'close_price', 'rise_and_fall',
+    'reason', 'reason_id', 'direction', 'rank',
+    'buy_amount', 'buyin_ratio', 'sell_amount', 'sellout_ratio',
+    'net_amount', 'broker_name', 'broker_type', 'broker_label',
 ]
 
 # qd_lhb_broker 列顺序
@@ -69,25 +71,6 @@ LHB_BROKER_COLS = [
     'broker_name', 'update_time', 'broker_type', 'broker_label',
     'total_buy_30d', 'total_sell_30d', 'appear_count_30d', 'hot_level',
 ]
-
-# 字段名候选 (兼容中英文)
-_CODE_KEYS = ['code', '股票代码', 'Code']
-_REASON_KEYS = ['reason', '上榜原因', 'Reason']
-_BUY5_KEYS = ['买5', 'buy5', 'Buy5', 'buy_list', 'BuyList']
-_SELL5_KEYS = ['卖5', 'sell5', 'Sell5', 'sell_list', 'SellList']
-_BROKER_NAME_KEYS = ['name', '营业部名称', 'operator_name', 'seat']
-_BUY_AMT_KEYS = ['buy', '买入额', 'buy_amount', 'BuyMoney']
-_SELL_AMT_KEYS = ['sell', '卖出额', 'sell_amount', 'SellMoney']
-
-
-def _pick(d, keys, default=None):
-    """从 dict 按候选 key 取值"""
-    if not d:
-        return default
-    for k in keys:
-        if k in d and d[k] is not None:
-            return d[k]
-    return default
 
 
 def _identify_broker(broker_name):
@@ -109,116 +92,40 @@ def _identify_broker(broker_name):
     return ('', '')
 
 
-def parse_lhb_detail(data, lhb_date):
-    """解析龙虎榜明细 → (detail_rows, broker_agg)
-
-    Args:
-        data: get_lhb_data 返回 list[dict], 每个是一只股票
-        lhb_date: 龙榜日期 (date → datetime)
-
-    Returns:
-        detail_rows: list[tuple] 与 LHB_DETAIL_COLS 对应
-        broker_agg:  dict{broker_name: {'buy':, 'sell':, 'count':, 'type':, 'label':}}
-    """
-    detail_rows = []
-    broker_agg = {}
-
-    for item in (data or []):
-        code = _pick(item, _CODE_KEYS, '')
-        reason = _pick(item, _REASON_KEYS, '')
-        if not code:
-            continue
-
-        # 买5/卖5 营业部列表
-        buy5 = _pick(item, _BUY5_KEYS, []) or []
-        sell5 = _pick(item, _SELL5_KEYS, []) or []
-
-        # 按 (broker_name) 聚合, 买侧 rank=1..5, 卖侧 rank=1..5
-        # 同一 broker 在买卖都出现时, 合并 buy/sell, rank 取首次出现位置
-        seen = {}  # broker_name → rank
-
-        for idx, b in enumerate(buy5, start=1):
-            bname = _pick(b, _BROKER_NAME_KEYS, '')
-            if not bname:
-                continue
-            buy_amt = _pick(b, _BUY_AMT_KEYS, 0) or 0
-            sell_amt = _pick(b, _SELL_AMT_KEYS, 0) or 0
-            if bname not in seen:
-                seen[bname] = idx
-                btype, blabel = _identify_broker(bname)
-                detail_rows.append((
-                    code, lhb_date, reason, idx,
-                    buy_amt, sell_amt, buy_amt - sell_amt,
-                    bname, btype, blabel,
-                ))
-            # 营业部聚合
-            agg = broker_agg.setdefault(bname, {'buy': 0, 'sell': 0, 'count': 0})
-            agg['buy'] += buy_amt
-            agg['sell'] += sell_amt
-
-        for idx, s in enumerate(sell5, start=1):
-            bname = _pick(s, _BROKER_NAME_KEYS, '')
-            if not bname:
-                continue
-            buy_amt = _pick(s, _BUY_AMT_KEYS, 0) or 0
-            sell_amt = _pick(s, _SELL_AMT_KEYS, 0) or 0
-            if bname not in seen:
-                # 卖侧新出现的营业部
-                seen[bname] = idx
-                btype, blabel = _identify_broker(bname)
-                detail_rows.append((
-                    code, lhb_date, reason, idx,
-                    buy_amt, sell_amt, buy_amt - sell_amt,
-                    bname, btype, blabel,
-                ))
-            # 营业部聚合 (买5 已计入的不重复加, 但 sell 侧的 sell_amt 要补)
-            # 简化: 买5和卖5的 buy/sell 分别累加 (避免重复)
-            agg = broker_agg.setdefault(bname, {'buy': 0, 'sell': 0, 'count': 0})
-            agg['sell'] += sell_amt
-            if bname not in {x for x in seen if seen[x] != idx}:
-                agg['buy'] += buy_amt
-
-        # 上榜一次计数 +1
-        for bname in seen:
-            broker_agg.setdefault(bname, {'buy': 0, 'sell': 0, 'count': 0})
-            broker_agg[bname]['count'] += 1
-
-    return detail_rows, broker_agg
+def _safe_float(v, default=0.0):
+    """安全转 float"""
+    if v is None:
+        return default
+    try:
+        return float(v)
+    except (TypeError, ValueError):
+        return default
 
 
-def _build_broker_rows(broker_agg, update_time):
-    """构造 qd_lhb_broker 行
-
-    hot_level: 按当日上榜次数评级 1-5
-        count>=10 → 5, >=6 → 4, >=3 → 3, >=1 → 2, 否则 1
-    """
-    rows = []
-    for bname, agg in broker_agg.items():
-        btype, blabel = _identify_broker(bname)
-        cnt = agg['count']
-        if cnt >= 10:
-            hot = 5
-        elif cnt >= 6:
-            hot = 4
-        elif cnt >= 3:
-            hot = 3
-        elif cnt >= 1:
-            hot = 2
-        else:
-            hot = 1
-        rows.append((
-            bname, update_time, btype, blabel,
-            agg['buy'], agg['sell'], cnt, hot,
-        ))
-    return rows
+def _get_latest_date(con):
+    """获取 QuestDB 最新龙虎榜日期"""
+    try:
+        cur = con.cursor()
+        cur.execute("SELECT MAX(lhb_date) FROM qd_lhb_detail")
+        result = cur.fetchone()[0]
+        cur.close()
+        if result:
+            # result 是 datetime 或 string
+            if hasattr(result, 'strftime'):
+                return result.strftime('%Y-%m-%d')
+            return str(result)[:10]
+    except Exception:
+        pass
+    return None
 
 
-def run(date=None, con=None):
+def run(date=None, con=None, dry_run=False):
     """龙虎榜采集主入口
 
     Args:
         date: 龙虎榜日期 (datetime.date), None 用今天
         con:  psycopg2 连接, None 则自建
+        dry_run: True 时只查询不入库
 
     Returns:
         dict: {'qd_lhb_detail': n, 'qd_lhb_broker': n}
@@ -229,33 +136,123 @@ def run(date=None, con=None):
 
     if date is None:
         date = datetime.now().date()
+    date_str = date.strftime('%Y-%m-%d')
     # lhb_date 用当日 00:00:00 的 datetime (QuestDB TIMESTAMP)
     lhb_date = datetime(date.year, date.month, date.day)
 
     try:
-        logger.info('龙虎榜采集开始, date={}', date)
+        logger.info('龙虎榜采集开始, date={}', date_str)
 
-        # 1. 调用 get_lhb_data
-        data = safe_call(tq.get_lhb_data, date=date)
-        if not data:
-            logger.warning('get_lhb_data 返回空, date={}', date)
+        # 1. 连接 QMT sqlite
+        conn = sqlite3.connect(QMT_LHB_PATH)
+        conn.text_factory = lambda b: b.decode('utf-8', errors='ignore')
+
+        # 2. 查询 longhubang 表
+        df_lhb = pd.read_sql(
+            f"SELECT * FROM longhubang WHERE trade_date = '{date_str}'",
+            conn
+        )
+        if df_lhb.empty:
+            logger.warning('longhubang 无数据, date={}', date_str)
+            conn.close()
             return {'qd_lhb_detail': 0, 'qd_lhb_broker': 0}
 
-        logger.info('龙虎榜原始记录 {} 条', len(data) if hasattr(data, '__len__') else '?')
+        logger.info('longhubang {} 条', len(df_lhb))
 
-        # 2. 解析明细 + 营业部聚合
-        detail_rows, broker_agg = parse_lhb_detail(data, lhb_date)
+        # 3. 查询 trader_booth 表
+        df_booth = pd.read_sql(
+            f"SELECT * FROM trader_booth WHERE trade_date = '{date_str}'",
+            conn
+        )
+        conn.close()
+
+        logger.info('trader_booth {} 条', len(df_booth))
+
+        # dry_run 模式只查询不写入
+        if dry_run:
+            logger.info('dry_run 模式，跳过写入')
+            return {'qd_lhb_detail': len(df_booth), 'qd_lhb_broker': 0}
+
+        # 4. 解析明细行
+        detail_rows = []
+        broker_agg = {}  # broker_name → {buy, sell, count}
+
+        for _, r in df_booth.iterrows():
+            code = str(r.get('stock_code', ''))
+            stock_name = str(r.get('stock_name', '')) if r.get('stock_name') else ''
+            direction = str(r.get('direction', 'B'))
+            rank = int(r.get('rank', 0)) if r.get('rank') else 0
+            broker_name = str(r.get('business_department', ''))
+
+            buy_amt = _safe_float(r.get('buyin_amount'))
+            buy_ratio = _safe_float(r.get('buyin_ratio'))
+            sell_amt = _safe_float(r.get('sellout_amount'))
+            sell_ratio = _safe_float(r.get('sellout_ratio'))
+            net_amt = _safe_float(r.get('net_amount'))
+
+            # 回填 longhubang 信息
+            lhb_match = df_lhb[df_lhb['stock_code'] == code]
+            if not lhb_match.empty:
+                lhb_row = lhb_match.iloc[0]
+                reason = str(lhb_row.get('reason', ''))
+                reason_id = int(lhb_row.get('reason_id', 0)) if lhb_row.get('reason_id') else None
+                close_price = _safe_float(lhb_row.get('close_price'))
+                rise_fall = _safe_float(lhb_row.get('rise_and_fall'))
+                if not stock_name:
+                    stock_name = str(lhb_row.get('stock_name', '')) if lhb_row.get('stock_name') else ''
+            else:
+                reason = ''
+                reason_id = None
+                close_price = 0.0
+                rise_fall = 0.0
+
+            # 营业部识别
+            btype, blabel = _identify_broker(broker_name)
+
+            detail_rows.append((
+                code, lhb_date, stock_name, close_price, rise_fall,
+                reason, reason_id, direction, rank,
+                buy_amt, buy_ratio, sell_amt, sell_ratio,
+                net_amt, broker_name, btype, blabel,
+            ))
+
+            # 营业部聚合
+            agg = broker_agg.setdefault(broker_name, {'buy': 0.0, 'sell': 0.0, 'count': 0})
+            agg['buy'] += buy_amt
+            agg['sell'] += sell_amt
+            agg['count'] += 1
+
         logger.info('解析: 明细 {} 行, 营业部 {} 个', len(detail_rows), len(broker_agg))
 
-        # 3. 写 qd_lhb_detail
+        # 5. 写 qd_lhb_detail
         n_detail = executemany_batch(con, 'qd_lhb_detail', LHB_DETAIL_COLS, detail_rows)
 
-        # 4. 写 qd_lhb_broker (当日画像)
-        broker_rows = _build_broker_rows(broker_agg, datetime.now())
+        # 6. 写 qd_lhb_broker (当日画像)
+        broker_rows = []
+        for bname, agg in broker_agg.items():
+            btype, blabel = _identify_broker(bname)
+            cnt = agg['count']
+            if cnt >= 10:
+                hot = 5
+            elif cnt >= 6:
+                hot = 4
+            elif cnt >= 3:
+                hot = 3
+            elif cnt >= 1:
+                hot = 2
+            else:
+                hot = 1
+            broker_rows.append((
+                bname, datetime.now(), btype, blabel,
+                agg['buy'], agg['sell'], cnt, hot,
+            ))
         n_broker = executemany_batch(con, 'qd_lhb_broker', LHB_BROKER_COLS, broker_rows)
 
         logger.info('龙虎榜写入完成: detail={}, broker={}', n_detail, n_broker)
         return {'qd_lhb_detail': n_detail, 'qd_lhb_broker': n_broker}
+    except Exception as e:
+        logger.error('龙虎榜采集失败: {}', e)
+        raise
     finally:
         if own_con:
             con.close()
@@ -266,17 +263,57 @@ def main():
     parser = argparse.ArgumentParser(description='c6 龙虎榜采集')
     parser.add_argument('--date', type=str, default=None,
                         help='龙虎榜日期 YYYY-MM-DD, 默认今天')
+    parser.add_argument('--full', action='store_true',
+                        help='全量同步所有历史数据')
     args = parser.parse_args()
 
-    d = None
-    if args.date:
-        d = datetime.strptime(args.date, '%Y-%m-%d').date()
+    if args.full:
+        # 全量同步
+        con = connect()
+        try:
+            latest = _get_latest_date(con)
+            if latest:
+                logger.info('当前 QuestDB 最新日期: {}', latest)
+            else:
+                logger.info('QuestDB 无数据，将全量同步')
 
-    init()
-    try:
+            # 连接 sqlite 获取所有日期
+            conn = sqlite3.connect(QMT_LHB_PATH)
+            conn.text_factory = lambda b: b.decode('utf-8', errors='ignore')
+            df_dates = pd.read_sql(
+                "SELECT DISTINCT trade_date FROM longhubang ORDER BY trade_date",
+                conn
+            )
+            conn.close()
+
+            dates = df_dates['trade_date'].tolist()
+            logger.info('QMT 数据共 {} 个日期 {} ~ {}',
+                       len(dates),
+                       dates[0] if dates else 'N/A',
+                       dates[-1] if dates else 'N/A')
+
+            total_detail = 0
+            total_broker = 0
+            for i, d in enumerate(dates):
+                logger.info('[{}/{}] 同步 {}', i+1, len(dates), d)
+                try:
+                    result = run(date=datetime.strptime(d, '%Y-%m-%d').date(), con=con)
+                    total_detail += result.get('qd_lhb_detail', 0)
+                    total_broker += result.get('qd_lhb_broker', 0)
+                except Exception as e:
+                    logger.error('日期 {} 失败: {}', d, e)
+                    continue
+
+            logger.info('全量同步完成: detail {} 行, broker {} 行',
+                        total_detail, total_broker)
+        finally:
+            con.close()
+    else:
+        # 单日采集
+        d = None
+        if args.date:
+            d = datetime.strptime(args.date, '%Y-%m-%d').date()
         run(date=d)
-    finally:
-        close()
 
 
 if __name__ == '__main__':

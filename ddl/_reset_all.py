@@ -24,7 +24,7 @@ QDB = dict(
 
 LOG_DIR = PROJ_ROOT / 'logs'
 LOG_DIR.mkdir(exist_ok=True)
-logger.add(LOG_DIR / 'reset_all_{time:YYYYMMDD}.log', rotation='1 day', retention='30 days')
+logger.add(LOG_DIR / 'reset_all_{time:YYYYMMDD}.log', rotation='50 MB', retention='30 days')
 
 # DDL 文件顺序
 DDL_FILES = [
@@ -107,6 +107,33 @@ def main():
     logger.info(f'qd_ 表 ({len(tables)} 张):')
     for t in tables:
         logger.info(f'  {t}')
+
+    # === 修复: ALTER TABLE 补缺失列 (CREATE TABLE IF NOT EXISTS 不会补旧表) ===
+    # code_type 是这次改造加的新列, 旧表不会自动有
+    logger.info('=== 检查缺失列 ===')
+    _REPAIR = [
+        ('qd_stock_snapshot',  'code_type', 'SYMBOL'),
+        ('qd_sector_snapshot', 'code_type', 'SYMBOL'),
+        ('qd_index_snapshot',  'code_type', 'SYMBOL'),
+        ('qd_stock_intraday',  'code_type', 'SYMBOL'),
+        ('qd_stock_daily',     'code_type', 'SYMBOL'),
+        ('qd_sector_daily',    'code_type', 'SYMBOL'),
+        ('qd_index_daily',     'code_type', 'SYMBOL'),
+    ]
+    _repair_fixed = 0
+    for table, col, dtype in _REPAIR:
+        if table in tables:
+            try:
+                cur.execute(f'ALTER TABLE {table} ADD COLUMN {col} {dtype}')
+                logger.info(f'  补全: {table}.{col} ({dtype})')
+                _repair_fixed += 1
+            except Exception as e:
+                if 'already exists' in str(e).lower():
+                    continue
+                logger.warning(f'  补全失败 {table}.{col}: {str(e)[:80]}')
+    if _repair_fixed:
+        logger.info(f'补全 {_repair_fixed} 列')
+    logger.info('=== 修复完成 ===')
 
     con.close()
 

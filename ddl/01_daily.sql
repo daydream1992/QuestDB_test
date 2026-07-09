@@ -17,6 +17,7 @@
 -- ------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS qd_stock_daily (
     code            VARCHAR,
+    code_type       SYMBOL,
     date            TIMESTAMP,
     HqDate          VARCHAR,
     ZTPrice         DOUBLE,
@@ -80,6 +81,7 @@ DEDUP UPSERT KEYS(date, code);
 -- ------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS qd_sector_daily (
     code            VARCHAR,
+    code_type       SYMBOL,
     date            TIMESTAMP,
     HqDate          VARCHAR,
     ZAFYesterday    DOUBLE,
@@ -109,6 +111,7 @@ DEDUP UPSERT KEYS(date, code);
 -- ------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS qd_index_daily (
     code            VARCHAR,
+    code_type       SYMBOL,
     date            TIMESTAMP,
     HqDate          VARCHAR,
     ZAFYesterday    DOUBLE,

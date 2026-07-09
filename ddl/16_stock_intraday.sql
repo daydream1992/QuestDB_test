@@ -15,6 +15,7 @@
 -- ============================================================
 CREATE TABLE IF NOT EXISTS qd_stock_intraday (
     code          VARCHAR,
+    code_type     SYMBOL,
     snapshot_time TIMESTAMP,
     ZAF           DOUBLE,      -- 涨幅%
     ZTPrice       DOUBLE,      -- 涨停价

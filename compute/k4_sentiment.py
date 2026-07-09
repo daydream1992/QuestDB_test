@@ -39,7 +39,7 @@ from lib.qdb import connect, query_df, executemany_batch, cutoff
 _LOG_DIR = os.path.join(_PROJ_ROOT, 'logs')
 os.makedirs(_LOG_DIR, exist_ok=True)
 logger.add(os.path.join(_LOG_DIR, 'k4_sentiment_deep_{time:YYYYMMDD}.log'),
-           rotation='1 day', retention='30 days', encoding='utf-8')
+           rotation='50 MB', retention='30 days', encoding='utf-8')
 
 DST_DEEP = 'qd_sentiment_deep'
 _DEEP_COLS = [
@@ -492,9 +492,6 @@ def push_panoramic(result):
         bool
     """
     try:
-        import importlib as _il
-        _feishu = _il.import_module('feishu')
-
         idx = result.get('index_readings', {})
         breadth = result.get('breadth', {})
         cap = result.get('capital_flow', {})
@@ -539,7 +536,9 @@ def push_panoramic(result):
         fbl_v = breadth.get('fbl', 0)
 
         lines.append(f'── 涨跌全景 ──')
-        lines.append(f'  涨 {uc}  跌 {dc}  (涨跌比 {breadth.get("udr", "-"):.2f})')
+        udr_v = breadth.get('udr')
+        udr_str = f'{udr_v:.2f}' if isinstance(udr_v, (int, float)) else str(udr_v or '-')
+        lines.append(f'  涨 {uc}  跌 {dc}  (涨跌比 {udr_str})')
         lines.append(f'  涨停 {zt}  跌停 {dt_c}  炸板 {brk}  封板率 {fbl_v:.0f}%')
         lines.append('')
 
@@ -572,12 +571,10 @@ def push_panoramic(result):
         lines.append(f'k4 深度情绪 | 5min 自动推送')
 
         text = '\n'.join(lines)
-        ok = _feishu.push_text(text)
-        logger.info('全景推送: {}', ok)
-        return ok
+        return text
     except Exception as e:
         logger.warning('k4 全景推送失败: {}', e)
-        return False
+        return '' 
 
 
 # ══════════════════════════════════════════════════════════════
@@ -675,29 +672,10 @@ def run(con, ctx=None):
     dur_ms = int((time.time() - t0) * 1000)
     _write_deep(con, now, result, dur_ms)
 
-    # 推送 (有拐点信号或背离就推, 否则每轮都推 — 用户要的是「一眼看到」)
-    # 拐点 / 背离 必推; 普通轮次静默写库
-    should_push = turn is not None or len(divs) > 0
-
-    if should_push:
-        push_panoramic(result)
-
-    # 飞书多维表格写入 (每 5min 一行, 不管有没有信号)
-    try:
-        import importlib as _il
-        _bw = _il.import_module('feishu.bitable_writer')
-        bitable_token = getattr(_bw._cfg, 'BITABLE_TOKEN', '')
-        if bitable_token:
-            _bw.write_panorama_row(bitable_token, result)
-        else:
-            logger.debug('BITABLE_TOKEN 未配置, 跳过全景情绪写表')
-    except Exception as e:
-        logger.warning('全景情绪写多维表格失败: {}', e)
-
-    logger.info('✓ k4 完成 ({}ms): PG={} {} 拐点={} 背离={} 推送={}',
+    logger.info('✓ k4 完成 ({}ms): PG={} {} 拐点={} 背离={}',
                 dur_ms, pg, sig,
                 turn['type'] if turn else '无',
-                len(divs), should_push)
+                len(divs))
 
     if ctx is not None:
         ctx.sentiment_deep = result

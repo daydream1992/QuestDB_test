@@ -29,7 +29,7 @@ if _TQCENTER_PATH and _TQCENTER_PATH not in sys.path:
     sys.path.insert(0, _TQCENTER_PATH)
 
 from tqcenter import tq
-from lib.tq_client import safe_call
+from lib.tq_client import safe_call, init as tq_init
 from lib.qdb import connect, executemany_batch
 from loguru import logger
 
@@ -65,6 +65,11 @@ class Subscriber:
     def __init__(self):
         self._targets: dict[str, str] = {}  # code → name
         self._exit_flag = False
+        # 连接复用: 每 tick 新建连接耗尽资源，改用复用连接 + 按需重建
+        self._con = None
+        self._con_mtime = 0.0  # 连接创建时间
+        self._con_idle = 0     # 连接空闲秒数
+        self._CON_MAX_IDLE = 30  # 最大空闲秒数，超过则重建连接（防 QuestDB idle timeout）
         signal.signal(signal.SIGINT, self._signal_handler)
         if os.name == 'nt':
             signal.signal(signal.SIGBREAK, self._signal_handler)
@@ -85,6 +90,22 @@ class Subscriber:
             except Exception:
                 pass
 
+    def _get_con(self):
+        """获取复用连接（自动按需重建，防止 idle timeout）"""
+        now = time.time()
+        if self._con is not None:
+            # 检查空闲超时
+            if now - self._con_mtime > self._CON_MAX_IDLE:
+                try:
+                    self._con.close()
+                except Exception:
+                    pass
+                self._con = None
+        if self._con is None:
+            self._con = connect()
+            self._con_mtime = now
+        return self._con
+
     def _signal_handler(self, signum, frame):
         logger.info('收到退出信号, 清理订阅...')
         self._exit_flag = True
@@ -92,6 +113,7 @@ class Subscriber:
             tq.unsubscribe_hq(stock_list=list(self._targets.keys()))
         except Exception:
             pass
+        self._cleanup()
         sys.exit(0)
 
     def on_data(self, data_str: str):
@@ -132,8 +154,8 @@ class Subscriber:
                         tick.get('Volume'), tick.get('Buyv1'), tick.get('Sellv1'),
                         more.get('Zjl'), more.get('FCAmo'))
 
-            # 写 qd_stock_snapshot + qd_stock_intraday (共用一次连接)
-            con = connect()
+            # 写 qd_stock_snapshot + qd_stock_intraday (复用连接)
+            con = self._get_con()
             try:
                 snap_row = (
                     ts, code,
@@ -156,10 +178,19 @@ class Subscriber:
                 )
                 executemany_batch(con, 'qd_stock_intraday', _INTRA_COLS, [intra_row])
             finally:
-                con.close()
+                self._con_mtime = time.time()
 
         except Exception as e:
             logger.warning('订阅回调异常: {}', e)
+
+    def _cleanup(self):
+        """退出时关闭复用连接"""
+        if self._con is not None:
+            try:
+                self._con.close()
+            except Exception:
+                pass
+            self._con = None
 
     def start(self):
         """启动订阅, 阻塞运行"""
@@ -172,7 +203,7 @@ class Subscriber:
         for c, n in self._targets.items():
             logger.info('  {} ({})', c, n)
 
-        tq.initialize(__file__)
+        tq_init()
 
         # 分批订阅 (最多 100 只)
         for i in range(0, len(codes), 50):
@@ -189,6 +220,15 @@ class Subscriber:
                 dtime(9, 15) <= now.time() < dtime(11, 30)
                 or dtime(13, 0) <= now.time() < dtime(15, 0)
             )
+            # 写心跳
+            try:
+                hb_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'logs', 'heartbeats')
+                os.makedirs(hb_dir, exist_ok=True)
+                with open(os.path.join(hb_dir, 'subscribe.ts'), 'w') as f:
+                    f.write(str(time.time()))
+            except Exception:
+                pass
+
             if not is_market_open:
                 time.sleep(30)  # 非交易时段慢速轮询
                 continue

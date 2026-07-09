@@ -43,7 +43,7 @@ from lib.qdb import connect, executemany_batch  # noqa: E402
 _LOG_DIR = os.path.join(_PROJ_ROOT, 'logs')
 os.makedirs(_LOG_DIR, exist_ok=True)
 logger.add(os.path.join(_LOG_DIR, 'k3_sentiment_{time:YYYYMMDD}.log'),
-           rotation='1 day', retention='30 days', encoding='utf-8')
+           rotation='50 MB', retention='30 days', encoding='utf-8')
 
 DST_MIN = 'qd_sentiment_snapshot_min'
 DST_EVENT = 'qd_sentiment_event_log'
@@ -102,11 +102,14 @@ def _bin(value, bins):
     return len(bins)
 
 
-def classify_stock(fcamo, mx, zt_price):
-    """涨跌停判定 (DB文档权威): FCAmo>0涨停 / <0跌停 / =0且Max>=ZTPrice炸板"""
+def classify_stock(now_price, fcamo, mx, zt_price):
+    """涨跌停判定 (知识库规范): Now==ZTPrice AND FCAmo>0 涨停; FCAmo<0 跌停; 曾触板但未封=炸板"""
     fcamo = _safe_float(fcamo)
+    now_price = _safe_float(now_price)
     if fcamo > TH.SEAL_AMO_POS:
-        return 'zt'
+        zt = _safe_float(zt_price)
+        if zt > 0 and now_price >= zt * TH.NEAR_ZT_RATIO:
+            return 'zt'
     if fcamo < TH.SEAL_AMO_POS:
         return 'dt'
     mx = _safe_float(mx)
@@ -159,9 +162,12 @@ def _calc_seal_stats(merged_df, _cls=None, lb_series=None):
             [fcamo > 0, fcamo < 0, (fcamo == 0) & (mx >= ztp * 0.999)],
             ['zt', 'dt', 'break'], default='normal')
     if lb_series is None:
-        lb_series = pd.to_numeric(
-            merged_df['fLianB'].fillna(merged_df['EverZTCount']),
-            errors='coerce').fillna(0).astype(int)
+        if 'EverZTCount' in merged_df.columns:
+            lb_series = pd.to_numeric(
+                merged_df['fLianB'].fillna(merged_df['EverZTCount']),
+                errors='coerce').fillna(0).astype(int)
+        else:
+            lb_series = pd.to_numeric(merged_df['fLianB'], errors='coerce').fillna(0).astype(int)
     zt = int((_cls == 'zt').sum())
     dt = int((_cls == 'dt').sum())
     brk = int((_cls == 'break').sum())
@@ -189,8 +195,11 @@ def build_pools(merged_df, cls_arr=None, lb_arr=None,
     else:
         fcamo_v = fcamo_arr
     if lb_arr is None:
-        lb_arr = pd.to_numeric(merged_df['fLianB'].fillna(merged_df['EverZTCount']),
-                               errors='coerce').fillna(0).astype(int)
+        if 'EverZTCount' in merged_df.columns:
+            lb_arr = pd.to_numeric(merged_df['fLianB'].fillna(merged_df['EverZTCount']),
+                                   errors='coerce').fillna(0).astype(int)
+        else:
+            lb_arr = pd.to_numeric(merged_df['fLianB'], errors='coerce').fillna(0).astype(int)
     if fcb_arr is None:
         fcb_arr = pd.to_numeric(merged_df['FCb'], errors='coerce').fillna(0)
     if fcamo_arr is None:
@@ -225,7 +234,7 @@ def build_pools(merged_df, cls_arr=None, lb_arr=None,
     return pools
 
 
-def build_sector_strength(merged_df, cls_arr=None, zaf_arr=None, lb_arr=None, zjl_arr=None):
+def build_sector_strength(merged_df, cls_arr=None, zaf_arr=None, lb_arr=None, zjl_hb_arr=None):
     """板块强度: 每板块涨停数*3 + 涨幅 + 主力(归一) + 2板数*2 → Top 板块列表 (部分向量化)"""
     if merged_df is None or merged_df.empty:
         return []
@@ -240,10 +249,13 @@ def build_sector_strength(merged_df, cls_arr=None, zaf_arr=None, lb_arr=None, zj
     if zaf_arr is None:
         zaf_arr = pd.to_numeric(merged_df['ZAF'], errors='coerce').fillna(0)
     if lb_arr is None:
-        lb_arr = pd.to_numeric(merged_df['fLianB'].fillna(merged_df['EverZTCount']),
-                               errors='coerce').fillna(0).astype(int)
-    if zjl_arr is None:
-        zjl_arr = pd.to_numeric(merged_df['Zjl'], errors='coerce').fillna(0)
+        if 'EverZTCount' in merged_df.columns:
+            lb_arr = pd.to_numeric(merged_df['fLianB'].fillna(merged_df['EverZTCount']),
+                                   errors='coerce').fillna(0).astype(int)
+        else:
+            lb_arr = pd.to_numeric(merged_df['fLianB'], errors='coerce').fillna(0).astype(int)
+    if zjl_hb_arr is None:
+        zjl_hb_arr = pd.to_numeric(merged_df.get('Zjl_HB', merged_df.get('Zjl', pd.Series([0]*len(merged_df)))), errors='coerce').fillna(0)
 
     codes = merged_df['code'].tolist()
     agg = {}
@@ -262,7 +274,7 @@ def build_sector_strength(merged_df, cls_arr=None, zaf_arr=None, lb_arr=None, zj
             a['zaf_sum'] += zaf_arr[i]
             if lb_arr[i] >= 2:
                 a['lb2'] += 1
-            a['flow'] += zjl_arr[i]
+            a['flow'] += zjl_hb_arr[i]
     scored = []
     for bc, a in agg.items():
         score = a['zt'] * 3 + a['zaf_sum'] + (1 if a['flow'] > 0 else 0) + a['lb2'] * 2
@@ -376,38 +388,55 @@ def run(con, ctx):
     _zaf_arr = None
     _zjl_arr = None
     if merged is not None and not merged.empty:
+        nw_v = pd.to_numeric(merged['Now'], errors='coerce').fillna(0)
+        ztp_v = pd.to_numeric(merged['ZTPrice'], errors='coerce').fillna(0)
         _fcamo_arr = pd.to_numeric(merged['FCAmo'], errors='coerce').fillna(0)
         mx_v = pd.to_numeric(merged['Max'], errors='coerce').fillna(0)
-        ztp_v = pd.to_numeric(merged['ZTPrice'], errors='coerce').fillna(0)
-        _cls = np.select([_fcamo_arr > 0, _fcamo_arr < 0,
-                          (_fcamo_arr == 0) & (mx_v >= ztp_v * 0.999)],
-                         ['zt', 'dt', 'break'], default='normal')
-        _lb_series = pd.to_numeric(
-            merged['fLianB'].fillna(merged['EverZTCount']),
-            errors='coerce').fillna(0).astype(int)
+        # 涨停：Now接近ZTPrice AND FCAmo>0 (知识库规范)
+        _cls = np.select(
+            [(_fcamo_arr > 0) & (nw_v >= ztp_v * 0.999),
+             _fcamo_arr < 0,
+             (_fcamo_arr == 0) & (mx_v >= ztp_v * 0.999)],
+            ['zt', 'dt', 'break'], default='normal')
+        if 'EverZTCount' in merged.columns:
+            _lb_series = pd.to_numeric(
+                merged['fLianB'].fillna(merged['EverZTCount']),
+                errors='coerce').fillna(0).astype(int)
+        else:
+            _lb_series = pd.to_numeric(merged['fLianB'], errors='coerce').fillna(0).astype(int)
         _fcb_arr = pd.to_numeric(merged['FCb'], errors='coerce').fillna(0)
-        nw_v = pd.to_numeric(merged['Now'], errors='coerce').fillna(0)
         lc_v = pd.to_numeric(merged['LastClose'], errors='coerce').fillna(0)
         _chg_arr = np.where(lc_v > 0, (nw_v - lc_v) / lc_v * 100, 0.0)
         _zaf_arr = pd.to_numeric(merged['ZAF'], errors='coerce').fillna(0)
-        _zjl_arr = pd.to_numeric(merged['Zjl'], errors='coerce').fillna(0)
+        # 主力净流入: 用 Zjl_HB (知识库规范)
+        _zjl_hb_arr = pd.to_numeric(merged.get('Zjl_HB', merged.get('Zjl', pd.Series([0]*len(merged)))), errors='coerce').fillna(0)
 
     zt_cnt, dt_cnt, break_cnt, fbl, max_lb = _calc_seal_stats(merged, _cls, _lb_series)
     pools = build_pools(merged, _cls, _lb_series, _fcamo_arr, _fcb_arr, _chg_arr)
 
-    # 3. 板块强度
-    top_sectors = build_sector_strength(merged, _cls, _zaf_arr, _lb_series, _zjl_arr)
+    # 3. 板块强度 (用 Zjl_HB)
+    top_sectors = build_sector_strength(merged, _cls, _zaf_arr, _lb_series, _zjl_hb_arr)
 
     # 4. 主指数涨幅
     index_zaf = _main_index_zaf(ctx.index_snapshot)
 
-    # 5. 情绪评级 (4 分量取最差档)
+    # 5. 全市场主力净流入 + 一致率 (知识库规范: Zjl_HB)
+    _total_flow = 0.0
+    _pos_flow_cnt = 0
+    _flow_cnt = 0
+    if _zjl_hb_arr is not None and len(_zjl_hb_arr) > 0:
+        _total_flow = float(_zjl_hb_arr.sum())
+        _pos_flow_cnt = int((_zjl_hb_arr > 0).sum())
+        _flow_cnt = int((_zjl_hb_arr != 0).sum())
+    _consistency = (_pos_flow_cnt / _flow_cnt * 100) if _flow_cnt > 0 else 0.0
+
+    # 6. 情绪评级 (4 分量取最差档)
     emotion, emotion_order = rate_emotion(zt_cnt, fbl, max_lb, udr)
 
-    # 6. 背离
+    # 7. 背离
     divergences = detect_divergence(index_zaf, udr, up_cnt, down_cnt)
 
-    # 7. 连板梯队 (按板数分层)
+    # 8. 连板梯队 (按板数分层)
     lb_tier = {'lb2': pools['lianban'][:20], 'shouban': pools['shouban'][:20],
                'leader': pools['leader']}
 
@@ -461,6 +490,8 @@ def run(con, ctx):
         'pools': pools,
         'top_sectors': top_sectors,
         'events': events,
+        'total_flow': round(_total_flow, 0),
+        'consistency': round(_consistency, 1),
     }
 
 

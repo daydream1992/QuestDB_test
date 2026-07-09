@@ -12,8 +12,7 @@ if _PROJ_ROOT not in sys.path:
 
 from lib.qdb import connect, query_df, cutoff
 from loguru import logger
-import importlib as _il
-_feishu = _il.import_module('feishu')
+from feishu import flush_pending_bucket, build_review_card, _send, push_text
 
 
 def _split_review_sections(lines):
@@ -51,7 +50,7 @@ def run():
     """拉当日全链路数据, 生成复盘汇总, 推飞书"""
     # 刷出盘中未推送的聚合决策桶
     try:
-        _feishu.flush_pending_bucket()
+        flush_pending_bucket()
     except Exception as e:
         logger.warning('close flush 桶失败: {}', e)
     con = connect()
@@ -174,16 +173,69 @@ def run():
         text = '\n'.join(lines)
         logger.info('复盘汇总:\n{}', text)
 
+        # 构造 k4 数据 (收盘复盘卡片扩展分区)
+        k4_data = {}
         try:
-            # 构造 T4 复盘卡片
+            con_k4 = connect()
+            try:
+                # 情绪总结
+                df_k4 = query_df(con_k4,
+                    'SELECT pg_index, pg_signal, zt_cnt, dt_cnt, udr, main_net '
+                    'FROM qd_sentiment_deep ORDER BY snapshot_time DESC LIMIT 1')
+                if not df_k4.empty:
+                    r = df_k4.iloc[0]
+                    k4_data['sentiment'] = (
+                        f'┄ 情绪结语 ┄\n'
+                        f'  PG指数: {r.get("pg_index","-")} {r.get("pg_signal","")}\n'
+                        f'  收市涨跌: {r.get("zt_cnt",0)}家涨停 / {r.get("dt_cnt",0)}家跌停\n'
+                        f'  涨跌比: {r.get("udr","-")}'
+                    )
+
+                # 板块热力
+                df_h = query_df(con_k4,
+                    "SELECT industry_l1_ranking, industry_l2_ranking, concept_ranking "
+                    "FROM qd_sector_heatmap ORDER BY snapshot_time DESC LIMIT 1")
+                if not df_h.empty:
+                    try:
+                        import json
+                        l1 = json.loads(df_h.iloc[0].get('industry_l1_ranking', '[]'))[:3]
+                        concept = json.loads(df_h.iloc[0].get('concept_ranking', '[]'))[:3]
+                        lines_h = ['┄ 最强板块收盘 ┄']
+                        if l1:
+                            lines_h.append(f'  行业: {" | ".join(f"{s.get("name","")}{s.get("zaf",""):+.1f}" for s in l1)}')
+                        if concept:
+                            lines_h.append(f'  概念: {" | ".join(f"{s.get("name","")}{s.get("zaf",""):+.1f}" for s in concept)}')
+                        k4_data['heatmap'] = '\n'.join(lines_h)
+                    except Exception:
+                        pass
+
+                # 打板梯队
+                df_l = query_df(con_k4,
+                    "SELECT stats FROM qd_ladder_tracker ORDER BY snapshot_time DESC LIMIT 1")
+                if not df_l.empty:
+                    try:
+                        stats = json.loads(df_l.iloc[0].get('stats', '{}'))
+                        lines_l = ['┄ 打板梯队收盘 ┄']
+                        lines_l.append(f'  首板:{stats.get("total_1b",0)} | 2板:{stats.get("total_2b",0)} | 3板:{stats.get("total_3b",0)} | 4板:{stats.get("total_4b",0)} | 5板+:{stats.get("total_5b_plus",0)}')
+                        lines_l.append(f'  2进3候选: {stats.get("candidates_2to3",0)} 只')
+                        k4_data['ladder'] = '\n'.join(lines_l)
+                    except Exception:
+                        pass
+            finally:
+                con_k4.close()
+        except Exception as e:
+            logger.warning('读取 k4 复盘数据失败: {}', e)
+
+        try:
+            # 构造 T4 复盘卡片 (含 k4 扩展)
             sections = _split_review_sections(lines)
-            card = _feishu.build_review_card(sections)
-            ok = _feishu._send({'msg_type': 'interactive', 'card': card})
+            card = build_review_card(sections, k4_data=k4_data)
+            ok = _send({'msg_type': 'interactive', 'card': card})
             logger.info('复盘推送(卡片): {}', ok)
         except Exception as e:
             logger.warning('复盘卡片推送失败, 降级纯文本: {}', e)
             try:
-                _feishu.push_text(text)   # 降级: 卡片失败用纯文本兜底
+                push_text(text)   # 降级: 卡片失败用纯文本兜底
             except Exception as e2:
                 logger.warning('复盘纯文本推送也失败: {}', e2)
 

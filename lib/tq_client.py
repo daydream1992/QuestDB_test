@@ -16,6 +16,7 @@ import os
 import sys
 import threading
 import functools
+import time as _time
 
 from dotenv import load_dotenv
 from loguru import logger
@@ -38,6 +39,10 @@ _lock = threading.Lock()
 
 # 标记当前进程是否已 initialize
 _initialized = False
+
+# 重试退避配置
+_RETRY_BASE_DELAY = 0.1   # 100ms
+_RETRY_MAX_DELAY = 5.0    # 5s (H1: 提升避免高频重试打满 tqcenter)
 
 
 def init(path=None):
@@ -113,7 +118,7 @@ def retry(func):
 
 
 def safe_call(func, *args, **kwargs):
-    """通用调用包装: 线程安全 + 自动重试 3 次
+    """通用调用包装: 线程安全 + 自动重试 3 次 + 指数退避
 
     用法: safe_call(tq.get_sector_list, list_type=0)
 
@@ -128,7 +133,7 @@ def safe_call(func, *args, **kwargs):
         最后一次重试仍失败时抛出异常
     """
     last_exc = None
-    for _ in range(3):
+    for attempt in range(3):
         with _lock:
             _ensure_init()
             try:
@@ -136,4 +141,7 @@ def safe_call(func, *args, **kwargs):
             except Exception as e:
                 last_exc = e
                 _reconnect()
+                if attempt < 2:  # 不是最后一次重试，添加退避
+                    delay = min(_RETRY_BASE_DELAY * (2 ** attempt), _RETRY_MAX_DELAY)
+                    _time.sleep(delay)
     raise last_exc

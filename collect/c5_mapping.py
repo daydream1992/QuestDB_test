@@ -34,7 +34,7 @@ from lib.relation_graph import load_from_json, sync_to_db, DEFAULT_JSON_DIR  # n
 _LOG_DIR = os.path.join(_PROJ_ROOT, 'logs')
 os.makedirs(_LOG_DIR, exist_ok=True)
 logger.add(os.path.join(_LOG_DIR, 'c5_mapping_{time:YYYYMMDD}.log'),
-           rotation='1 day', retention='30 days', encoding='utf-8')
+           rotation='50 MB', retention='30 days', encoding='utf-8')
 
 
 def run(con=None, json_dir=None):

@@ -104,11 +104,17 @@ def select_focus_pool(pricevol_df, more_info_df) -> list:
     # 仅保留 pricevol 中存在的 code (合并可能引入空值)
     pool &= codes_in
     result = sorted(pool)
-    logger.info('选股器: 涨幅={} 量比={} 重点池去重后 {} 只',
-                len(top_change),
-                len(top_volume) if 'Volume' in df.columns else 0,
-                len(result))
-    return result
+    detail = {
+        'top_change': len(top_change),
+        'top_volume': len(top_volume) if 'Volume' in df.columns else 0,
+        'high_hsl': len(top_hsl) if 'fHSL' in df.columns else 0,
+        'lianban': len(lianb) if 'fLianB' in df.columns else 0,
+        'near_zt': len(near_zt) if 'ZTPrice' in df.columns else 0,
+    }
+    logger.info('选股器: 重点池 {} 只 (涨幅{} 量比{} 换手{} 连板{} 近涨停{})',
+                len(result), detail['top_change'], detail['top_volume'],
+                detail['high_hsl'], detail['lianban'], detail['near_zt'])
+    return result, detail
 
 
 def _safe_change(now, lastclose) -> float:

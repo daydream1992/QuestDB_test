@@ -151,6 +151,6 @@ class StrategyRegistry:
             for f in need:
                 if f not in all_cols:
                     missing.append((name, f))
-                    logger.error('字段护栏: 策略 "{}" required_fields 含 "{}" '
-                                 '但 ctx 无此列 (检查 DDL/字段名/大小写)', name, f)
+                    logger.warning('字段护栏: 策略 "{}" required_fields 含 "{}" '
+                                   '但 ctx 无此列 (检查 DDL/字段名/大小写)', name, f)
         return missing

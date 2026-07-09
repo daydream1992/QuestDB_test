@@ -3,12 +3,28 @@
 脚本路径: K:\QuestDB_test\\lib\\tq_utils.py
 用途: 股票代码转换 / 标的类型判定 / 全市场代码获取 / 注册表刷新
 依赖: tqcenter (lib.tq_client), psycopg2, config.index_codes
-数据源: tqcenter get_sector_list + get_stock_list_in_sector + get_stock_list
+数据源: tqcenter get_stock_list(市场参数) + get_sector_list + get_stock_list_in_sector
 入库表: qd_code_registry
 说明:
   - to_tdx: 转通达信内部格式 "市场编号#代码" (SZ=0, SH=1, BJ=2)
-  - route_type: index / sector / stock 三类标的
-  - fetch_all_codes: 股票 + 板块 + 指数, 供 refresh_registry 入库
+  - classify_code: 按 code_type_map 或降级规则判定 11 种标的类型
+  - route_type_to_table: 11 种 → 3 种表路由 (stock/sector/index)
+  - load_code_type_map: 从 qd_code_registry 加载类型映射
+  - fetch_all_codes: 全市场代码 (个股/板块6类/指数/ETF/可转债/REITs)
+  - refresh_registry: 入库 qd_code_registry
+
+分类体系 (11 种):
+  - stock:       个股 (market=5)
+  - industry_l1: 行业一级 (market=16)
+  - industry_l2: 行业二级 (market=17)
+  - industry_l3: 行业三级 (market=18)
+  - concept:     概念板块 (market=12)
+  - style:       风格板块 (market=13)
+  - region:      地区板块 (market=14)
+  - index:       重点指数 (market=9, 补充 INDEX_CODE_SET)
+  - etf:         ETF基金 (market=31)
+  - kzz:         可转债 (market=32)
+  - reits:       REITs (market=30)
 """
 
 import os
@@ -29,15 +45,43 @@ from tqcenter import tq  # noqa: E402  (tqcenter 的 tq 类)
 # 市场后缀 → tdx 内部市场编号 (与 tqcenter.MARKET_NUM_BY_SUFFIX 一致)
 _MARKET_NUM = {'SZ': '0', 'SH': '1', 'BJ': '2'}
 
-# get_sector_list 的 list_type → 板块分类标签
-# 注: tqcenter list_type 默认 0; 这里枚举常见取值, 实际可用范围以 tqcenter 为准
-_SECTOR_LIST_TYPES = [
-    (0, 'industry'),   # 行业板块
-    (1, 'concept'),    # 概念板块
-    (2, 'region'),     # 地域板块
-    (3, 'style'),      # 风格板块
-    (4, 'index'),      # 指数板块
+# 全市场 API 查询参数 (参考脚本 API_MARKET_MAP + NON_STOCK_API)
+# (market, code_type, sector_category, list_type)
+# 顺序决定去重优先级: 后到覆盖先到
+_COLLECT_MARKETS = [
+    # 个股 (list_type=0 返回标准代码)
+    ('5',  'stock',       '',            0),
+    # 行业先写三级再写二级，让二级覆盖重叠的 36 个板块
+    ('18', 'industry_l3', 'industry',    1),
+    ('17', 'industry_l2', 'industry',    1),
+    ('16', 'industry_l1', 'industry',    1),
+    # 概念/风格/地区
+    ('12', 'concept',     'concept',     1),
+    ('13', 'style',       'style',       1),
+    ('14', 'region',      'region',      1),
+    # 指数
+    ('9',  'index',       '',            1),
+    # ETF/可转债/REITs
+    ('31', 'etf',         '',            1),
+    ('32', 'kzz',         '',            1),
+    ('30', 'reits',       '',            1),
 ]
+
+# 表路由映射: code_type → stock/sector/index (采集脚本路由用)
+_ROUTE_TO_TABLE = {
+    'stock': 'stock',
+    'etf': 'stock',
+    'kzz': 'stock',
+    'reits': 'stock',
+    'sector': 'sector',
+    'industry_l1': 'sector',
+    'industry_l2': 'sector',
+    'industry_l3': 'sector',
+    'concept': 'sector',
+    'style': 'sector',
+    'region': 'sector',
+    'index': 'index',
+}
 
 
 def to_tdx(code):
@@ -62,15 +106,76 @@ def to_tdx(code):
     return '{m}#{c}'.format(m=market, c=code_part)
 
 
+def classify_code(code, code_type_map=None):
+    """判定标的类型 (11 种): stock/sector/index/etf/kzz/reits/industry_l1/...
+
+    优先查 code_type_map (从 qd_code_registry 加载, 最准确);
+    其次按规则降级判定。
+
+    Args:
+        code: 标的代码
+        code_type_map: dict[str, str] 从 load_code_type_map 加载
+
+    Returns:
+        str: 类型标签
+    """
+    if not code:
+        return 'stock'
+    # 优先查映射
+    if code_type_map and code in code_type_map:
+        ct = code_type_map[code]
+        if ct:  # 非 None/非空字符串
+            return ct
+    # 降级: 硬编码指数
+    if code in INDEX_CODE_SET:
+        return 'index'
+    # 降级: 板块代码特征
+    if code.startswith('881') or code.startswith('880'):
+        return 'sector'
+    return 'stock'
+
+
+def route_type_to_table(code_type):
+    """code_type → 表路由: stock/etf/kzz/reits → stock
+
+    Args:
+        code_type: classify_code 返回的类型
+
+    Returns:
+        str: 'stock' / 'sector' / 'index'
+    """
+    return _ROUTE_TO_TABLE.get(code_type, 'stock')
+
+
+def load_code_type_map(con):
+    """从 qd_code_registry 加载 code_type 映射
+
+    Args:
+        con: psycopg2 连接
+
+    Returns:
+        dict[str, str]: {code: code_type}
+    """
+    try:
+        from lib.qdb import query_df
+        df = query_df(con, "SELECT code, code_type FROM qd_code_registry WHERE is_active = true")
+        if df is not None and not df.empty:
+            return dict(zip(df['code'], df['code_type']))
+    except Exception:
+        pass
+    return {}
+
+
 def route_type(code):
-    """判定标的类型: index / sector / stock
+    """⚠️ 已废弃: 用 classify_code + route_type_to_table 替代
+
+    保留向后兼容 (被 c2/c3 main() 引用), 新代码用 classify_code()。
+
+    判定标的类型: index / sector / stock
 
     - index:  在 INDEX_CODE_SET 内 (来自 config/index_codes.py)
     - sector: 板块代码 (881xxx 行业 / 880xxx 概念·地域·风格)
     - stock:  其他 (6 位数字 .SZ/.SH/.BJ)
-
-    Args:
-        code: 标的代码
     """
     if not code:
         return 'stock'
@@ -82,79 +187,56 @@ def route_type(code):
 
 
 def fetch_all_codes():
-    """获取全市场代码 (股票 + 板块 + 指数)
+    """获取全市场代码 (个股 + 板块 6 类 + 指数 + ETF + 可转债 + REITs)
 
     调用 tqcenter:
-      - tq.get_stock_list(market='5', list_type=0)  股票
-      - tq.get_sector_list(list_type=0..4)          各类板块
-      - INDEX_CODE_SET                               指数 (固定列表)
+      - 所有 _COLLECT_MARKETS 中的 market 参数
+      - 顺序决定去重: 个股先, 行业三级→二级→一级, 概念/风格/地区, 指数, ETF/可转债/REITs
 
     Returns:
         list[dict]: 每个元素包含
             code             标准代码
             tdx_code         tdx 内部格式 (板块为空)
             name             名称
-            code_type        index / sector / stock
+            code_type        stock / industry_l1 / concept / index / etf / kzz / ...
             market           SH / SZ / BJ / ''
-            sector_category  板块分类 (industry/concept/region/style/index), 仅 sector 有
+            sector_category  板块分类 (industry/concept/region/style), 非板块为空
     """
     init()
+    seen = set()
     result = []
 
-    # 1. 股票
-    # 注: tqcenter get_stock_list 返回 list[str] (标准代码), 兼容 list[dict]
-    stocks = safe_call(tq.get_stock_list, market='5', list_type=0) or []
-    for s in stocks:
-        if isinstance(s, str):
-            code, name = s, ''
-        else:
-            code = s.get('code') or s.get('stock_code') or ''
-            name = s.get('name', '') or ''
-        if not code:
-            continue
-        result.append({
-            'code': code,
-            'tdx_code': to_tdx(code),
-            'name': name,
-            'code_type': 'stock',
-            'market': code.rsplit('.', 1)[-1] if '.' in code else '',
-            'sector_category': '',
-        })
-
-    # 2. 板块 (枚举 list_type)
-    # 注: tqcenter get_sector_list 返回 list[str] (板块代码), 兼容 list[dict]
-    seen_sector = set()
-    for list_type, category in _SECTOR_LIST_TYPES:
-        sectors = safe_call(tq.get_sector_list, list_type=list_type) or []
-        for sec in sectors:
-            if isinstance(sec, str):
-                code, name = sec, ''
+    for market, code_type, sector_category, list_type in _COLLECT_MARKETS:
+        items = safe_call(tq.get_stock_list, market=market, list_type=list_type) or []
+        name_key = 'Name' if list_type == 1 else 'name'
+        code_key = 'Code' if list_type == 1 else 'code'
+        for item in items:
+            if isinstance(item, str):
+                code, name = item, ''
             else:
-                code = sec.get('block_code', '') or ''
-                name = sec.get('block_name', '') or ''
-            if not code or code in seen_sector:
+                code = item.get(code_key, '')
+                name = item.get(name_key, '') or ''
+            if not code or code in seen:
                 continue
-            seen_sector.add(code)
+            seen.add(code)
+            # 计算 tdx_code (个股才需要)
+            tdx = ''
+            if code_type == 'stock' and '.' in code:
+                tdx = to_tdx(code)
             result.append({
                 'code': code,
-                'tdx_code': '',  # 板块不走 to_tdx
+                'tdx_code': tdx,
                 'name': name,
-                'code_type': 'sector',
+                'code_type': code_type,
                 'market': code.rsplit('.', 1)[-1] if '.' in code else '',
-                'sector_category': category,
+                'sector_category': sector_category,
             })
 
-    # 3. 指数 (固定列表, 名称取 INDEX_CODES)
-    for idx_code in INDEX_CODE_SET:
-        result.append({
-            'code': idx_code,
-            'tdx_code': to_tdx(idx_code),
-            'name': INDEX_CODES.get(idx_code, ''),
-            'code_type': 'index',
-            'market': idx_code.rsplit('.', 1)[-1] if '.' in idx_code else '',
-            'sector_category': '',
-        })
-
+    num_by_type = {}
+    for c in result:
+        num_by_type[c['code_type']] = num_by_type.get(c['code_type'], 0) + 1
+    type_str = ', '.join(f'{k}={v}' for k, v in sorted(num_by_type.items()))
+    print('全市场代码加载完成: {} 只 ({})'.format(len(result), type_str))
     return result
 
 

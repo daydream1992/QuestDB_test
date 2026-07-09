@@ -1,0 +1,206 @@
+===== 全局列名校验 (2026-07-08 16:52) =====
+项目根: K:\QuestDB_test
+
+=== 1. DDL 表结构解析 ===
+  解析到 40 张表:
+    qd_alpha_score: 15 列
+    qd_auction_snapshot: 8 列
+    qd_big_order: 8 列
+    qd_code_registry: 9 列
+    qd_decisions: 7 列
+    qd_index_daily: 12 列
+    qd_index_snapshot: 13 列
+    qd_indicators: 14 列
+    qd_intraday_event: 5 列
+    qd_kline_1m: 8 列
+    qd_kline_5m: 8 列
+    qd_ladder_tracker: 6 列
+    qd_lhb_broker: 8 列
+    qd_lhb_detail: 17 列
+    qd_map_concept_stock: 4 列
+    qd_map_index_stock: 4 列
+    qd_map_region_stock: 3 列
+    qd_map_style_stock: 3 列
+    qd_money_flow: 10 列
+    qd_positions: 11 列
+    qd_positions_v2: 17 列
+    qd_pricevol: 5 列
+    qd_resonance: 10 列
+    qd_sector_daily: 17 列
+    qd_sector_flow: 10 列
+    qd_sector_heatmap: 10 列
+    qd_sector_meta: 6 列
+    qd_sector_snapshot: 23 列
+    qd_sentiment_daily: 6 列
+    qd_sentiment_deep: 26 列
+    qd_sentiment_event_log: 4 列
+    qd_sentiment_snapshot_min: 14 列
+    qd_signal_log: 6 列
+    qd_signals: 9 列
+    qd_stock_daily: 51 列
+    qd_stock_gpjy: 14 列
+    qd_stock_industry: 5 列
+    qd_stock_intraday: 18 列
+    qd_stock_snapshot: 59 列
+    qd_strategy_eval: 9 列
+
+  [INFO] 表 qd_stock_snapshot 已有 DDL (59 列)，手动定义将被比较
+  [INFO] 表 qd_stock_intraday 已有 DDL (18 列)，手动定义将被比较
+
+=== 2. 采集模块 (collect/) 写入列 vs DDL ===
+  [c1_pricevol] qd_pricevol: code+snapshot_time+PRICEVOL_FIELDS(3)
+  [OK] c2.INDEX_TABLE_COLS → qd_index_snapshot: 一致 (13 列)
+  [OK] c2.SECTOR_TABLE_COLS → qd_sector_snapshot: 一致 (23 列)
+  [MISS] c2.STOCK_TABLE_COLS → qd_stock_snapshot: DDL 有但 代码 缺失 16 列:
+       - DTPrice
+       - FCAmo
+       - FCb
+       - FzAmo
+       - Fzhsl
+       - LastStartZT
+       - MA5Value
+       - Wtb
+       - ZAF
+       - ZTGPNum
+       - ZTPrice
+       - Zjl
+       - Zjl_HB
+       - fHSL
+       - fLianB
+       - vzangsu
+  [c3_more_info] 写入列由 config/fields.py 的 _FIELDS + ['code','date'/'snapshot_time'] 拼装
+    qd_stock_daily: DDL 有 51 列（字段由 STOCK_DAILY_FIELDS 定义）
+    qd_sector_daily: DDL 有 17 列（字段由 SECTOR_DAILY_FIELDS 定义）
+    qd_index_daily: DDL 有 12 列（字段由 INDEX_DAILY_FIELDS 定义）
+  [c3_more_info] intraday 模式: stock → qd_stock_intraday
+  [MISS] c3._INTRADAY_COLS[stock] → qd_stock_intraday: DDL 有但 代码 缺失 16 列:
+       - DTPrice
+       - FCAmo
+       - FCb
+       - FzAmo
+       - Fzhsl
+       - LastStartZT
+       - MA5Value
+       - Wtb
+       - ZAF
+       - ZTGPNum
+       - ZTPrice
+       - Zjl
+       - Zjl_HB
+       - fHSL
+       - fLianB
+       - vzangsu
+  [c4_kline] qd_kline_1m/qd_kline_5m
+  [OK] c4.KLINE_COLS → qd_kline_1m: 一致 (8 列)
+  [OK] c4.KLINE_COLS → qd_kline_5m: 一致 (8 列)
+  [OK] c5.INSERT_COLUMNS → qd_stock_gpjy: 一致 (14 列)
+  [OK] c6.LHB_DETAIL_COLS → qd_lhb_detail: 一致 (17 列)
+  [OK] c6.LHB_BROKER_COLS → qd_lhb_broker: 一致 (8 列)
+
+=== 3. 计算模块 (compute/) 写入列 vs DDL ===
+  [OK] k1_indicators.INSERT_COLUMNS → qd_indicators: 一致 (14 列)
+  [OK] k2_signals.INSERT_COLUMNS → qd_signals: 一致 (9 列)
+  [OK] k5_kline_synth.KLINE_COLS → qd_kline_5m: 一致 (8 列)
+  [OK] k3._MIN_COLS → qd_sentiment_snapshot_min: 一致 (14 列)
+  [OK] k3._EVENT_COLS → qd_sentiment_event_log: 一致 (4 列)
+  [OK] k4._DEEP_COLS → qd_sentiment_deep: 一致 (26 列)
+  [OK] k4_heatmap._HEATMAP_COLS → qd_sector_heatmap: 一致 (10 列)
+  [OK] k4_ladder._COLS → qd_ladder_tracker: 一致 (6 列)
+
+=== 4. runner 模块 (intraday_loop) 写入列 vs DDL ===
+  [OK] intraday_loop._DECISION_COLS → qd_decisions: 一致 (7 列)
+  [OK] intraday_loop._RESONANCE_COLS → qd_resonance: 一致 (10 列)
+  [OK] intraday_loop._SECTOR_FLOW_COLS → qd_sector_flow: 一致 (10 列)
+  [OK] intraday_loop._MONEY_FLOW_COLS → qd_money_flow: 一致 (10 列)
+  [OK] intraday_loop._BIG_ORDER_COLS → qd_big_order: 一致 (8 列)
+
+=== 5. subscribe 写入列 vs DDL ===
+  [INFO] subscribe._SNAP_COLS 写 qd_stock_snapshot (20 列, 非全量)
+  ✅ subscribe._SNAP_COLS → qd_stock_snapshot: 所有列在 DDL 中
+  [MISS] subscribe._INTRA_COLS → qd_stock_intraday: DDL 有但 代码 缺失 5 列:
+       - LastStartZT
+       - MA5Value
+       - Wtb
+       - ZTGPNum
+       - Zjl_HB
+
+=== 6. config/fields.py 类型映射 vs DDL ===
+  [MISS] qd_alpha_score 下列不在 config/fields.py 类型映射中: ['alpha_score', 'rank', 'decile', 'sector_rank', 'ts_momentum_5m', 'ts_acceleration', 'xs_amount_surge', 'xs_sector_strength', 'micro_imbalance', 'micro_imbalance_weighted', 'ladder_position', 'quality_gp']
+  [MISS] qd_auction_snapshot 下列不在 config/fields.py 类型映射中: ['auction_price', 'auction_volume', 'auction_amount', 'gap_pct', 'prev_close']
+  [MISS] qd_big_order 下列不在 config/fields.py 类型映射中: ['price', 'volume', 'amount']
+  [MISS] qd_code_registry 下列不在 config/fields.py 类型映射中: ['is_active']
+  [MISS] qd_decisions 下列不在 config/fields.py 类型映射中: ['position_size', 'price']
+  [MISS] qd_index_daily 下列不在 config/fields.py 类型映射中: ['ZAFYesterday', 'ZAFPre5', 'ZAFPre10', 'ZAFPre20', 'ZAFPre60', 'ZAFYear', 'Zsz', 'Ltsz', 'MA5Value']
+  [MISS] qd_index_snapshot 下列不在 config/fields.py 类型映射中: ['ItemNum', 'LastClose', 'Open', 'Max', 'Min', 'Now', 'Volume', 'Amount', 'Average', 'TickDiff', 'ZAFPre3']
+  [MISS] qd_indicators 下列不在 config/fields.py 类型映射中: ['close', 'macd_dif', 'macd_dea', 'macd_hist', 'pressure_high', 'support_low', 'boll_upper', 'boll_mid', 'boll_lower', 'ma5', 'ma10', 'ma20']
+  [MISS] qd_intraday_event 下列不在 config/fields.py 类型映射中: ['critical']
+  [MISS] qd_kline_1m 下列不在 config/fields.py 类型映射中: ['Open', 'High', 'Low', 'Close', 'Volume', 'Amount']
+  [MISS] qd_kline_5m 下列不在 config/fields.py 类型映射中: ['Open', 'High', 'Low', 'Close', 'Volume', 'Amount']
+  [MISS] qd_ladder_tracker 下列不在 config/fields.py 类型映射中: ['calc_duration_ms']
+  [MISS] qd_lhb_broker 下列不在 config/fields.py 类型映射中: ['total_buy_30d', 'total_sell_30d', 'appear_count_30d', 'hot_level']
+  [MISS] qd_lhb_detail 下列不在 config/fields.py 类型映射中: ['close_price', 'rise_and_fall', 'rank', 'buy_amount', 'buyin_ratio', 'sell_amount', 'sellout_ratio', 'net_amount']
+  [MISS] qd_map_concept_stock 下列不在 config/fields.py 类型映射中: ['weight']
+  [MISS] qd_map_index_stock 下列不在 config/fields.py 类型映射中: ['weight']
+  [MISS] qd_money_flow 下列不在 config/fields.py 类型映射中: ['main_net', 'big_order_diff', 'dark_money', 'light_money', 'pressure_diff_5level', 'buy_pressure', 'sell_pressure', 'net_flow']
+  [MISS] qd_positions 下列不在 config/fields.py 类型映射中: ['entry_price', 'current_price', 'quantity', 'pnl', 'pnl_pct', 'stop_loss_price', 'take_profit_price']
+  [MISS] qd_positions_v2 下列不在 config/fields.py 类型映射中: ['size_pct', 'shares', 'entry_price', 'sector', 'stop_loss_pct', 'stop_profit_pct', 'entry_alpha', 'entry_rank', 'realized_pnl', 'close_price']
+  [MISS] qd_pricevol 下列不在 config/fields.py 类型映射中: ['LastClose', 'Now', 'Volume']
+  [MISS] qd_resonance 下列不在 config/fields.py 类型映射中: ['index_resonance', 'macd_resonance', 'volume_resonance', 'flow_resonance', 'total_score']
+  [MISS] qd_sector_daily 下列不在 config/fields.py 类型映射中: ['ZAFYesterday', 'ZAFPre5', 'ZAFPre10', 'ZAFPre20', 'ZTGPNum', 'fLianB', 'EverZTCount', 'YearZTDay', 'OpenAmoPre1', 'CJJEPre1', 'CJJEPre3', 'FDEPre1', 'FDEPre2']
+  [MISS] qd_sector_flow 下列不在 config/fields.py 类型映射中: ['main_net', 'big_net', 'mid_net', 'small_net', 'dark_money', 'light_money', 'total_flow', 'net_pct']
+  [MISS] qd_sector_heatmap 下列不在 config/fields.py 类型映射中: ['calc_duration_ms']
+  [MISS] qd_sector_meta 下列不在 config/fields.py 类型映射中: ['stock_count']
+  [MISS] qd_sector_snapshot 下列不在 config/fields.py 类型映射中: ['ItemNum', 'LastClose', 'Open', 'Max', 'Min', 'Now', 'Volume', 'NowVol', 'Amount', 'Inside', 'Outside', 'TickDiff', 'InOutFlag', 'Average', 'XsFlag', 'UpHome', 'DownHome', 'Before5MinNow', 'Zangsu', 'ZAFPre3', 'Jjjz']
+  [MISS] qd_sentiment_daily 下列不在 config/fields.py 类型映射中: ['zt_cnt_max', 'fbl_avg', 'max_lb', 'summary']
+  [MISS] qd_sentiment_deep 下列不在 config/fields.py 类型映射中: ['pg_index', 'bb_ratio', 'rotation_intensity', 'phase_confidence', 'capital_sentiment', 'market_main_net', 'capital_consistency', 'dark_money_active', 'ladder_health', 'divergence_count', 'st_ma_zt_cnt_5', 'st_ma_zt_cnt_10', 'st_ma_fbl_5', 'st_ma_fbl_10', 'st_ma_udr_5', 'st_ma_udr_10', 'st_ma_pg_5', 'st_ma_pg_10', 'calc_duration_ms']
+  [MISS] qd_sentiment_snapshot_min 下列不在 config/fields.py 类型映射中: ['emotion_order', 'zt_cnt', 'dt_cnt', 'break_cnt', 'fbl', 'max_lb', 'udr', 'up_cnt', 'down_cnt', 'index_zaf']
+  [MISS] qd_signal_log 下列不在 config/fields.py 类型映射中: ['signal_count', 'last_push_time', 'cooldown_sec', 'pushed']
+  [MISS] qd_signals 下列不在 config/fields.py 类型映射中: ['signal_score', 'price', 'volume']
+  [MISS] qd_stock_daily 下列不在 config/fields.py 类型映射中: ['ZTPrice', 'DTPrice', 'ZAFYesterday', 'ZAFPre2D', 'ZAFPre5', 'ZAFPre10', 'ZAFPre20', 'ZAFPre30', 'ZAFPre60', 'ZAFYear', 'ZAFPreMyMonth', 'ZAFPreOneYear', 'Zsz', 'Ltsz', 'DynaPE', 'MorePE', 'StaticPE_TTM', 'DYRatio', 'PB_MRQ', 'Yield', 'FreeLtgb', 'BetaValue', 'fLianB', 'LastZTHzNum', 'EverZTCount', 'YearZTDay', 'ConZAFDateNum', 'ZTGPNum', 'OpenAmo', 'OpenAmoPre1', 'OpenVolPre1', 'CJJEPre1', 'CJJEPre3', 'FDEPre1', 'FDEPre2', 'OpenZTBuy', 'OpenZAF', 'VOpenZAF', 'MA5Value', 'Wtb', 'HisHigh', 'HisLow', 'IPO_Price', 'SafeValue', 'ShineValue', 'ShapeValue']
+  [MISS] qd_stock_gpjy 下列不在 config/fields.py 类型映射中: ['gp15_status', 'gp15_seal', 'gp14_zt_amo', 'gp14_break_cnt', 'gp38_zt_cnt', 'gp38_premium_cnt', 'gp39_first_seal_rate', 'gp39_next_red_rate', 'gp40_lb_rate', 'gp40_last_zt_time', 'gp09_inst_cnt', 'gp09_inst_amo']
+  [MISS] qd_stock_intraday 下列不在 config/fields.py 类型映射中: ['ZAF', 'ZTPrice', 'DTPrice', 'fLianB', 'ZTGPNum', 'MA5Value', 'Wtb', 'fHSL', 'Fzhsl', 'FzAmo', 'Zjl', 'Zjl_HB', 'FCAmo', 'FCb', 'vzangsu']
+  [MISS] qd_stock_snapshot 下列不在 config/fields.py 类型映射中: ['ItemNum', 'LastClose', 'Open', 'Max', 'Min', 'Now', 'Volume', 'NowVol', 'Amount', 'Inside', 'Outside', 'TickDiff', 'InOutFlag', 'Jjjz', 'Average', 'XsFlag', 'UpHome', 'DownHome', 'Before5MinNow', 'Zangsu', 'ZAFPre3', 'Buyp1', 'Buyp2', 'Buyp3', 'Buyp4', 'Buyp5', 'Buyv1', 'Buyv2', 'Buyv3', 'Buyv4', 'Buyv5', 'Sellp1', 'Sellp2', 'Sellp3', 'Sellp4', 'Sellp5', 'Sellv1', 'Sellv2', 'Sellv3', 'Sellv4', 'Sellv5', 'ZTPrice', 'DTPrice', 'ZAF', 'fHSL', 'Fzhsl', 'FzAmo', 'Zjl', 'Zjl_HB', 'FCAmo', 'FCb', 'vzangsu', 'ZTGPNum', 'fLianB', 'MA5Value', 'Wtb']
+  [MISS] qd_strategy_eval 下列不在 config/fields.py 类型映射中: ['total_signals', 'win_count', 'loss_count', 'win_rate', 'total_pnl', 'profit_factor', 'max_drawdown']
+
+=== 7. 策略插件 required_fields 字段在 DDL 中的可用性 ===
+  [OK] p01_zt_daban.py 6 个字段均在 DDL 中
+       -> 关联表: qd_stock_daily(ZTPrice,fLianB); qd_sector_daily(fLianB); qd_stock_snapshot(Now,FCAmo,ZTPrice,fLianB,fHSL,Amount)
+  [OK] p02_zha_fanbao.py 5 个字段均在 DDL 中
+       -> 关联表: qd_stock_daily(ZAFYesterday,CJJEPre1); qd_sector_daily(ZAFYesterday,CJJEPre1); qd_index_daily(ZAFYesterday)
+  [OK] p04_break_pressure.py 5 个字段均在 DDL 中
+       -> 关联表: qd_stock_daily(CJJEPre1); qd_sector_daily(CJJEPre1); qd_stock_snapshot(Now,LastClose,Amount)
+  [OK] p05_sector_rotation.py 2 个字段均在 DDL 中
+       -> 关联表: qd_stock_snapshot(Now,LastClose); qd_sector_snapshot(Now,LastClose); qd_index_snapshot(Now,LastClose)
+  [OK] p06_resonance.py 1 个字段均在 DDL 中
+       -> 关联表: qd_resonance(total_score)
+  [OK] p07_divergence.py 3 个字段均在 DDL 中
+       -> 关联表: qd_stock_snapshot(Now,LastClose); qd_sector_snapshot(Now,LastClose); qd_index_snapshot(Now,LastClose)
+  [OK] p08_dark_money.py 3 个字段均在 DDL 中
+       -> 关联表: qd_sector_flow(dark_money); qd_money_flow(dark_money,buy_pressure,sell_pressure)
+  [OK] p09_auction_rush.py 4 个字段均在 DDL 中
+       -> 关联表: qd_stock_daily(CJJEPre1); qd_sector_daily(CJJEPre1); qd_auction_snapshot(gap_pct,auction_type,auction_amount)
+  [OK] p10_auction_gap.py 4 个字段均在 DDL 中
+       -> 关联表: qd_stock_daily(CJJEPre1); qd_sector_daily(CJJEPre1); qd_auction_snapshot(gap_pct,auction_type,auction_amount)
+  [OK] p11_auction_close.py 3 个字段均在 DDL 中
+       -> 关联表: qd_auction_snapshot(gap_pct,auction_type,auction_price)
+  [OK] p12_big_order.py 5 个字段均在 DDL 中
+       -> 关联表: qd_stock_snapshot(Now,LastClose,Zjl); qd_sector_snapshot(Now,LastClose); qd_index_snapshot(Now,LastClose)
+  [MISS] p13_lhb_inst.py required_fields 不在任何 DDL 表中: ['institution_count', 'net_buy']
+  [MISS] p14_lhb_hotmoney.py required_fields 不在任何 DDL 表中: ['hotmoney_count', 'institution_count', 'net_buy']
+  [MISS] p15_stop_loss.py required_fields 不在任何 DDL 表中: ['stop_loss']
+  [MISS] p16_stop_profit.py required_fields 不在任何 DDL 表中: ['stop_profit']
+
+=== 8. 策略插件对 ctx 字段的引用检查 (基于注释/命名) ===
+  [INFO] p17_market_emotion.py 引用了 DDL 字段: 含 8 个 (未声明 required_fields)
+  [INFO] p18_turn_alert.py 引用了 DDL 字段: 含 5 个 (未声明 required_fields)
+  [INFO] p20_alpha_breakout.py 引用了 DDL 字段: 含 12 个 (未声明 required_fields)
+  [INFO] p21_leader_echelon.py 引用了 DDL 字段: 含 9 个 (未声明 required_fields)
+  [INFO] p22_sector_rotation_relay.py 引用了 DDL 字段: 含 9 个 (未声明 required_fields)
+  [INFO] p23_capital_flow_divergence.py 引用了 DDL 字段: 含 12 个 (未声明 required_fields)
+  [INFO] p24_lhb_broker_network.py 引用了 DDL 字段: 含 14 个 (未声明 required_fields)
+  [INFO] p25_sentiment_extreme_reversal.py 引用了 DDL 字段: 含 9 个 (未声明 required_fields)
+  [INFO] p26_late_session_raid.py 引用了 DDL 字段: 含 11 个 (未声明 required_fields)
+
+===== 校验完成 =====
+检查了 40 张 DDL 表, 15 个策略插件的 required_fields
+详细报告已保存到: K:\QuestDB_test\docs\field_consistency_report.txt

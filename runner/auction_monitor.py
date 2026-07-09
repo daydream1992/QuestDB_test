@@ -41,8 +41,7 @@ def _write_heartbeat(name):
     except Exception:
         pass
 from lib.tq_client import safe_call, init, close  # noqa: E402
-import importlib as _il
-_feishu = _il.import_module('feishu')  # noqa: E402
+from feishu import log_signals  # noqa: E402
 from lib.market_clock import is_auction_time, is_trading_day, get_auction_phase  # noqa: E402
 
 from tqcenter import tq  # noqa: E402
@@ -58,7 +57,7 @@ _PLUGINS_DIR = os.path.join(_PROJ_ROOT, 'strategy', 'plugins')
 _LOG_DIR = os.path.join(_PROJ_ROOT, 'logs')
 os.makedirs(_LOG_DIR, exist_ok=True)
 logger.add(os.path.join(_LOG_DIR, 'runner_auction_monitor_{time:YYYYMMDD}.log'),
-           rotation='1 day', retention='30 days', encoding='utf-8')
+           rotation='50 MB', retention='30 days', encoding='utf-8')
 
 # qd_auction_snapshot 列顺序 (与 DDL 10_auction.sql 一致)
 _AUCTION_COLS = ['code', 'auction_time', 'auction_price', 'auction_volume',
@@ -165,7 +164,7 @@ def _process_decisions(con, decisions):
             })
     if feishu_signals:
         try:
-            _feishu.log_signals(feishu_signals)
+            log_signals(feishu_signals)
         except Exception as e:
             logger.warning('飞书写入失败: {}', e)
     if rows:

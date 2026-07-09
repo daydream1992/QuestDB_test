@@ -39,7 +39,7 @@ from lib.relation_graph import get_sector_raw_type, get_sector_stocks, get_stock
 _LOG_DIR = os.path.join(_PROJ_ROOT, 'logs')
 os.makedirs(_LOG_DIR, exist_ok=True)
 logger.add(os.path.join(_LOG_DIR, 'k4_sector_heatmap_{time:YYYYMMDD}.log'),
-           rotation='1 day', retention='30 days', encoding='utf-8')
+           rotation='50 MB', retention='30 days', encoding='utf-8')
 
 DST_HEATMAP = 'qd_sector_heatmap'
 _HEATMAP_COLS = [
@@ -281,8 +281,6 @@ def push_heatmap(result):
         bool
     """
     try:
-        import importlib as _il
-        _feishu = _il.import_module('feishu')
 
         lines = []
         ts = datetime.now().strftime('%H:%M')
@@ -322,12 +320,10 @@ def push_heatmap(result):
         lines.append('k4 板块梯队 | 5min 自动推送')
 
         text = '\n'.join(lines)
-        ok = _feishu.push_text(text)
-        logger.info('板块梯队推送: {}', ok)
-        return ok
+        return text
     except Exception as e:
         logger.warning('k4 板块梯队推送失败: {}', e)
-        return False
+        return ''
 
 
 # ══════════════════════════════════════════════════════════════
@@ -404,13 +400,6 @@ def run(con, ctx=None):
     # 3. 写库
     dur_ms = int((time.time() - t0) * 1000)
     _write_heatmap(con, now, result, dur_ms)
-
-    # 4. 推送 (有数据就推)
-    has_data = any(result.get(f'{key}_ranking') for key, _, _ in _GROUP_CONFIG)
-    if has_data:
-        push_heatmap(result)
-    else:
-        logger.info('板块热力图: 无有效排行数据, 不推送')
 
     logger.info('✓ k4 板块热力图完成 ({}ms): 行业L1={} L2={} L3={} 概念={}',
                 dur_ms,

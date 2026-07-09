@@ -33,7 +33,7 @@ import os
 import sys
 import time
 import json
-from datetime import datetime, time as dtime
+from datetime import datetime
 
 # 确保项目根在 sys.path
 _PROJ_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -45,24 +45,23 @@ import psutil
 
 from lib.qdb import connect, query_df, cutoff, _ensure_alive
 from lib.market_clock import get_phase, is_trading_day
-import importlib as _il
-_feishu = _il.import_module('feishu')
+from feishu import push_text
 
 # ── 日志配置 ──
 _LOG_DIR = os.path.join(_PROJ_ROOT, 'logs')
 os.makedirs(_LOG_DIR, exist_ok=True)
 logger.add(os.path.join(_LOG_DIR, 'runner_overseer_{time:YYYYMMDD}.log'),
-           rotation='1 day', retention='30 days', encoding='utf-8')
+           rotation='50 MB', retention='30 days', encoding='utf-8')
 
-# ── 轮询间隔 (秒) 按阶段 ──
+# ── 轮询间隔 (秒) 按阶段 (M1: 盘中从 120s 提升到 60s)
 _POLL_INTERVALS = {
-    'pre_market':   30,   # 盘前
-    'auction':      30,   # 竞价
-    'morning':     120,   # 上午盘中
-    'lunch':       300,   # 午休
-    'afternoon':   120,   # 下午盘中
-    'pre_close':    30,   # 收盘竞价
-    'closed':      600,   # 收盘后
+    'pre_market':   120,   # 盘前
+    'auction':      120,   # 竞价
+    'morning':      300,   # 上午盘中 (P1 降频: 原 60s → 300s)
+    'lunch':        600,   # 午休
+    'afternoon':    300,   # 下午盘中 (P1 降频: 原 60s → 300s)
+    'pre_close':    120,   # 收盘竞价
+    'closed':       600,   # 收盘后
 }
 
 # ── 数据检查阈值 ──
@@ -255,7 +254,7 @@ class Overseer:
         text = f'[监工] {tag} {message}'
         logger.info('{}', text)
         try:
-            _feishu.push_text(text)
+            push_text(text)
         except Exception as e:
             logger.warning('监工飞书推送失败: {}', e)
 
@@ -266,7 +265,7 @@ class Overseer:
         try:
             self.con = _ensure_alive(self.con)
         except Exception as e:
-            logger.error('监工 DB 保活失败: {}', e)
+            logger.warning('DB 保活失败: {}', e)
             self.con = None
 
     # ─── 阶段刷新 ──────────────────────────────────────
@@ -357,7 +356,8 @@ class Overseer:
 
         now = datetime.now()
         # 倒计时: 每 5 分钟推一次
-        remaining = int((dtime(13, 0) - now.time()).total_seconds() / 60)
+        afternoon = now.replace(hour=13, minute=0, second=0, microsecond=0)
+        remaining = int((afternoon - now).total_seconds() / 60)
         if remaining <= 0:
             return
         # 每 5 分钟或关键倒计时点推送
@@ -593,7 +593,8 @@ def main():
         signal.signal(signal.SIGBREAK, _graceful_exit)
     signal.signal(signal.SIGTERM, _graceful_exit)
 
-    __doc__ = __doc__ or ''
+    import __main__
+    doc = __main__.__doc__ or ''
     overseer = Overseer()
     try:
         overseer.run()
@@ -605,7 +606,7 @@ def main():
                 overseer.con.close()
             except Exception:
                 pass
-        _feishu.push_text('[监工] 监工已退出')
+        push_text('[监工] 监工已退出')
         logger.info('===== 监工退出 =====')
 
 

@@ -28,8 +28,7 @@ if _PROJ_ROOT not in sys.path:
 from loguru import logger  # noqa: E402
 
 from lib.qdb import executemany_batch, cutoff  # noqa: E402
-import importlib as _il
-_feishu = _il.import_module('feishu')  # noqa: E402
+from feishu import log_signals  # noqa: E402
 from lib.notify_dedup import allow_push  # noqa: E402
 from lib.relation_graph import get_stock_name  # noqa: E402
 
@@ -176,7 +175,7 @@ def run(con, snapshot_df, watchlist=None):
                     'position_size': 0,
                 })
             # 异动只推+写表格, 不再单独 push_text (log_signals 内含推送)
-            _feishu.log_signals(feishu_signals, sheet=True, bitable=True)
+            log_signals(feishu_signals, sheet=True, bitable=True)
         except Exception as e:
             logger.warning('异动飞书写入失败: {}', e)
     logger.info('intraday_engine: 检测 {} 事件, 推送 {}', len(events), len(pushed))
