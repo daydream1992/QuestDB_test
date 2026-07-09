@@ -26,11 +26,9 @@ import os
 import sys
 import time
 import threading
-from contextlib import contextmanager
 from datetime import datetime, time as dtime
 
 import pandas as pd
-import psycopg2
 
 # 确保项目根在 sys.path
 _PROJ_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -119,28 +117,6 @@ _alpha_engine = None
 _writer = None
 _reader = None
 
-@contextmanager
-def qdb_conn():
-    """独立连接上下文管理器 (保留兼容, 新代码请使用 _ensure_writer/_ensure_reader)
-
-    每次 yield 一个新 psycopg2 连接, 退出时自动 close。
-    配置 TCP keepalive 缩短空闲超时检测间隔。
-    """
-    con = None
-    try:
-        con = psycopg2.connect(
-            host='127.0.0.1', port=8812, user='admin', password='quest',
-            database='qdb', connect_timeout=5,
-            keepalives=1, keepalives_idle=30,
-            keepalives_interval=10, keepalives_count=3,
-        )
-        yield con
-    finally:
-        if con is not None:
-            try:
-                con.close()
-            except Exception:
-                pass
 
 def _ensure_writer():
     """获取/保活写连接 (进程级单例)"""

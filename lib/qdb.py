@@ -53,7 +53,7 @@ QDB_DBNAME = os.getenv('QDB_DBNAME', 'qdb')
 
 # —— parquet 双写备份 (批次分片, O(1) 写入) ——
 # 每批写独立小文件 (today/NNNNNN.parquet), 不读不拼不合并。
-# 读取时用 pyarrow/duckdb 读目录下所有分片 (收盘后可通过 force_flush_backup 合并)。
+# 读取时用 pyarrow/duckdb 读目录下所有分片 (分批独立文件, O(1) 写入)。
 # 每批 I/O = 写当前批次, O(1), 不随当日数据量增长。
 #
 # 熔断器: 连续 3 次写入延迟 > 500ms 或 5 次异常 → 自动禁用当天备份, 保主线不崩。
@@ -124,42 +124,6 @@ def _write_parquet_backup(table, columns, rows):
             _BACKUP_CIRCUIT_BROKEN = True
             logger.error('parquet备份熔断: 连续 {count} 次失败, 当天禁用',
                           count=_BACKUP_FAIL_COUNT)
-
-
-def force_flush_backup():
-    """收盘后合并当天所有分片为单个文件 (可选, 方便归档)
-
-    遍历 _BACKUP_HIGH_FREQ 每张表下今天的日期目录,
-    读所有分片, concat 后写一个合并文件并删除分片。
-    非必调: 查询时可直接读目录下所有分片 (pyarrow/duckdb 原生支持)。
-    """
-    if not _BACKUP_ENABLED:
-        return
-    today = datetime.now().strftime('%Y-%m-%d')
-    for table in _BACKUP_HIGH_FREQ:
-        table_dir = os.path.join(_BACKUP_DIR, table, today)
-        if not os.path.isdir(table_dir):
-            continue
-        try:
-            parts = sorted([p for p in os.listdir(table_dir) if p.endswith('.parquet')])
-            if not parts:
-                continue
-            if len(parts) == 1:
-                # 唯一文件, 移到父目录
-                src = os.path.join(table_dir, parts[0])
-                dst = os.path.join(_BACKUP_DIR, table, f'{today}.parquet')
-                os.rename(src, dst)
-            else:
-                dfs = [pd.read_parquet(os.path.join(table_dir, p)) for p in parts]
-                merged = pd.concat(dfs, ignore_index=True)
-                dst = os.path.join(_BACKUP_DIR, table, f'{today}.parquet')
-                merged.to_parquet(dst, index=False)
-                # 删除分片
-                for p in parts:
-                    os.remove(os.path.join(table_dir, p))
-            os.rmdir(table_dir)
-        except Exception as e:
-            logger.warning('parquet 合并失败 {table}: {e}', table=table, e=e)
 
 
 def connect():
