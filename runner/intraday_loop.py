@@ -53,7 +53,7 @@ import compute.k4_sector_heatmap as k4_heatmap  # noqa: E402
 import compute.k4_ladder_tracker as k4_ladder  # noqa: E402
 import compute.k5_kline_synth as k5  # noqa: E402
 import strategy.intraday_engine as intraday_engine  # noqa: E402
-from strategy import dark_money  # noqa: E402
+# from strategy import dark_money  # ⚠️ 已禁用
 from strategy import big_order  # noqa: E402
 from strategy import sector_flow as sector_flow_mod  # noqa: E402
 
@@ -668,21 +668,25 @@ def _run_money_flow(con, ctx):
     if snap is None or snap.empty:
         return
     try:
+        # ⚠️ 已禁用 dark_money 模块，暂跳过资金流计算
+        logger.info('个股资金流已禁用 (dark_money 模块)')
+        return
+        # 原代码:
         # C8 拆表后: snapshot_focus_df 已含快照列 + merge 进的 intraday 列 (Zjl/FCAmo 等)
         # 不再 bfill / filter NowVol (都是 c2 行, intraday 已真实)
-        df = snap.copy().sort_values(['code', 'snapshot_time'])
-        mf = dark_money.calc_batch(df, None)  # df 已嵌 intraday 字段, 跳过内部 merge
-        if mf is None or mf.empty:
-            return
+        # df = snap.copy().sort_values(['code', 'snapshot_time'])
+        # mf = dark_money.calc_batch(df, None)  # df 已嵌 intraday 字段, 跳过内部 merge
+        # if mf is None or mf.empty:
+        #     return
         # 构造行 (big_order_diff/light_money 显式 None, 不写 pandas NaN; 仿 _run_sector_flow)
-        rows = [
-            (r.code, r.flow_time, r.main_net, None, r.dark_money, None,
-             r.pressure_diff_5level, r.buy_pressure, r.sell_pressure, r.net_flow)
-            for r in mf[_MONEY_FLOW_COLS].itertuples(index=False)
-        ]
-        executemany_batch(con, 'qd_money_flow', _MONEY_FLOW_COLS, rows)
-        ctx.money_flow_df = mf  # 当轮刷新, 供 p08/p12 + H1 首轮校验
-        logger.info('写入 qd_money_flow: {} 行', len(rows))
+        # rows = [
+        #     (r.code, r.flow_time, r.main_net, None, r.dark_money, None,
+        #      r.pressure_diff_5level, r.buy_pressure, r.sell_pressure, r.net_flow)
+        #     for r in mf[_MONEY_FLOW_COLS].itertuples(index=False)
+        # ]
+        # executemany_batch(con, 'qd_money_flow', _MONEY_FLOW_COLS, rows)
+        # ctx.money_flow_df = mf  # 当轮刷新, 供 p08/p12 + H1 首轮校验
+        # logger.info('写入 qd_money_flow: {} 行', len(rows))
     except Exception as e:
         logger.warning('个股资金流失败: {}', e)
 

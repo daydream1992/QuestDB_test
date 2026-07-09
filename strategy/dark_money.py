@@ -1,3 +1,7 @@
+# ⚠️ 已禁用：明暗资金计算公式复杂难验证，暂不使用
+# 如需启用，删除此行并取消下面的代码注释
+__DISABLED__ = True
+
 """明暗资金计算
 
 脚本路径: K:\QuestDB_test\\strategy\\dark_money.py
