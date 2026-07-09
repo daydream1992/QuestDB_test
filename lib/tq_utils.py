@@ -29,6 +29,9 @@
 
 import os
 import sys
+import logging
+
+logger = logging.getLogger(__name__)
 
 # 确保项目根目录在 sys.path, 以便 from config.index_codes import ...
 _PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -161,8 +164,8 @@ def load_code_type_map(con):
         df = query_df(con, "SELECT code, code_type FROM qd_code_registry WHERE is_active = true")
         if df is not None and not df.empty:
             return dict(zip(df['code'], df['code_type']))
-    except Exception:
-        pass
+    except Exception as e:
+        logger.warning('load_code_type_map 失败: {}', e)
     return {}
 
 

@@ -40,7 +40,6 @@ if _PROJ_ROOT not in sys.path:
 from loguru import logger  # noqa: E402
 
 from lib.qdb import connect, query_df, executemany_batch, cutoff, _ensure_alive  # noqa: E402
-from lib.tq_utils import classify_code, route_type_to_table, route_type  # noqa: E402
 from lib.tq_client import init  # noqa: E402
 from feishu import push_decision_aggregated, log_signals  # noqa: E402
 from lib.market_clock import is_trading_time, is_trading_day  # noqa: E402
@@ -52,7 +51,6 @@ import collect.c4_kline as c4  # noqa: E402
 import compute.k1_indicators as k1  # noqa: E402
 import compute.k2_signals as k2  # noqa: E402
 import compute.k3_sentiment as k3  # noqa: E402
-import compute.k4_sentiment as k4  # noqa: E402
 import compute.k4_sector_heatmap as k4_heatmap  # noqa: E402
 import compute.k4_ladder_tracker as k4_ladder  # noqa: E402
 import compute.k5_kline_synth as k5  # noqa: E402
@@ -64,6 +62,7 @@ from strategy import sector_flow as sector_flow_mod  # noqa: E402
 from strategy.registry import StrategyRegistry  # noqa: E402
 from strategy.context import StrategyContext  # noqa: E402
 from strategy.risk import RiskManager  # noqa: E402
+from strategy.base import Decision  # noqa: E402
 from strategy.selector import select_focus_pool  # noqa: E402
 from strategy.resonance import scan_market  # noqa: E402
 from lib.relation_graph import load_from_json, DEFAULT_JSON_DIR, get_stock_sectors, get_stock_name  # noqa: E402
@@ -743,8 +742,7 @@ def run(con=None, max_rounds=None, force=False):
     # 加载关系图谱 (盘中复用内存映射, 加载失败降级)
     graph = None
     try:
-        load_from_json(DEFAULT_JSON_DIR)
-        graph = True
+        graph = load_from_json(DEFAULT_JSON_DIR)
         logger.info('关系图谱加载完成')
     except Exception as e:
         logger.warning('关系图谱加载失败, 板块资金流/共振将降级: {}', e)

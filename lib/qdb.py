@@ -17,6 +17,7 @@
 
 import os
 import re
+import time
 from collections import defaultdict
 from datetime import datetime, timedelta
 import numpy as np
@@ -285,10 +286,8 @@ def _do_executemany(con, sql, rows, batch_size):
                 total += len(batch)
             except (OperationalError, InterfaceError) as e:
                 # 本批断连: 自动重连后创建新 cursor, 重试本批
-                from loguru import logger
                 logger.warning('executemany 批次连接断, 自动重连重试 (已写 {} 行, 失败在 {})', total, i)
                 cur.close()
-                import time
                 time.sleep(0.5)
                 con = _ensure_alive(con)
                 cur = con.cursor()

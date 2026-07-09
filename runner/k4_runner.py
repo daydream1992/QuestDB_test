@@ -33,7 +33,7 @@ if _PROJ_ROOT not in sys.path:
 
 from loguru import logger
 
-from lib.qdb import connect, query_df, executemany_batch, cutoff
+from lib.qdb import connect
 
 
 _LOG_DIR = os.path.join(_PROJ_ROOT, 'logs')

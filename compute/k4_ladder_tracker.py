@@ -40,7 +40,7 @@ if _PROJ_ROOT not in sys.path:
 
 from loguru import logger
 from lib.qdb import connect, query_df, executemany_batch, cutoff
-from lib.relation_graph import get_stock_sectors, get_sector_raw_type, _sector_meta
+from lib.relation_graph import get_stock_sectors, _sector_meta
 
 _LOG_DIR = os.path.join(_PROJ_ROOT, 'logs')
 os.makedirs(_LOG_DIR, exist_ok=True)
@@ -86,12 +86,6 @@ def _health_label(score):
     return '🔴危险'
 
 
-def _safe_name(code):
-    """从名称映射取股票名称"""
-    from lib.relation_graph import get_stock_name
-    return get_stock_name(code)
-
-
 # ══════════════════════════════════════════════════════════════
 # 数据加载
 # ══════════════════════════════════════════════════════════════
@@ -108,7 +102,7 @@ def _load_snapshot_data(con):
     """
     try:
         from datetime import timedelta
-        ts = (datetime.now() - timedelta(minutes=5)).strftime('%Y-%m-%dT%H:%M:%S')
+        ts = (datetime.now() - timedelta(minutes=10)).strftime('%Y-%m-%dT%H:%M:%S')
 
         # 分别读两表, 每个 code 取最新
         snap = query_df(con,
@@ -138,6 +132,8 @@ def _load_snapshot_data(con):
             code = r['code']
             now = _sf(r.get('Now'))
             lc = _sf(r.get('LastClose'))
+            if now <= 0 or lc <= 0:  # 排除停牌/退市
+                continue
             zaf = round((now - lc) / lc * 100, 2) if lc > 0 else 0.0
             result[code] = {
                 'fcamo': _sf(r.get('fcamo')),
@@ -416,9 +412,10 @@ def _compute(con, snap_data, daily_data, gp_data, sector_flow):
     flat_all = []
     for k, items in tiers.items():
         for item in items:
-            flat_all.append((k, item))
-    flat_all.sort(key=lambda x: (-x[0], -x[1]['fcamo']))
-    top3 = flat_all[:3]
+            tier_rank = k if isinstance(k, int) else 99  # '5+' → 99
+            flat_all.append((tier_rank, k, item))
+    flat_all.sort(key=lambda x: (-x[0], -x[2]['fcamo']))
+    top3 = [(x[1], x[2]) for x in flat_all[:3]]
 
     # 2进3 晋级池: 全局排序 (含评分降序)
     candidates_2to3.sort(key=lambda x: -x['total_score'])
@@ -625,14 +622,11 @@ if __name__ == '__main__':
         r = run(con)
         stats = r.get('stats', {})
         print(f'\n连板: {stats}')
-        tiers = r.get('lb_tiers', {})
-        for k in ['5+', 4, 3, 2, 1]:
-            v = tiers.get(k, [])
-            if v:
-                label = f'{k}板' if k != '5+' else '5板+'
-                print(f'\n{label} ({len(v)}):')
-                for s in v[:3]:
-                    print(f'  {s.get("name","")}({s["code"]}) FCAmo{_sf(s["fcamo"])/1e8:.2f}亿')
+        top3 = r.get('lb_tiers', [])
+        print(f'\n最强梯队 Top3 ({len(top3)}):')
+        for i, (k, s) in enumerate(top3, 1):
+            lbl = f'{k}板' if isinstance(k, int) else '5板+'
+            print(f'  {i}. {lbl} {s.get("name","")}({s["code"]}) FCAmo{_sf(s["fcamo"])/1e8:.2f}亿')
         candidates = r.get('promotion_rankings', [])
         if candidates:
             print(f'\n2进3 排行:')

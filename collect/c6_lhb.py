@@ -114,7 +114,8 @@ def _get_latest_date(con):
             if hasattr(result, 'strftime'):
                 return result.strftime('%Y-%m-%d')
             return str(result)[:10]
-    except Exception:
+    except Exception as e:
+        logger.warning('获取最新龙虎榜日期失败: {}', e)
         pass
     return None
 
@@ -149,8 +150,7 @@ def run(date=None, con=None, dry_run=False):
 
         # 2. 查询 longhubang 表
         df_lhb = pd.read_sql(
-            f"SELECT * FROM longhubang WHERE trade_date = '{date_str}'",
-            conn
+            "SELECT * FROM longhubang WHERE trade_date = ?", conn, params=(date_str,)
         )
         if df_lhb.empty:
             logger.warning('longhubang 无数据, date={}', date_str)
@@ -161,8 +161,7 @@ def run(date=None, con=None, dry_run=False):
 
         # 3. 查询 trader_booth 表
         df_booth = pd.read_sql(
-            f"SELECT * FROM trader_booth WHERE trade_date = '{date_str}'",
-            conn
+            "SELECT * FROM trader_booth WHERE trade_date = ?", conn, params=(date_str,)
         )
         conn.close()
 
@@ -203,8 +202,8 @@ def run(date=None, con=None, dry_run=False):
             else:
                 reason = ''
                 reason_id = None
-                close_price = 0.0
-                rise_fall = 0.0
+                close_price = None
+                rise_fall = None
 
             # 营业部识别
             btype, blabel = _identify_broker(broker_name)

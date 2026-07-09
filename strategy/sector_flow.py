@@ -134,19 +134,22 @@ def detect_rotation(sector_flow_history) -> dict:
 def flow_divergence(block_code, context) -> dict:
     """板块资金流与板块价格背离
 
+    注意: context.index_snapshot 是 dict {code: {Now, LastClose}},
+          不是 DataFrame。此函数当前未被调用 (死代码/预留接口)。
+
     Args:
         block_code: 板块代码
-        context: StrategyContext (用 pricevol_df 取板块价格,
-                 sector_flow_df 取板块资金流)
+        context: StrategyContext
 
     Returns:
         dict: {block_code, price_change, net_flow, divergence, reason}
-        divergence ∈ {'top_divergence', 'bottom_divergence', None}
     """
     price_change = 0.0
-    # 从 index_snapshot 取板块行情 (pricevol_df 不含板块代码)
-    if context.index_snapshot is not None and not context.index_snapshot.empty:
-        row = context.index_snapshot[context.index_snapshot['code'] == block_code]
+    # index_snapshot 是 dict: {code: {Now, LastClose}}
+    if context.index_snapshot and isinstance(context.index_snapshot, dict):
+        snap = context.index_snapshot.get(block_code)
+        if snap:
+            price_change = _change_pct(snap.get('Now'), snap.get('LastClose'))
         if not row.empty:
             r = row.iloc[0]
             price_change = _change_pct(r.get('Now'), r.get('LastClose'))

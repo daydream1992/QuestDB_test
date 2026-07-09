@@ -32,7 +32,6 @@
 import os
 import sys
 import time
-import json
 from datetime import datetime
 
 # 确保项目根在 sys.path
@@ -593,8 +592,6 @@ def main():
         signal.signal(signal.SIGBREAK, _graceful_exit)
     signal.signal(signal.SIGTERM, _graceful_exit)
 
-    import __main__
-    doc = __main__.__doc__ or ''
     overseer = Overseer()
     try:
         overseer.run()

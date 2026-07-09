@@ -11,7 +11,6 @@
 
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from typing import List
 
 
 @dataclass
@@ -35,7 +34,7 @@ class StrategyBase(ABC):
     enabled = True
 
     @abstractmethod
-    def evaluate(self, context) -> List[Decision]:
+    def evaluate(self, context) -> list[Decision]:
         """评估策略, 返回决策列表"""
         pass
 

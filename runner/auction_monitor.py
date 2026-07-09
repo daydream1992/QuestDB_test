@@ -27,19 +27,6 @@ if _PROJ_ROOT not in sys.path:
 from loguru import logger  # noqa: E402
 
 from lib.qdb import connect, query_df, executemany_batch, cutoff  # noqa: E402
-
-
-def _write_heartbeat(name):
-    """写入心跳文件 (logs/heartbeats/{name}.ts)"""
-    import os as _os
-    hb_dir = _os.path.join(_PROJ_ROOT, 'logs', 'heartbeats')
-    _os.makedirs(hb_dir, exist_ok=True)
-    try:
-        fp = os.path.join(hb_dir, f'{name}.ts')
-        with open(fp, 'w') as f:
-            f.write(str(time.time()))
-    except Exception:
-        pass
 from lib.tq_client import safe_call, init, close  # noqa: E402
 from feishu import log_signals  # noqa: E402
 from lib.market_clock import is_auction_time, is_trading_day, get_auction_phase  # noqa: E402
@@ -48,6 +35,19 @@ from tqcenter import tq  # noqa: E402
 
 from strategy.registry import StrategyRegistry  # noqa: E402
 from strategy.context import StrategyContext  # noqa: E402
+
+
+def _write_heartbeat(name):
+    """写入心跳文件 (logs/heartbeats/{name}.ts)"""
+    hb_dir = os.path.join(_PROJ_ROOT, 'logs', 'heartbeats')
+    os.makedirs(hb_dir, exist_ok=True)
+    try:
+        fp = os.path.join(hb_dir, f'{name}.ts')
+        with open(fp, 'w') as f:
+            f.write(str(time.time()))
+    except Exception:
+        pass
+
 
 # 配置路径
 _YAML_PATH = os.path.join(_PROJ_ROOT, 'config', 'strategies.yaml')

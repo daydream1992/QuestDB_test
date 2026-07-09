@@ -35,8 +35,8 @@ if _PROJ_ROOT not in sys.path:
 
 from loguru import logger  # noqa: E402
 
-from lib.tq_client import safe_call, init  # noqa: E402
-from lib.tq_utils import to_tdx, route_type, fetch_all_codes, classify_code, route_type_to_table  # noqa: E402
+from lib.tq_client import safe_call  # noqa: E402
+from lib.tq_utils import fetch_all_codes, classify_code, route_type_to_table  # noqa: E402
 from lib.qdb import connect, executemany_batch  # noqa: E402
 
 from tqcenter import tq  # noqa: E402
@@ -142,7 +142,6 @@ def parse_snapshot(code, data, snapshot_time, code_type, route_to):
 
 def _fetch_one(code):
     """调用 get_market_snapshot 单只采集 (带 10s 超时, 防卡死整轮)"""
-    import signal as _sig
     # Windows 不支持 signal.alarm, 用 threading.Timer 兜底
     _result, _exception = [], []
 

@@ -102,23 +102,6 @@ def _bin(value, bins):
     return len(bins)
 
 
-def classify_stock(now_price, fcamo, mx, zt_price):
-    """涨跌停判定 (知识库规范): Now==ZTPrice AND FCAmo>0 涨停; FCAmo<0 跌停; 曾触板但未封=炸板"""
-    fcamo = _safe_float(fcamo)
-    now_price = _safe_float(now_price)
-    if fcamo > TH.SEAL_AMO_POS:
-        zt = _safe_float(zt_price)
-        if zt > 0 and now_price >= zt * TH.NEAR_ZT_RATIO:
-            return 'zt'
-    if fcamo < TH.SEAL_AMO_POS:
-        return 'dt'
-    mx = _safe_float(mx)
-    zt = _safe_float(zt_price)
-    if zt > 0 and mx >= zt * TH.NEAR_ZT_RATIO:
-        return 'break'
-    return 'normal'
-
-
 def rate_emotion(zt_cnt, fbl, max_lb, udr):
     """4 分量各评 1 档取最差档 → (label, order)"""
     orders = [
@@ -142,7 +125,7 @@ def _calc_market_breadth(pricevol_df):
         df = df.groupby('code', as_index=False).last()
     lc = pd.to_numeric(df['LastClose'], errors='coerce')
     nw = pd.to_numeric(df['Now'], errors='coerce')
-    valid = lc > 0
+    valid = (lc > 0) & (nw > 0)  # 排除停牌/退市
     up = int(((nw > lc) & valid).sum())
     down = int(((nw < lc) & valid).sum())
     udr = (up / down) if down > 0 else (float('inf') if up > 0 else 1.0)
@@ -284,14 +267,62 @@ def build_sector_strength(merged_df, cls_arr=None, zaf_arr=None, lb_arr=None, zj
     return scored[:10]
 
 
-def detect_divergence(index_zaf, udr, up_cnt, down_cnt):
-    """指数层背离 (本次实现价宽; 价资/价量/北向/期指 stub)"""
+_INDEX_CODES = {
+    '000001.SH': '上证指数',
+    '399001.SZ': '深证成指',
+    '399006.SZ': '创业板指',
+    '000688.SH': '科创50',
+}
+
+
+def _main_index_zaf(index_snapshot):
+    """四大指数涨幅 dict (上证/深证/创业板/科创50)
+
+    返回:
+      dict[str, float]: {指数名称: 涨幅%}, 为空时返回 {}
+    """
+    if not index_snapshot:
+        return {}
+    result = {}
+    for code, name in _INDEX_CODES.items():
+        s = index_snapshot.get(code)
+        if s:
+            now = _safe_float(s.get('Now'))
+            lc = _safe_float(s.get('LastClose'))
+            if lc > 0:
+                result[name] = round((now - lc) / lc * 100, 2)
+    return result
+
+
+def detect_divergence(index_zaf_dict, udr, up_cnt, down_cnt):
+    """指数层背离 (价宽 + 指数间分化)
+
+    当前实现:
+      - 价宽背离: 指数涨但涨跌比低
+      - 指数分化: 四大指数涨幅偏差过大
+
+    Returns:
+        list[dict]: 背离信号列表
+    """
     divs = []
-    if index_zaf > TH.DIV_INDEX_MIN_ZAF and udr < TH.DIV_PRICE_WIDTH_UDR:
-        divs.append({'type': 'price_width', 'desc': f'指数涨{index_zaf:.2f}%但涨跌比{udr:.2f}(二八虚涨)'})
-    # TODO(批2后续): 价资背离(指数涨但主力净流出, 需 qd_index_snapshot Zjl)
-    # TODO: 价量背离(涨但成交较昨缩>20%, 需 CJJEPre1)
-    # TODO: 北向/期指 (数据源 2024 后停披露, 暂不实现)
+
+    # 主指数取上证涨幅做价宽背离检测 (与原逻辑兼容)
+    sh_zaf = _safe_float(index_zaf_dict.get('上证指数', 0.0))
+    if sh_zaf > TH.DIV_INDEX_MIN_ZAF and udr < TH.DIV_PRICE_WIDTH_UDR:
+        divs.append({'type': 'price_width', 'desc': f'上证涨{sh_zaf:.2f}%但涨跌比{udr:.2f}(二八虚涨)'})
+
+    # 指数间分化: 四大指数最大-最小 > 2% 为显著分化
+    zafs = [v for v in index_zaf_dict.values() if v != 0.0]
+    if len(zafs) >= 2:
+        max_zaf, min_zaf = max(zafs), min(zafs)
+        spread = max_zaf - min_zaf
+        if spread > 2.0:
+            names_above = [f'{n}({v:+.2f}%)' for n, v in index_zaf_dict.items() if v == max_zaf]
+            names_below = [f'{n}({v:+.2f}%)' for n, v in index_zaf_dict.items() if v == min_zaf]
+            divs.append({
+                'type': 'index_divergence',
+                'desc': f'指数分化 {spread:.1f}%: {" ".join(names_above)} ↑ {" ".join(names_below)} ↓',
+            })
     return divs
 
 
@@ -340,26 +371,6 @@ def check_turn(frame):
     return events
 
 
-def _main_index_zaf(index_snapshot):
-    """主指数 (上证 000001.SH) 涨幅 %"""
-    if not index_snapshot:
-        return 0.0
-    for code in ('000001.SH', '1A0001', 'sh000001'):
-        s = index_snapshot.get(code)
-        if s:
-            now = _safe_float(s.get('Now'))
-            lc = _safe_float(s.get('LastClose'))
-            if lc > 0:
-                return (now - lc) / lc * 100
-    # 退化: 取第一个指数
-    for s in index_snapshot.values():
-        now = _safe_float(s.get('Now'))
-        lc = _safe_float(s.get('LastClose'))
-        if lc > 0:
-            return (now - lc) / lc * 100
-    return 0.0
-
-
 def run(con, ctx):
     """情绪监控主流程 (60s/轮): 算评级→写库→返回 sentiment dict 挂 ctx
 
@@ -387,6 +398,9 @@ def run(con, ctx):
     _chg_arr = None
     _zaf_arr = None
     _zjl_arr = None
+    _zjl_hb_arr = None
+    nw_v = None
+    lc_v = None
     if merged is not None and not merged.empty:
         nw_v = pd.to_numeric(merged['Now'], errors='coerce').fillna(0)
         ztp_v = pd.to_numeric(merged['ZTPrice'], errors='coerce').fillna(0)
@@ -417,24 +431,27 @@ def run(con, ctx):
     # 3. 板块强度 (用 Zjl_HB)
     top_sectors = build_sector_strength(merged, _cls, _zaf_arr, _lb_series, _zjl_hb_arr)
 
-    # 4. 主指数涨幅
-    index_zaf = _main_index_zaf(ctx.index_snapshot)
+    # 4. 四大指数涨幅 dict + 上证涨幅 (DDL 兼容)
+    index_zaf_dict = _main_index_zaf(ctx.index_snapshot)
+    index_zaf = _safe_float(index_zaf_dict.get('上证指数', 0.0))
 
-    # 5. 全市场主力净流入 + 一致率 (知识库规范: Zjl_HB)
+    # 5. 全市场主力净流入 + 一致率 (知识库规范: Zjl_HB, 仅统计有效交易个股)
     _total_flow = 0.0
     _pos_flow_cnt = 0
-    _flow_cnt = 0
-    if _zjl_hb_arr is not None and len(_zjl_hb_arr) > 0:
-        _total_flow = float(_zjl_hb_arr.sum())
-        _pos_flow_cnt = int((_zjl_hb_arr > 0).sum())
-        _flow_cnt = int((_zjl_hb_arr != 0).sum())
-    _consistency = (_pos_flow_cnt / _flow_cnt * 100) if _flow_cnt > 0 else 0.0
+    _valid_cnt = 0
+    if _zjl_hb_arr is not None and len(_zjl_hb_arr) > 0 and nw_v is not None and lc_v is not None:
+        _valid_mask = (nw_v > 0) & (lc_v > 0)  # 停牌/退市剔除
+        _valid_zjl = _zjl_hb_arr[_valid_mask]
+        _total_flow = float(_valid_zjl.sum())
+        _pos_flow_cnt = int((_valid_zjl > 0).sum())
+        _valid_cnt = int(_valid_mask.sum())
+    _consistency = (_pos_flow_cnt / _valid_cnt * 100) if _valid_cnt > 0 else 0.0
 
     # 6. 情绪评级 (4 分量取最差档)
     emotion, emotion_order = rate_emotion(zt_cnt, fbl, max_lb, udr)
 
     # 7. 背离
-    divergences = detect_divergence(index_zaf, udr, up_cnt, down_cnt)
+    divergences = detect_divergence(index_zaf_dict, udr, up_cnt, down_cnt)
 
     # 8. 连板梯队 (按板数分层)
     lb_tier = {'lb2': pools['lianban'][:20], 'shouban': pools['shouban'][:20],

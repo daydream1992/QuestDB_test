@@ -34,6 +34,7 @@ class Position:
     stop_profit_pct: float     # 止盈 % (正数)
     entry_alpha: float = 0.0
     entry_rank: int = 0
+    _unrealized_pnl: float = 0.0
     status: str = 'open'       # 'open' / 'closed'
     realized_pnl: float = 0.0
     close_price: float = 0.0

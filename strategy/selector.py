@@ -19,6 +19,7 @@
 
 import pandas as pd
 from loguru import logger
+from typing import Tuple
 
 TOP_N = 100
 NEAR_ZT_THRESHOLD = 0.01  # 接近涨停: 距涨停价 1% 以内
@@ -45,7 +46,7 @@ def _latest_per_code(df) -> pd.DataFrame:
     return df
 
 
-def select_focus_pool(pricevol_df, more_info_df) -> list:
+def select_focus_pool(pricevol_df, more_info_df) -> Tuple[list, dict]:
     """动态选重点池
 
     Args:

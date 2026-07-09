@@ -46,8 +46,8 @@ if _PROJ_ROOT not in sys.path:
 
 from loguru import logger  # noqa: E402
 
-from lib.tq_client import safe_call, init  # noqa: E402
-from lib.tq_utils import to_tdx, route_type, classify_code, route_type_to_table  # noqa: E402
+from lib.tq_client import safe_call  # noqa: E402
+from lib.tq_utils import classify_code, route_type_to_table  # noqa: E402
 from lib.qdb import connect, executemany_batch  # noqa: E402
 
 from config.fields import (  # noqa: E402

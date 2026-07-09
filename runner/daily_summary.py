@@ -141,7 +141,7 @@ def run():
                 df = query_df(con, f'SELECT count(*) as c FROM {tbl}')
                 if df['c'].iloc[0] == 0:
                     zero.append(label)
-            except:
+            except Exception:
                 pass
         if zero:
             lines.append(f'⚠️ 零产出模块: {", ".join(zero)}')

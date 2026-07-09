@@ -137,23 +137,13 @@ MAX_C4_STOCKS = 800
 _CHUNK_SIZE = 100
 
 
-def _merge_kline_chunks(chunks):
-    """合并多批 K 线解析结果"""
-    all_rows = []
-    for rows in chunks:
-        if rows:
-            all_rows.extend(rows)
-    return all_rows
-
-
-def run(codes, period='1m', count=1, con=None):
+def run(codes, period='1m', count=1):
     """K 线采集主入口
 
     Args:
         codes:  待采集代码列表 (标准代码)
         period: '1m' / '5m'
-        count:  K 线根数
-        con:    忽略——c4 自建连接 (调用者传入的连接可能因采集耗时长而超时)
+        count:  K 线根数 (调用者传入的连接可能因采集耗时长而超时)
 
     Returns:
         int: 写入行数

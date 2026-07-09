@@ -33,7 +33,7 @@ if _PROJ_ROOT not in sys.path:
 
 from loguru import logger
 from lib.qdb import connect, query_df, executemany_batch, cutoff
-from lib.relation_graph import get_sector_raw_type, get_sector_stocks, get_stock_sectors, _sector_meta
+from lib.relation_graph import get_sector_stocks, get_stock_sectors, _sector_meta
 
 # 日志
 _LOG_DIR = os.path.join(_PROJ_ROOT, 'logs')
@@ -95,17 +95,18 @@ def _get_sector_name(code):
 # ══════════════════════════════════════════════════════════════
 
 def _load_sector_zaf(con):
-    """读板块快照: qd_sector_snapshot (c2 60s轮换写入, 数据在 snapshot 表)
+    """读板块快照: qd_sector_snapshot (Outside=涨停家数, Inside=跌停家数)
 
     C8 拆表后: 板块快照没有对应的 intraday 表, 涨幅直接由 Now/LastClose 算。
+    Outside/Inside 在板块快照中分别表示涨停家数/跌停家数 (知识库规范)。
 
     返回:
-      dict[block_code, {'zaf': float, 'now': float}]
+      dict[block_code, {'zaf': float, 'now': float, 'outside': int, 'inside': int}]
     """
     try:
         df = query_df(con,
-            f"SELECT code, Now, LastClose FROM qd_sector_snapshot "
-            f"WHERE snapshot_time > '{cutoff(minutes=5)}' "  # 放宽到5分钟, c2 60s全市场轮换
+            f"SELECT code, Now, LastClose, Outside, Inside FROM qd_sector_snapshot "
+            f"WHERE snapshot_time > '{cutoff(minutes=10)}' "
             f"ORDER BY snapshot_time DESC")
         if df is None or df.empty:
             return {}
@@ -117,7 +118,12 @@ def _load_sector_zaf(con):
             lc = _sf(r.get('LastClose'))
             if lc > 0:
                 zaf = round((now - lc) / lc * 100, 2)
-                result[code] = {'zaf': zaf, 'now': now}
+                result[code] = {
+                    'zaf': zaf,
+                    'now': now,
+                    'outside': int(_sf(r.get('Outside'))),
+                    'inside': int(_sf(r.get('Inside'))),
+                }
         return result
     except Exception as e:
         logger.warning('读板块快照失败: {}', e)
@@ -125,29 +131,38 @@ def _load_sector_zaf(con):
 
 
 def _load_stock_data(con):
-    """读个股快照: 从 qd_stock_intraday 取 FCAmo, 从 qd_stock_snapshot 取 Now/LastClose
+    """读个股快照: 从 qd_stock_snapshot 取 Now/LastClose, 从 qd_stock_intraday 取 FCAmo
 
-    C8 拆表后: FCAmo 在 qd_stock_intraday 表, JOIN snapshot 取完整数据。
+    C8 拆表后: FCAmo 在 qd_stock_intraday 表, 无法精确 JOIN (两表时间戳不对齐)。
+    改为按 code 分别取最新后 merge (同 k4_ladder_tracker 模式)。
 
     返回:
       dict[stock_code, {'zaf': float, 'fcamo': float}]
     """
     try:
-        df = query_df(con,
-            f"SELECT s.code, s.Now, s.LastClose, i.FCAmo "
-            f"FROM qd_stock_intraday i "
-            f"JOIN qd_stock_snapshot s ON i.code = s.code AND i.snapshot_time = s.snapshot_time "
-            f"WHERE i.snapshot_time > '{cutoff(minutes=5)}'")
-        if df is None or df.empty:
+        snap = query_df(con,
+            f"SELECT code, Now, LastClose FROM qd_stock_snapshot "
+            f"WHERE snapshot_time > '{cutoff(minutes=10)}' "
+            f"ORDER BY snapshot_time DESC")
+        intra = query_df(con,
+            f"SELECT code, FCAmo FROM qd_stock_intraday "
+            f"WHERE snapshot_time > '{cutoff(minutes=10)}' "
+            f"ORDER BY snapshot_time DESC")
+        if snap is None or snap.empty:
             return {}
-        latest = df.groupby('code', as_index=False).first()
+        snap_l = snap.groupby('code', as_index=False).first()
+        if intra is not None and not intra.empty:
+            intra_l = intra.groupby('code', as_index=False).first()
+            merged = snap_l.merge(intra_l, on='code', how='left')
+        else:
+            merged = snap_l
         result = {}
-        for _, r in latest.iterrows():
+        for _, r in merged.iterrows():
             code = r['code']
             now = _sf(r.get('Now'))
             lc = _sf(r.get('LastClose'))
             fcamo = _sf(r.get('FCAmo'))
-            if lc > 0:
+            if now > 0 and lc > 0:  # 排除停牌
                 zaf = round((now - lc) / lc * 100, 2)
                 result[code] = {'zaf': zaf, 'fcamo': fcamo}
         return result
@@ -194,11 +209,12 @@ def _compute_sector_ranking(raw_type, sector_zaf, stock_data):
 
     Args:
         raw_type: 原始分类类型
-        sector_zaf: _load_sector_zaf() 结果
+        sector_zaf: _load_sector_zaf() 结果 (含 outside/inside)
         stock_data: _load_stock_data() 结果
 
     Returns:
-        list[dict]: [{code, name, zaf, zt_count}, ...] 按 ZAF 降序
+        list[dict]: [{code, name, zaf, zt_count}, ...]
+                    按 涨停家数(Outside)降序→涨幅降序 (知识库规范)
     """
     codes = _get_sector_codes_by_raw_type(raw_type)
     if not codes:
@@ -224,8 +240,11 @@ def _compute_sector_ranking(raw_type, sector_zaf, stock_data):
             if zaf_cnt == 0:
                 continue
             zaf = round(zaf_sum / zaf_cnt, 2)
-            sz = {'zaf': zaf, 'now': 0.0}
-        zt_cnt = _compute_zt_count(code, stock_data)
+            sz = {'zaf': zaf, 'now': 0.0, 'outside': 0}
+        # 涨停家数: 优先用板块快照的 Outside (来源可靠), 无板块快照时成分股推算
+        zt_cnt = int(sz.get('outside', 0)) if sz.get('outside', 0) > 0 else _compute_zt_count(code, stock_data)
+        if zt_cnt == 0 and sz['zaf'] <= 0:
+            continue  # 无涨停且负涨幅的板块不展示
         scored.append({
             'code': code,
             'name': _get_sector_name(code),
@@ -233,7 +252,8 @@ def _compute_sector_ranking(raw_type, sector_zaf, stock_data):
             'zt_count': zt_cnt,
         })
 
-    scored.sort(key=lambda x: -x['zaf'])
+    # 知识库规范: 优先按涨停家数降序, 同涨停数按涨幅降序
+    scored.sort(key=lambda x: (-x['zt_count'], -x['zaf']))
     return scored[:_TOP_N_SECTORS]
 
 
