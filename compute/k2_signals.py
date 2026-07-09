@@ -212,7 +212,8 @@ def run(con=None):
 
         n = executemany_batch(con, DST, INSERT_COLUMNS, all_rows)
         logger.info('✓ k2 入库 {} 条信号', n)
-        _LAST_WATERMARK = datetime.now()
+        # 水印推进到已处理数据的最大 calc_time (数据时间, 非墙上时间)
+        _LAST_WATERMARK = _to_dt(df['calc_time'].max())
     finally:
         if own:
             con.close()

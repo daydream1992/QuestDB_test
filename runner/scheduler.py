@@ -277,61 +277,56 @@ def _attach_if_running(script_name):
 _LOCK_FILE = os.path.join(_PROJ_ROOT, 'logs', '.scheduler.lock')
 
 
+def _is_scheduler_process(pid):
+    """检查一个 PID 是否确实是 scheduler.py 进程 (防 PID 复用误判)"""
+    try:
+        proc = psutil.Process(pid)
+        cmdline = proc.cmdline()
+        return any('scheduler.py' in part for part in cmdline)
+    except (psutil.NoSuchProcess, psutil.AccessDenied, IndexError):
+        return False
+
+
 def _acquire_scheduler_lock():
-    """进程锁: 检查 .scheduler.lock, 若已有运行中的 scheduler 则退出。"""
-    import msvcrt
+    """进程锁: 基于 PID 文件 + 命令行验证, 防止重复启动 scheduler。
+
+    逻辑:
+      1. 读 .scheduler.lock 中的旧 PID
+      2. 若旧 PID 存在且是 scheduler 进程 → 冲突, 退出
+      3. 若旧 PID 是僵尸/被复用/无效 → 覆盖
+      4. 写当前 PID 到锁文件
+    """
     try:
         lock_fd = open(_LOCK_FILE, 'a+')
-    except OSError:
-        return None
+    except OSError as e:
+        logger.error('scheduler 锁文件访问失败: {}', e)
+        sys.exit(1)
     try:
-        # 先读出旧 PID 检查进程是否还活着
         lock_fd.seek(0)
         old_content = lock_fd.read().strip()
         if old_content:
             try:
                 old_pid = int(old_content)
-                if old_pid != os.getpid():
-                    # 进程还活着？→ 真冲突，退出
-                    psutil.Process(old_pid)
+                if old_pid != os.getpid() and _is_scheduler_process(old_pid):
                     logger.error('scheduler 已在运行 (PID={}), 退出', old_pid)
                     lock_fd.close()
                     sys.exit(1)
             except (ValueError, psutil.NoSuchProcess):
-                # PID 无效 → 旧锁文件是僵尸，直接覆盖
-                logger.warning('清理僵尸 scheduler 锁 (old_pid={})', old_content)
-        # 取锁
-        msvcrt.locking(lock_fd.fileno(), msvcrt.LK_NBLCK, 1)
-        lock_fd.seek(0)
-        content = lock_fd.read().strip()
-        if content:
-            try:
-                old_pid = int(content)
-                if old_pid != os.getpid():
-                    psutil.Process(old_pid)
-                    logger.error('scheduler 已在运行 (PID={}), 退出', old_pid)
-                    lock_fd.close()
-                    sys.exit(1)
-            except (ValueError, psutil.NoSuchProcess):
-                pass  # 无效 PID，可继续
-        # 写入当前 PID
+                pass  # 无效 PID 或僵尸, 覆盖
         lock_fd.seek(0)
         lock_fd.truncate()
         lock_fd.write(str(os.getpid()))
         lock_fd.flush()
         return lock_fd
-    except OSError:
-        # 锁已被占用，说明有其他 scheduler 在跑
+    except OSError as e:
         lock_fd.close()
-        logger.error('scheduler 锁文件被占用，可能有其他实例在运行，退出')
+        logger.error('scheduler 锁文件访问失败: {}', e)
         sys.exit(1)
 
 
 def _release_scheduler_lock(lock_fd):
     """释放锁文件"""
-    import msvcrt
     try:
-        msvcrt.locking(lock_fd.fileno(), msvcrt.LK_UNLCK, 1)
         lock_fd.close()
         os.remove(_LOCK_FILE)
     except Exception:
