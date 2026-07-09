@@ -47,74 +47,45 @@ def _latest_per_code(df) -> pd.DataFrame:
 
 
 def select_focus_pool(pricevol_df, more_info_df) -> Tuple[list, dict]:
-    """动态选重点池
+    """动态选重点池 (仅连板梯队)
 
     Args:
         pricevol_df: 全场价量 DataFrame (code/LastClose/Now/Volume)
         more_info_df: 88 字段 DataFrame (code/fHSL/fLianB/ZTPrice 等)
 
     Returns:
-        list[str]: 重点池股票代码列表 (去重)
+        list[str]: 连板股票代码列表 (去重)
     """
     if pricevol_df is None or pricevol_df.empty:
         logger.warning('选股器: pricevol_df 为空')
-        return []
+        return [], {}
 
     df = _latest_per_code(pricevol_df)
+
+    # 仅保留有板块映射的 code
     codes_in = set(df['code'].tolist())
 
-    # 涨幅
-    df['change_pct'] = df.apply(
-        lambda r: _safe_change(r.get('Now'), r.get('LastClose')), axis=1)
-
     pool = set()
-
-    # 1. 涨幅前 100
-    top_change = df.nlargest(TOP_N, 'change_pct')['code'].tolist()
-    pool.update(top_change)
-
-    # 2. 量比前 100 (用 Volume 代理, pricevol 无均量字段)
-    if 'Volume' in df.columns:
-        top_volume = df.nlargest(TOP_N, 'Volume')['code'].tolist()
-        pool.update(top_volume)
 
     # 合并 more_info
     mi = _latest_per_code(more_info_df) if more_info_df is not None else pd.DataFrame()
     if not mi.empty:
-        merge_cols = [c for c in ('fHSL', 'fLianB', 'ZTPrice') if c in mi.columns]
+        merge_cols = [c for c in ('fLianB',) if c in mi.columns]
         if merge_cols:
             mi_sub = mi[['code'] + merge_cols].drop_duplicates('code')
             df = df.merge(mi_sub, on='code', how='left')
 
-        # 3. 换手前 100
-        if 'fHSL' in df.columns:
-            df['fHSL'] = df['fHSL'].apply(lambda v: _safe_float(v))
-            top_hsl = df.nlargest(TOP_N, 'fHSL')['code'].tolist()
-            pool.update(top_hsl)
-
-        # 4. 连板梯队 (fLianB > 0)
+        # 仅保留连板梯队 (fLianB > 0)
         if 'fLianB' in df.columns:
-            lianb = df[df['fLianB'].apply(lambda v: _safe_float(v) > 0)]['code'].tolist()
+            df['fLianB'] = df['fLianB'].apply(lambda v: _safe_float(v))
+            lianb = df[df['fLianB'] > 0]['code'].tolist()
             pool.update(lianb)
 
-        # 5. 接近涨停 (距 ZTPrice 1% 以内)
-        if 'ZTPrice' in df.columns:
-            near_zt = df[df.apply(_near_zt, axis=1)]['code'].tolist()
-            pool.update(near_zt)
-
-    # 仅保留 pricevol 中存在的 code (合并可能引入空值)
+    # 仅保留 pricevol 中存在的 code
     pool &= codes_in
     result = sorted(pool)
-    detail = {
-        'top_change': len(top_change),
-        'top_volume': len(top_volume) if 'Volume' in df.columns else 0,
-        'high_hsl': len(top_hsl) if 'fHSL' in df.columns else 0,
-        'lianban': len(lianb) if 'fLianB' in df.columns else 0,
-        'near_zt': len(near_zt) if 'ZTPrice' in df.columns else 0,
-    }
-    logger.info('选股器: 重点池 {} 只 (涨幅{} 量比{} 换手{} 连板{} 近涨停{})',
-                len(result), detail['top_change'], detail['top_volume'],
-                detail['high_hsl'], detail['lianban'], detail['near_zt'])
+    detail = {'lianban': len(result)}
+    logger.info('选股器: 连板池 {} 只', len(result))
     return result, detail
 
 
