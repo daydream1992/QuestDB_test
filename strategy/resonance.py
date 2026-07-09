@@ -34,15 +34,22 @@ _STOCK_RE = re.compile(r'^\d{6}\.(SH|SZ|BJ)$')
 # 背离触发阈值 (涨跌幅 %)
 _DIVERGENCE_THRESHOLD = 1.0
 
+# 异常涨跌幅阈值 (超过此值视为异常/停牌/数据错误)
+_MAX_CHANGE_THRESHOLD = 30.0
+
 
 def _safe_change(now, lastclose) -> float:
     """涨跌幅 %, 异常或除零返回 0"""
     try:
         now = float(now)
         lastclose = float(lastclose)
-        if lastclose <= 0:
+        if lastclose <= 0 or now <= 0:
             return 0.0
-        return (now - lastclose) / lastclose * 100
+        change = (now - lastclose) / lastclose * 100
+        # 过滤异常涨跌幅 (停牌/数据错误/科创板涨跌停)
+        if abs(change) > _MAX_CHANGE_THRESHOLD:
+            return 0.0
+        return change
     except (TypeError, ValueError):
         return 0.0
 
@@ -57,9 +64,18 @@ def _index_change(index_snapshot, code) -> float:
     return _safe_change(snap.get('Now'), snap.get('LastClose'))
 
 
-def _sector_change(pricevol_df, block_code) -> float:
-    """从 pricevol_df 取板块涨跌幅"""
-    if pricevol_df is None or pricevol_df.empty or not block_code:
+def _sector_change(pricevol_df, sector_df, block_code) -> float:
+    """从 sector_df 或 pricevol_df 取板块涨跌幅 (优先查 sector_df)"""
+    if not block_code:
+        return 0.0
+    # 优先从 sector_df 查
+    if sector_df is not None and not sector_df.empty:
+        row = sector_df[sector_df['code'] == block_code]
+        if not row.empty:
+            r = row.iloc[0]
+            return _safe_change(r.get('Now'), r.get('LastClose'))
+    # 回退到 pricevol_df
+    if pricevol_df is None or pricevol_df.empty:
         return 0.0
     row = pricevol_df[pricevol_df['code'] == block_code]
     if row.empty:
@@ -84,20 +100,39 @@ def _resonance_score(mkt_chg, sec_chg, stk_chg) -> float:
 
     三层同涨 → 90+; 两层涨 → 60; 三层同跌 → 10; 其余 → 25-40。
     叠加平均幅度加成 (上限 100)。
+    注意: 只有当三层变化都有效(非0)时才计算高分,
+          部分数据无效时降权 (最多两层有效则 base 上限 60)。
     """
-    ups = sum(1 for x in (mkt_chg, sec_chg, stk_chg) if x > 0)
-    downs = sum(1 for x in (mkt_chg, sec_chg, stk_chg) if x < 0)
-    if ups == 3:
-        base = 90.0
-    elif ups == 2:
-        base = 60.0
-    elif downs == 3:
-        base = 10.0
-    elif downs == 2:
-        base = 25.0
-    else:
-        base = 40.0
-    avg_amp = (abs(mkt_chg) + abs(sec_chg) + abs(stk_chg)) / 3.0
+    # 统计有效变化 (非零)
+    valid_chgs = [x for x in (mkt_chg, sec_chg, stk_chg) if x != 0]
+    if len(valid_chgs) < 2:
+        return 0.0  # 数据不足, 不给高分
+
+    ups = sum(1 for x in valid_chgs if x > 0)
+    downs = sum(1 for x in valid_chgs if x < 0)
+    n = len(valid_chgs)
+
+    # 分数计算 (按有效层数加权)
+    if n >= 3:
+        if ups == 3:
+            base = 90.0
+        elif ups == 2:
+            base = 60.0
+        elif downs == 3:
+            base = 10.0
+        elif downs == 2:
+            base = 25.0
+        else:
+            base = 40.0
+    else:  # 只有 2 层有效
+        if ups == 2:
+            base = 50.0
+        elif downs == 2:
+            base = 20.0
+        else:
+            base = 35.0
+
+    avg_amp = sum(abs(x) for x in valid_chgs) / n
     score = min(100.0, base + avg_amp * 2.0)
     return round(score, 2)
 
@@ -125,33 +160,37 @@ def _detect_divergence(stock_chg, sector_code, context):
     return None
 
 
-def _pick_industry_sector(stock_code, graph):
-    """取个股所属行业板块 code (回退首个板块)"""
-    if graph is None:
-        return None
+def _pick_industry_sector(stock_code):
+    """取个股板块 code，优先概念板块（880xxx 与 sector_df 匹配）"""
     sectors = get_stock_sectors(stock_code)
     if not sectors:
         return None
+    # 优先取概念板块（880xxx 格式，与 qd_sector_snapshot 匹配）
+    for s in sectors:
+        if s.get('sector_type') == 'concept':
+            return s.get('block_code')
+    # 回退: 行业板块
     for s in sectors:
         if s.get('sector_type') == 'industry':
             return s.get('block_code')
     return sectors[0].get('block_code')
 
 
-def analyze(stock_code, context) -> dict:
+def analyze(stock_code, context, sector_df=None) -> dict:
     """分析个股多层共振
 
     Args:
         stock_code: 股票代码 (如 '000001.SZ')
         context: StrategyContext
+        sector_df: 板块快照 DataFrame (可选)
 
     Returns:
         dict: {code, market_change, sector_code, sector_change, stock_change,
                resonance_score, divergence, reason}
     """
     mkt_chg = _index_change(context.index_snapshot, SH_INDEX)
-    sector_code = _pick_industry_sector(stock_code, context.graph)
-    sec_chg = _sector_change(context.pricevol_df, sector_code)
+    sector_code = _pick_industry_sector(stock_code)
+    sec_chg = _sector_change(context.pricevol_df, sector_df, sector_code)
     stk_chg = _stock_change(context.pricevol_df, stock_code)
     score = _resonance_score(mkt_chg, sec_chg, stk_chg)
     divergence = _detect_divergence(stk_chg, sector_code, context)
@@ -177,13 +216,13 @@ def analyze(stock_code, context) -> dict:
     }
 
 
-def scan_market(pricevol_df, index_snapshot, graph) -> pd.DataFrame:
+def scan_market(pricevol_df, sector_df, index_snapshot) -> pd.DataFrame:
     """全场共振扫描
 
     Args:
-        pricevol_df: 全场价量 (含个股与板块行)
+        pricevol_df: 全场价量 DataFrame (个股)
+        sector_df: 板块快照 DataFrame (可选)
         index_snapshot: 指数快照 dict
-        graph: 关系图谱对象
 
     Returns:
         DataFrame: 列 [code, market_change, sector_code, sector_change,
@@ -203,8 +242,8 @@ def scan_market(pricevol_df, index_snapshot, graph) -> pd.DataFrame:
     mkt_chg = _index_change(index_snapshot, SH_INDEX)
     rows = []
     for code in codes:
-        sector_code = _pick_industry_sector(code, graph)
-        sec_chg = _sector_change(pricevol_df, sector_code)
+        sector_code = _pick_industry_sector(code)
+        sec_chg = _sector_change(pricevol_df, sector_df, sector_code)
         stk_chg = _stock_change(pricevol_df, code)
         score = _resonance_score(mkt_chg, sec_chg, stk_chg)
         rows.append({
