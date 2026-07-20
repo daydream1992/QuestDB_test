@@ -46,17 +46,24 @@ tqcenter 返回字段名直接用中文缩写（如 `Zjl`=主力净流入，`ZAF
     ├─ c4_kline 5m     全场补拉 1 根 5m K 线
     ├─ k1_indicators    读 qd_kline_5m 最新 10 分钟，算 MACD/BOLL/MA
     ├─ k2_signals       读 qd_indicators，检测金叉/死叉/突破/跌破
-    ├─ _build_context   策略上下文：聚合 5 张表数据
-    ├─ 遍历 16 策略插件   每个 .evaluate(ctx) → decisions
-    ├─ _process_decisions 风控 + 飞书推送
-    ├─ _run_sector_flow 板块资金流聚合（写 qd_sector_flow）
-    └─ _run_resonance   共振分析（读刚写的 qd_sector_flow）
+    ├─ _build_context   策略上下文：聚合多张表数据
+    ├─ _run_big_order   大单检测（写 qd_big_order，深数据/日报消费）
+    ├─ _run_divergence  量价背离（写 qd_divergence，深数据）
+    ├─ k3_sentiment     大盘情绪（写 qd_sentiment_*）
+    ├─ _run_sector_flow 板块资金流聚合（读 snapshot_focus_df.Zjl → qd_sector_flow）
+    ├─ _run_resonance   共振分析（读 pricevol + 指数快照 → qd_resonance）
+    ├─ k6_linkage       板块联动评分（写 qd_sector_linkage，吃肉系统磨刀层）
+    ├─ k7_stock_type    票型分类（情绪/趋势/混合 → ctx.stock_types，不写库）
+    ├─ alpha_engine     多因子（纯内存 ctx.alpha_df，暂无插件消费）
+    ├─ 遍历 5 策略插件   每个 .evaluate(ctx) → decisions
+    └─ _process_decisions 风控 + 飞书推送（全局 ≤2 条/分钟）
 ```
 
 ### 2.2 关键设计点
 
 - **c3 intraday 时间戳**：`snapshot_time = now + timedelta(seconds=1)`，比 c2 晚 1 秒，避免同时间戳覆盖
-- **共振依赖板块资金流**：`_run_sector_flow` 必须在 `_run_resonance` 之前执行（否则读不到当轮数据）
+- **共振不依赖板块资金流**：`scan_market(pricevol_df, None, index_snapshot)`，与 `_run_sector_flow` 无先后约束（2026-07-14 核实更正）
+- **吃肉系统数据流有严格顺序**：k6 → `ctx.linkage_scores/metrics/thresholds` → k7 → `ctx.stock_types` → p28，k6 失败则 k7/p28 当轮空转（各自 try/except 隔离）
 - **qd_sector_flow 查询用 `code` 列**（板块代码），不是 `block_code`
 - **qd_sector_flow 用 `main_net` 字段**（主力净流入），不是 `net_flow`
 

@@ -13,7 +13,7 @@ QuestDB_test 是一套基于 QuestDB 时序数据库 + tqcenter 通达信量化�
 
 - **采集层** (collect/): 调用 tqcenter 拉取价量 / 快照 / 88 字段 / K 线 / 龙虎榜, 写入 QuestDB
 - **计算层** (compute/): 基于价量与 K 线计算技术指标 (MACD/BOLL/MA) 与原子信号 (金叉/死叉/突破)
-- **策略层** (strategy/): 16 个可热插拔策略插件, 评估后产出 buy/sell/hold 决策
+- **策略层** (strategy/): 5 个可热插拔策略插件 (p01,p04,p08[休眠],p17,p28), 评估后产出 buy/sell/hold 决策 (2026-07-14 瘦身重构: 其余 21 个插件移入 _deprecated/)
 - **调度层** (runner/): 全天自动调度, 按交易时段切换竞价监控 / 盘中主循环 / 盘后更新
 - **基础设施** (lib/): QuestDB 连接封装 / tqcenter 客户端 / 交易时钟 / 关系图谱 / 飞书推送
 
@@ -24,7 +24,7 @@ tqcenter ──→ collect(c1~c6) ──→ QuestDB(29张表)
                                    │
                                    ├──→ compute(k1~k2) ──→ QuestDB
                                    │
-                                   └──→ strategy(16插件) ──→ qd_decisions ──→ 飞书推送
+                                   └──→ strategy(5插件) ──→ qd_decisions ──→ 飞书推送
 ```
 
 ---
@@ -70,35 +70,33 @@ K:\QuestDB_test\
 │   └── c6_lhb.py           # 龙虎榜 (盘后)
 ├── compute/                # 计算层
 │   ├── k1_indicators.py    # 技术指标 (读 qd_kline_5m → qd_indicators)
-│   └── k2_signals.py       # 原子信号 (读 qd_indicators → qd_signals)
+│   ├── k2_signals.py       # 原子信号 (读 qd_indicators → qd_signals)
+│   ├── k3_sentiment.py     # 大盘情绪 (→ qd_sentiment_*)
+│   ├── k4_sentiment.py     # 深度情绪 (k4_runner 独立进程; 历史遗留 k4 拆 3 文件)
+│   ├── k4_sector_heatmap.py # 板块热力图
+│   ├── k4_ladder_tracker.py # 连板梯队
+│   ├── k5_kline_synth.py   # K线合成
+│   ├── k6_linkage.py       # 板块联动评分 (→ qd_sector_linkage, 吃肉系统磨刀层)
+│   ├── k7_stock_type.py    # 票型分类 情绪/趋势/混合 (挂 ctx.stock_types, 不写库)
+│   └── alpha_engine.py     # 多因子引擎 (纯内存 ctx.alpha_df; alpha 家族插件已废弃)
 ├── strategy/               # 策略层
 │   ├── base.py             # StrategyBase 抽象基类 + Decision 数据结构
-│   ├── context.py          # StrategyContext 一次采集全策略共享
+│   ├── context.py          # StrategyContext 一次采集全策略共享 (含 linkage/票型字段)
 │   ├── registry.py         # StrategyRegistry 热插拔注册器
-│   ├── risk.py             # RiskManager 仓位上限 + 止损止盈
-│   ├── selector.py         # select_focus_pool 重点池选择
-│   ├── resonance.py         # scan_market 共振分析
-│   ├── sector_flow.py      # 板块资金流
-│   ├── dark_money.py       # 暗资金分析
-│   ├── big_order.py        # 大单分析
-│   ├── lhb_analyzer.py     # 龙虎榜分析
-│   └── plugins/            # 17 个策略插件 (p01, p02, p04..p18, 跳号 p03)
-│       ├── p01_zt_daban.py     # 涨停打板
-│       ├── p02_zha_fanbao.py   # 炸板反包
-│       │   # ~~p03_macd_vol.py~~ 已废弃 (MACD金叉放量, 2026-07-05 删除)
+│   ├── risk.py             # RiskManager 仓位上限 + check_exit 出场
+│   ├── selector.py         # select_focus_pool 重点池选择 (连板梯队)
+│   ├── intraday_engine.py  # 盘中异动检测 (涨速/封板/炸板/资金, FCAmo 权威判定)
+│   ├── resonance.py        # scan_market 共振分析 (深数据, daily_summary 消费)
+│   ├── sector_flow.py      # detect_rotation 板块轮动检测
+│   ├── big_order.py        # 大单分析 (深数据, daily_summary 消费)
+│   ├── lhb_analyzer.py     # 龙虎榜分析 (k7 票型特征源)
+│   ├── volume_price_divergence.py # 量价背离检测 (→ qd_divergence 深数据)
+│   └── plugins/            # 5 个策略插件 (2026-07-14 瘦身; 其余移 _deprecated/)
+│       ├── p01_zt_daban.py     # 涨停打板 (FCAmo>0 权威判定)
 │       ├── p04_break_pressure.py # 突破压力位
-│       ├── p05_sector_rotation.py # 板块轮动
-│       ├── p06_resonance.py    # 多层共振
-│       ├── p07_divergence.py   # 背离预警
-│       ├── p08_dark_money.py   # 暗资金异动
-│       ├── p09_auction_rush.py # 竞价抢筹
-│       ├── p10_auction_gap.py  # 竞价缺口异动
-│       ├── p11_auction_close.py # 尾盘竞价异动
-│       ├── p12_big_order.py    # 大单跟单
-│       ├── p13_lhb_inst.py     # 机构龙虎榜
-│       ├── p14_lhb_hotmoney.py # 游资龙虎榜
-│       ├── p15_stop_loss.py    # 止损退出
-│       └── p16_stop_profit.py  # 止盈退出
+│       ├── p08_dark_money.py   # 暗资金异动 (休眠: yaml disabled, 数据源已停写)
+│       ├── p17_market_emotion.py # 大盘情绪
+│       └── p28_sector_focus_signal.py # 强势板块×票型×4信号 (吃肉系统)
 ├── runner/                 # 调度层
 │   ├── scheduler.py        # 总调度器 (全天自动调度)
 │   ├── daily_init.py       # 盘前初始化 (09:25)
@@ -209,17 +207,26 @@ K:\QuestDB_test\
 | 37 | qd_sector_heatmap | 19 | snapshot_time | 板块热力图 + 最强个股梯队 (4组Top5+个股Top3) |
 | 38 | qd_ladder_tracker | 20 | snapshot_time | 打板梯队 + 2进3 晋级监控 |
 
-### 3.11 DDL 对账 (2026-07-05 核对, 2026-07-06 更新至 38 张)
+### 3.12 Alpha/持仓/重点池/背离/联动 (5 张 — 2026-07-14 补登)
 
-**核对结论**: SQL 实际建表 = 文档表数 = **38 张, 完全对齐零差异**。
+| # | 表名 | DDL | 时间戳 | 用途 |
+|---|------|-----|--------|------|
+| 39 | qd_alpha_score | 22 | calc_time | 因子 alpha 快照 (**休眠表**: 写入方 factor_store.py 已废弃, alpha_engine 纯内存) |
+| 40 | qd_positions_v2 | 23 | updated_time | 持仓 v2 (**休眠表**: portfolio.py 已废弃, 持仓在 risk.py 内存) |
+| 41 | qd_focus_log | 24 | snapshot_time | 重点池变更日志 |
+| 42 | qd_divergence | 25 | divergence_time | 量价背离 (intraday_loop._run_divergence 写; 暂无插件消费, 深数据) |
+| 43 | qd_sector_linkage | 26 | linkage_time | 板块联动评分 (k6_linkage 写; 吃肉系统磨刀层) |
+
+### 3.11 DDL 对账 (2026-07-05 核对, 2026-07-06 更新至 38 张, 2026-07-14 补登至 43 张)
+
+**核对结论**: 2026-07-14 补登 §3.12 五张表后文档计 **43 张**; DDL 实际 25 个 `.sql` 文件 / 44 个 `CREATE TABLE` (07_relation.sql 的 `qd_map_industry_stock` 历史漏登 §3.7, 待下次审计对齐)。
 
 | 维度 | 数值 |
 |------|------|
-| DDL 文件数 | 20 个 `.sql` (00~20, 跳 15) |
-| SQL `CREATE TABLE` 总数 | 38 |
-| 本节 §3.1~§3.10 表数 | 38 |
-| 只在 SQL 里、文档缺 | **0** |
-| 只在文档里、SQL 没有 | **0** |
+| DDL 文件数 | 25 个 `.sql` (00~26, 跳 15/21) |
+| SQL `CREATE TABLE` 总数 | 44 |
+| 本节 §3.1~§3.12 表数 | 43 |
+| 待对齐 | qd_map_industry_stock (§3.7 漏登) |
 
 **对账方法**: 运行 `python scripts/data_inventory_ddl_audit.py`。重新核对命令:
 
@@ -346,7 +353,7 @@ TQCENTER_PATH=K:\txdlianghua\PYPlugins\sys
 
 三段配置:
 
-- **strategies**: 每个策略的 `enabled` 开关 + 中文名, 运行时可动态启停
+- **strategies**: 每个策略的 `enabled` 开关 + 中文名, 运行时可动态启停 (2026-07-14 瘦身后仅 5 个活跃条目, 与 strategy/plugins/ 一致)
 - **risk**: 风控参数
   - `max_total_position`: 最大总仓位 % (默认 80)
   - `max_single_position`: 单只最大仓位 % (默认 30)
@@ -354,6 +361,12 @@ TQCENTER_PATH=K:\txdlianghua\PYPlugins\sys
   - `push_cooldown_sec`: 飞书推送频控秒数 (300)
 - **schedule**: 各环节拉取频率 (秒)
   - `pricevol_interval: 10` / `kline_interval: 60` 等
+
+另有 4 个专段 (2026-07 吃肉系统新增):
+- **linkage**: k6 板块联动评分权重/满分门槛/动态阈值分位数/板块规模分层
+- **stock_type**: k7 票型分类阈值 (市值/换手/量比/Beta/PE, 情绪 vs 趋势)
+- **stock_signal**: p28 四信号阈值 (急涨/补涨/低吸/大单, 按票型差异化)
+- **factor_model**: 多因子权重 (纯内存 alpha, 暂无插件消费, 见 §8.3 注)
 
 ### 6.3 config/fields.py
 
@@ -364,7 +377,8 @@ TQCENTER_PATH=K:\txdlianghua\PYPlugins\sys
 - `STOCK_DAILY_FIELDS`: 个股日级 50 字段
 - `SECTOR_DAILY_FIELDS` / `INDEX_DAILY_FIELDS`: 板块/指数日级
 - `STOCK_INTRADAY_FIELDS`: 盘中高频 16 字段
-- `DOUBLE_FIELDS` / `BIGINT_FIELDS` / `INT_FIELDS` / `VARCHAR_FIELDS`: 字段类型映射 (DDL 用)
+- `SECTOR_LINKAGE_FIELDS`: 派生表 qd_sector_linkage 12 字段 (k6 写入列, ddl/26)
+- `DOUBLE_FIELDS` / `BIGINT_FIELDS` / `INT_FIELDS` / `VARCHAR_FIELDS`: 字段类型映射 (DDL 用, 兼收派生表字段)
 
 ### 6.4 config/index_codes.py
 
@@ -479,30 +493,21 @@ class MyStrategy(StrategyBase):
 
 无需改代码, 下次 `load_config` 即生效。运行时也可调 `StrategyRegistry.disable('zt_daban')`。
 
-### 8.3 现有策略清单 (17 个 — p01, p02, p04..p18, 跳号 p03)
+### 8.3 现有策略清单 (5 个 — 2026-07-14 瘦身后; p01/p04/p08/p17/p28)
 
-> 2026-07-05 整理: 原文档写 "16 个" 列了 17 行 (含 p03_macd_vol)
-> 实际 `strategy/plugins/` 目录只有 17 个 (p03 已从 working tree 删除, 待归档决策)
-> 替换关系未确认 — 不臆测 p03 的替代策略, 此处仅作废登记
+> 2026-07-14 瘦身重构: 21 个插件 (p02,p05,p06,p07,p09-p16,p18,p20-p27) + `strategy/dark_money.py` + `strategy/portfolio.py` + `compute/factor_store.py` 移入 `_deprecated/`。恢复须走 `_deprecated/README.md` 的 [plan] 评审。
+> 其中 p15/p16 早在该批次前已被 `risk.check_exit` 内联取代 (runner/intraday_loop.py:1019)。
+> 跳号 p03/p19 为历史开发跳号, 无策略。
 
 | 插件 | name | 类别 | 说明 |
 |------|------|------|------|
-| p01_zt_daban | zt_daban | 入场 | 涨停打板 |
-| p02_zha_fanbao | zha_fanbao | 入场 | 炸板反包 |
-| ~~p03_macd_vol~~ | ~~macd_golden_vol~~ | — | ~~已废弃 (MACD金叉放量)~~ |
+| p01_zt_daban | zt_daban | 入场 | 涨停打板 (FCAmo>0 权威判定 + 板块涨停潮) |
 | p04_break_pressure | break_pressure | 入场 | 突破压力位 |
-| p05_sector_rotation | sector_rotation | 入场 | 板块轮动 |
-| p06_resonance | resonance_triple | 入场 | 多层共振 |
-| p07_divergence | divergence_warn | 入场 | 背离预警 |
-| p08_dark_money | dark_money_anomaly | 入场 | 暗资金异动 |
-| p09_auction_rush | auction_rush | 竞价 | 竞价抢筹 |
-| p10_auction_gap | auction_gap | 竞价 | 竞价缺口异动 |
-| p11_auction_close | auction_close | 竞价 | 尾盘竞价异动 |
-| p12_big_order | big_order_pulse | L2 | 大单跟单 |
-| p13_lhb_inst | lhb_institution | 龙虎榜 | 机构龙虎榜 |
-| p14_lhb_hotmoney | lhb_hotmoney | 龙虎榜 | 游资龙虎榜 |
-| p15_stop_loss | stop_loss | 出场 | 止损退出 |
-| p16_stop_profit | stop_profit | 出场 | 止盈退出 |
+| p08_dark_money | dark_money_anomaly | 入场 | 暗资金异动 — **休眠**: yaml disabled, 数据源 qd_money_flow 已停写 |
+| p17_market_emotion | market_emotion | 市场级 | 大盘情绪 (消费 k3 emotion_rating) |
+| p28_sector_focus_signal | sector_focus_signal | 吃肉系 | 强势板块 × 票型(k7) × 4信号(急涨/补涨/低吸/大单) |
+
+**模块留用说明** (插件废、模块留): `strategy/` 下 big_order / resonance / sector_flow / lhb_analyzer / volume_price_divergence 仍由 intraday_loop 调用——写深数据表 (qd_big_order / qd_resonance / qd_divergence, daily_summary 消费) 或作 k7 特征源 (lhb)。`compute/alpha_engine.py` 每轮纯内存计算 ctx.alpha_df / top_candidates, **暂无插件消费**, qd_alpha_score 为休眠表 (见 §3.12)。
 
 ---
 
@@ -628,7 +633,7 @@ python e2e.py
 | 6 | 拉 K 线 1m + 5m (c4_kline, count=48) | qd_kline_1m / qd_kline_5m |
 | 7 | 算指标 (k1_indicators, MACD/BOLL/压力支撑/MA) | qd_indicators |
 | 8 | 检测信号 (k2_signals, 金叉/死叉/突破/跌破) | qd_signals |
-| 9 | 加载策略 (load_plugins + load_config, 16 个) | - |
+| 9 | 加载策略 (load_plugins + load_config, 24 个) | - |
 | 10 | 构建 StrategyContext (读 5 张表) | - |
 | 11 | 遍历策略 → decisions | qd_decisions |
 | 12 | 打印结果汇总 | - |
