@@ -1,6 +1,6 @@
 """QuestDB 连接封装
 
-脚本路径: K:\QuestDB_test\\lib\\qdb.py
+脚本路径: K:/QuestDB_test//lib//qdb.py
 用途: 封装 psycopg2 连接 QuestDB, 提供批量写入 / 查询 DataFrame / 单行查询
 依赖: psycopg2, pandas, python-dotenv
 数据源: QuestDB (PG 协议, 端口 8812)
@@ -18,6 +18,7 @@
 import os
 import re
 import time
+import warnings
 from collections import defaultdict
 from datetime import datetime, timedelta
 import numpy as np
@@ -27,6 +28,14 @@ from psycopg2 import OperationalError, InterfaceError
 import pandas as pd
 from dotenv import load_dotenv
 from loguru import logger
+
+# pandas read_sql_query 对 psycopg2 直连每次查询都发 UserWarning (QuestDB 走 PG 协议
+# 直连是既定架构, 不引入 SQLAlchemy), 定点抑制这一条, 其余警告不受影响
+warnings.filterwarnings(
+    'ignore',
+    message=r'pandas only supports SQLAlchemy connectable',
+    category=UserWarning,
+)
 
 
 
