@@ -72,8 +72,8 @@ def _synth_period(df, freq):
     g = d.groupby(['code', 'bucket'])
     out = g.agg(
         open=('Now', 'first'),
-        high=('Now', 'max'),
-        low=('Now', 'min'),
+        high=('Max', 'max'),   # 用快照的 Max 字段取桶内最高
+        low=('Min', 'min'),    # 用快照的 Min 字段取桶内最低
         close=('Now', 'last'),
         v_first=('Volume', 'first'),
         v_last=('Volume', 'last'),
@@ -114,7 +114,7 @@ def run(con=None):
         from datetime import datetime as _dt, timedelta
         cutoff = _dt.now() - timedelta(minutes=_LOOKBACK_MIN)
         df = query_df(
-            con, "SELECT code, snapshot_time, Now, Volume, Amount "
+            con, "SELECT code, snapshot_time, Now, Volume, Amount, Max, Min "
                  "FROM qd_stock_snapshot "
                  "WHERE snapshot_time > '" + cutoff.strftime('%Y-%m-%dT%H:%M:%S') + "'")
         if df is None or df.empty:

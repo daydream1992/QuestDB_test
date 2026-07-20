@@ -1,6 +1,6 @@
 """微结构失衡因子
 
-脚本路径: K:\QuestDB_test\\compute\\factors\\micro_imbalance.py
+脚本路径: K:/QuestDB_test//compute//factors//micro_imbalance.py
 用途: 5 档买卖盘压力失衡, 捕捉短线供需倾斜
 依赖: pandas / compute.factors
 数据源: ctx.snapshot_focus_df (含 Buyp1..5/Buyv1..5/Sellp1..5/Sellv1..5)

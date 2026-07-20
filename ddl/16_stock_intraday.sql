@@ -32,6 +32,13 @@ CREATE TABLE IF NOT EXISTS qd_stock_intraday (
     Zjl_HB        DOUBLE,      -- 主力净额环比 (连续性)
     FCAmo         DOUBLE,      -- 封单额 (权威涨跌停判定: >0涨停/<0跌停/=0未封)
     FCb           DOUBLE,      -- 封成比
+    -- 2026-07-14 新增: 撤单/主动买卖/L2委托 (实时赋能反诱多/主力识别)
+    BCancel       DOUBLE,      -- 总撤买量 (撤单率 = BCancel/(BCancel+Buyv总和) 判诱多)
+    SCancel       DOUBLE,      -- 总撤卖量
+    TotalBVol     DOUBLE,      -- 总买量
+    TotalSVol     DOUBLE,      -- 总卖量
+    L2TicNum      DOUBLE,      -- L2 逐笔成交数 (主力vs散户)
+    L2OrderNum    DOUBLE,      -- L2 逐笔委托数
     vzangsu       DOUBLE       -- 涨速
 ) TIMESTAMP(snapshot_time) PARTITION BY DAY
 DEDUP UPSERT KEYS(snapshot_time, code);

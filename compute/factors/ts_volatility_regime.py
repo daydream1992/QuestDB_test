@@ -1,6 +1,6 @@
 """ts_volatility_regime: 波动率状态因子
 
-脚本路径: K:\QuestDB_test\\compute\\factors\\ts_volatility_regime.py
+脚本路径: K:/QuestDB_test//compute//factors//ts_volatility_regime.py
 用途: 近 20 根 5m K 线的已实现波动率分档
 数据源: ctx.indicators_df (close 列)
 依赖: compute.factors.base, numpy

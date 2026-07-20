@@ -1,6 +1,6 @@
 """时序动量因子
 
-脚本路径: K:\QuestDB_test\\compute\\factors\\ts_momentum.py
+脚本路径: K:/QuestDB_test//compute//factors//ts_momentum.py
 用途: 5m K 线 N 根累计收益 (动量), 解决"无时序特征"问题
 依赖: pandas / compute.factors
 数据源: ctx.indicators_df (含 5m K 线 + 时间戳)

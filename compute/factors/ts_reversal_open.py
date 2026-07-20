@@ -1,6 +1,6 @@
 """ts_reversal_open: 开盘反转因子
 
-脚本路径: K:\QuestDB_test\\compute\\factors\\ts_reversal_open.py
+脚本路径: K:/QuestDB_test//compute//factors//ts_reversal_open.py
 用途: 利用开盘缺口 + 回补方向判断反转信号
 数据源: ctx.snapshot_focus_df (Open/PreClose/Close) + ctx.indicators_df (5m 前 6 根 K 线)
 依赖: compute.factors.base, numpy, pandas

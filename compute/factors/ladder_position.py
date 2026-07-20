@@ -1,6 +1,6 @@
 """连板位置因子 (升级 p01 涨停打板核心维度)
 
-脚本路径: K:\QuestDB_test\\compute\\factors\\ladder_position.py
+脚本路径: K:/QuestDB_test//compute//factors//ladder_position.py
 用途: 识别连板梯队位置 (首板/2板/3板加速/高位), 解决 p01 缺失的连板维度
 依赖: pandas / compute.factors
 数据源: ctx.gp_df (qd_stock_gpjy, 含 ConZAFDateNum 连板数) +

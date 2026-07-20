@@ -58,9 +58,9 @@ _DEEP_COLS = [
     'calc_duration_ms',
 ]
 
-# 4 大指数代码映射 (tqcenter 习惯用 000001.SH / 399001.SZ / 399006.SZ / 000688.SH)
+# 4 大指数代码映射 (避开 000001.SH 与平安银行混淆, 用 999999.SH)
 _INDEX_LABELS = {
-    '000001.SH': '上证',
+    '999999.SH': '上证',
     '399001.SZ': '深证',
     '399006.SZ': '创业板',
     '000688.SH': '科创50',
@@ -132,72 +132,66 @@ def _fmt_yi(v):
 # ══════════════════════════════════════════════════════════════
 
 def _load_market_breadth(con):
-    """全市场涨跌家数 + 涨跌停家数
+    """全市场涨跌家数 + 涨跌停家数 (从 880001.SH 总市值指数读取) +
+    封板率 fbl (从 qd_sentiment_snapshot_min 读, 由 k3 写入)
 
     读:
-      - qd_pricevol: 涨(Now>LastClose) / 跌 / 平
-      - qd_stock_snapshot: FCAmo>0 涨停 / <0 跌停 / 炸板
+      - qd_sector_snapshot: 880001.SH 的 UpHome/DownHome/Inside/Outside
+      - qd_sentiment_snapshot_min: fbl/zt_cnt/break_cnt (k3 计算结果)
     返回:
       dict {up_cnt, down_cnt, even_cnt, zt_cnt, dt_cnt, break_cnt, sealed, fbl}
-      数据不足返回空 dict
     """
     result = {}
-
-    # 涨跌家数 (pricevol 全场口径)
     try:
-        df_pv = query_df(con,
-            f"SELECT code, Now, LastClose FROM qd_pricevol "
-            f"WHERE snapshot_time > '{cutoff(minutes=5)}'")
-        if df_pv is not None and not df_pv.empty:
-            up = down = even = 0
-            for _, r in df_pv.iterrows():
-                now = _sf(r.get('Now'))
-                lc = _sf(r.get('LastClose'))
-                if lc <= 0:
-                    continue
-                if now > lc:
-                    up += 1
-                elif now < lc:
-                    down += 1
-                else:
-                    even += 1
-            result.update({'up_cnt': up, 'down_cnt': down, 'even_cnt': even})
+        df_total = query_df(con,
+            f"SELECT UpHome, DownHome, Inside, Outside, Now, ZAFPre3, snapshot_time "
+            f"FROM qd_sector_snapshot "
+            f"WHERE code = '880001.SH' AND snapshot_time > '{cutoff(minutes=5)}' "
+            f"ORDER BY snapshot_time DESC LIMIT 1")
+        if df_total is not None and not df_total.empty:
+            r = df_total.iloc[0]
+            up = int(r.get('UpHome') or 0)
+            down = int(r.get('DownHome') or 0)
+            zt = int(r.get('Outside') or 0)  # 涨停家数
+            dt = int(r.get('Inside') or 0)   # 跌停家数
             udr = (up / down) if down > 0 else (99.0 if up > 0 else 1.0)
-            result['udr'] = round(min(udr, 99.0), 2)
+            result = {
+                'up_cnt': up,
+                'down_cnt': down,
+                'even_cnt': 0,
+                'zt_cnt': zt,
+                'dt_cnt': dt,
+                'break_cnt': 0,
+                'sealed': zt,
+                # fbl 由下方 k3 快照覆盖 (k3 链路才区分封/炸)
+                'fbl': None,
+                'udr': round(min(udr, 99.0), 2),
+            }
     except Exception as e:
-        logger.warning('读涨跌家数失败: {}', e)
+        logger.warning('读 880001.SH 失败: {}', e)
 
-    # 涨跌停家数 (intraday 表有 FCAmo, snapshot 有 Max)
-    # C8 拆表: snapshot_time 不对齐，按 code 取最新再合并，不按精确 timestamp JOIN
+    # fbl 链路: 从 k3 写入的 qd_sentiment_snapshot_min 取最近 10 分钟内最新一行
     try:
-        # 分别取两表最近5min数据
-        snap = query_df(con,
-            f"SELECT code, Max, snapshot_time FROM qd_stock_snapshot "
-            f"WHERE snapshot_time > '{cutoff(minutes=5)}'")
-        intra = query_df(con,
-            f"SELECT code, FCAmo, ZTPrice, snapshot_time FROM qd_stock_intraday "
-            f"WHERE snapshot_time > '{cutoff(minutes=5)}'")
-        if snap is not None and not snap.empty and intra is not None and not intra.empty:
-            # 每个 code 取各表最新
-            snap_l = snap.sort_values('snapshot_time').groupby('code', as_index=False).last()
-            intra_l = intra.sort_values('snapshot_time').groupby('code', as_index=False).last()
-            merged = snap_l.merge(intra_l, on='code', how='left')
-            zt = dt = brk = 0
-            for _, r in merged.iterrows():
-                fcamo = _sf(r.get('FCAmo'))
-                mx = _sf(r.get('Max'))
-                zt_p = _sf(r.get('ZTPrice'))
-                if fcamo > 0:
-                    zt += 1
-                elif fcamo < 0:
-                    dt += 1
-                elif zt_p > 0 and mx >= zt_p * 0.999:
-                    brk += 1
-            sealed = zt + brk
-            fbl = round(zt / sealed * 100, 1) if sealed > 0 else 0.0
-            result.update({'zt_cnt': zt, 'dt_cnt': dt, 'break_cnt': brk, 'fbl': fbl})
+        df_k3 = query_df(con,
+            f"SELECT fbl, zt_cnt, dt_cnt, break_cnt, max_lb "
+            f"FROM qd_sentiment_snapshot_min "
+            f"WHERE snapshot_time > '{cutoff(minutes=10)}' "
+            f"ORDER BY snapshot_time DESC LIMIT 1")
+        if df_k3 is not None and not df_k3.empty:
+            rk = df_k3.iloc[0]
+            fbl_v = _sf(rk.get('fbl'))
+            if fbl_v > 0:
+                result['fbl'] = fbl_v
+            # 若 k3 有更精细的 zt/dt/break 也覆盖 (880001 仅给粗粒度)
+            for k in ('zt_cnt', 'dt_cnt', 'break_cnt'):
+                v = _sf(rk.get(k))
+                if v > 0:
+                    result[k] = int(v)
+            mb = _sf(rk.get('max_lb'))
+            if mb > 0:
+                result['max_lb'] = int(mb)
     except Exception as e:
-        logger.warning('读涨跌停家数失败: {}', e)
+        logger.warning('读 qd_sentiment_snapshot_min 失败: {}', e)
 
     return result
 
@@ -290,7 +284,7 @@ def _calc_pg_index(breadth, cap_flow, con=None):
     """
     raw = {
         'zt_cnt': breadth.get('zt_cnt', 0),
-        'fbl': breadth.get('fbl', 0.0),
+        'fbl': breadth.get('fbl') or 0.0,
         'udr': breadth.get('udr', 1.0),
         'max_lb': 0,   # 暂时没有连续帧 max_lb, 后续从 k3 快照读
         'main_net': cap_flow.get('main_net', 0.0),
@@ -316,10 +310,7 @@ def _calc_pg_index(breadth, cap_flow, con=None):
     total = 0.0
     for key, lo, hi, weight in _PG_WEIGHTS:
         v = _sf(raw.get(key))
-        if key in ('main_net', 'pressure_diff'):
-            norm = _norm(v, lo, hi)
-        else:
-            norm = _norm(v, lo, hi)
+        norm = _norm(v, lo, hi)
         total += norm * weight * 100
 
     pg = round(total, 1)
@@ -344,11 +335,11 @@ def _detect_divergences(index_readings, cap_flow, breadth):
     """
     divs = []
 
-    sh = index_readings.get('000001.SH', {})
+    sh = index_readings.get('999999.SH', {})
     sh_zaf = sh.get('zaf', 0.0)
     main_net = cap_flow.get('main_net', 0.0)
     zt_cnt = breadth.get('zt_cnt', 0)
-    fbl = breadth.get('fbl', 0.0)
+    fbl = breadth.get('fbl') or 0.0
     udr = breadth.get('udr', 1.0)
     up_cnt = breadth.get('up_cnt', 0)
     down_cnt = breadth.get('down_cnt', 0)
@@ -369,13 +360,21 @@ def _detect_divergences(index_readings, cap_flow, breadth):
 
     # 2) 价宽背离: 指数分化 (二八)
     if len(index_readings) >= 2:
-        zafs = [v['zaf'] for v in index_readings.values()]
+        items = list(index_readings.items())  # [(code, {zaf,...}), ...]
+        zafs = [v['zaf'] for _, v in items]
         zaf_range = max(zafs) - min(zafs)
         if zaf_range > 1.0:
-            parts = [f"{v['label']}{v['zaf']:+.2f}%" for v in index_readings.values()]
+            # 名称解析 (code→get_stock_name) + 截断到分化两端各 5 只 (避免 ~100 只刷屏)
+            from lib.relation_graph import get_stock_name
+            items_sorted = sorted(items, key=lambda kv: kv[1]['zaf'], reverse=True)
+            def _disp(code):
+                nm = get_stock_name(code)
+                return nm if nm and nm != code else code  # 880xxx/899xxx 未解析退回 code
+            hi = [f"{_disp(c)}{v['zaf']:+.2f}%" for c, v in items_sorted[:5]]
+            lo = [f"{_disp(c)}{v['zaf']:+.2f}%" for c, v in items_sorted[-5:]]
             divs.append({
                 'type': '指数分化',
-                'desc': f"指数强弱分化 {zaf_range:.2f}%: {' '.join(parts)}",
+                'desc': f"指数强弱分化 {zaf_range:.2f}% (共{len(items)}只): ↑{' '.join(hi)} | ↓{' '.join(lo)}",
                 'priority': 'warning' if sh_zaf > 0 and udr < 0.8 else 'info',
             })
 
@@ -401,8 +400,8 @@ def _detect_divergences(index_readings, cap_flow, breadth):
             'priority': 'warning',
         })
 
-    # 5) 封板率过低
-    if 0 < fbl < 50 and zt_cnt >= 20:
+    # 5) 封板率过低 (880001 不提供 fbl, 此信号依赖 k3 链路)
+    if fbl is not None and 0 < fbl < 50 and zt_cnt >= 20:
         divs.append({
             'type': '炸板潮',
             'desc': f"封板率仅{fbl:.1f}% 涨停{zt_cnt}家 (炸板潮, 追高风险极大)",
@@ -427,18 +426,19 @@ def _detect_turning_point(pg, prev_pg, breadth):
         return None
 
     zt_cnt = breadth.get('zt_cnt', 0)
-    fbl = breadth.get('fbl', 0.0)
+    fbl = breadth.get('fbl') or 0.0
     udr = breadth.get('udr', 1.0)
 
     # A) 变盘临界 → 清仓提示
     #    PG>65(贪婪/狂热) 且 封板率<60% → 情绪虚高
-    if pg >= 65 and 0 < fbl < 60:
+    #    注: 880001 不暴露封/炸细分, fbl=None 时此分支跳过 (k3 链路仍可提供)
+    if fbl is not None and pg >= 65 and fbl < 60:
         return {
             'type': '变盘临界',
             'desc': f"PG {pg} 情绪偏热但封板率仅{fbl:.0f}% (赚钱效应差 ↔ 资金谨慎)",
             'action': '⚠ 警惕追高, 可考虑减仓',
         }
-    if pg >= 75 and zt_cnt >= 50 and fbl < 75:
+    if fbl is not None and pg >= 75 and zt_cnt >= 50 and fbl < 75:
         return {
             'type': '变盘临界',
             'desc': f"PG {pg} 情绪过热 {zt_cnt}家涨停, 但封板率{fbl:.0f}% (分歧加大)",
@@ -469,7 +469,7 @@ def _detect_turning_point(pg, prev_pg, breadth):
             }
 
     # C) 震荡区提示
-    if 40 <= pg <= 60 and zt_cnt >= 40 and fbl >= 75:
+    if fbl is not None and 40 <= pg <= 60 and zt_cnt >= 40 and fbl >= 75:
         return {
             'type': '健康震荡',
             'desc': f"PG {pg} 中性偏多, {zt_cnt}家涨停封板率{fbl:.0f}% (短线生态良好)",
@@ -483,17 +483,9 @@ def _detect_turning_point(pg, prev_pg, breadth):
 # 飞书推送 — 直观全景消息
 # ══════════════════════════════════════════════════════════════
 
-def push_panoramic(result):
-    """推送全市场全景消息 (整条消息浓缩为一眼看完)
-
-    Args:
-        result: k4.run() 返回的 dict
-    Returns:
-        bool
-    """
+def push_panoramic(result, con=None):
+    """推送全市场全景消息 (一眼看完)"""
     try:
-        idx = result.get('index_readings', {})
-        breadth = result.get('breadth', {})
         cap = result.get('capital_flow', {})
         pg = result.get('pg_index')
         pg_sig = result.get('pg_signal', '')
@@ -502,84 +494,170 @@ def push_panoramic(result):
         turn = result.get('turning_point')
 
         lines = []
-
-        # ── 标题行 ──
         ts = datetime.now().strftime('%H:%M')
+
+        # 标题
         if pg is not None:
-            lines.append(f'📊 全景情绪 | PG {pg} {pg_sig} | {ts}')
+            delta_str = ''
             if prev_pg is not None:
                 delta = pg - prev_pg
                 d_arrow = '↑' if delta > 0 else '↓'
-                lines.append(f'   (较上期 {d_arrow} {abs(delta):.1f}点, 前值 {prev_pg:.1f})')
+                delta_str = f' {d_arrow}{abs(delta):.1f}'
+            lines.append(f'📊 全景 {ts} | PG {pg}{delta_str} {pg_sig}')
         else:
-            lines.append(f'📊 全景情绪 | {ts} (数据不足)')
-        lines.append('')
+            lines.append(f'📊 全景 {ts} (数据不足)')
 
-        # ── 4 大指数 ──
-        if idx:
-            parts = []
-            for code in _INDEX_CODES:
-                v = idx.get(code)
-                if v:
-                    parts.append(f"{v['label']}{v['zaf']:+.2f}{_arrow(v['zaf'])}")
-            if parts:
-                lines.append('── 四大指数 ──')
-                lines.append('  ' + '  '.join(parts))
-                lines.append('')
+        # 四大指数 + 880001 总市值
+        if con is not None:
+            try:
+                # 4 大盘指数 (硬编码, 880001.SH 在 qd_sector_snapshot 而非 qd_index_snapshot,
+# 故不在此处查; 它在下方 880001 段独立读 sector 表)
+                df_idx = query_df(con, f"""
+                    SELECT code, Now, LastClose FROM qd_index_snapshot
+                    WHERE code IN ('999999.SH','399001.SZ','399006.SZ','000688.SH')
+                    ORDER BY snapshot_time DESC LIMIT 5
+                """)
+                idx_parts = []
+                idx_map = {
+                    '999999.SH': '上证指数',
+                    '399001.SZ': '深证成指',
+                    '399006.SZ': '创业板指',
+                    '000688.SH': '科创50',
+                }
+                if df_idx is not None and not df_idx.empty:
+                    df_idx = df_idx.drop_duplicates('code', keep='first')
+                    for _, ir in df_idx.iterrows():
+                        code = ir.get('code', '')
+                        label = idx_map.get(code, code[:6])
+                        now_i = ir.get('Now') or 0
+                        lc_i = ir.get('LastClose') or 1
+                        zaf_i = (now_i - lc_i) / lc_i * 100
+                        arrow = '↑' if zaf_i > 0 else '↓' if zaf_i < 0 else '-'
+                        color = '🔴' if zaf_i > 0.5 else '🟢' if zaf_i < -0.5 else '🟡'
+                        idx_parts.append(f'{label}{color}{zaf_i:+.2f}{arrow}')
 
-        # ── 涨跌全景 ──
-        uc = breadth.get('up_cnt', '-')
-        dc = breadth.get('down_cnt', '-')
-        zt = breadth.get('zt_cnt', '-')
-        dt_c = breadth.get('dt_cnt', 0)
-        brk = breadth.get('break_cnt', 0)
-        fbl_v = breadth.get('fbl', 0)
+                # 880001 (放宽到24小时)
+                _cutoff24h = cutoff(hours=24)
+                df8801 = query_df(con, f"""
+                    SELECT UpHome, DownHome, Inside, Outside, Now, Open
+                    FROM qd_sector_snapshot
+                    WHERE code = '880001.SH' AND snapshot_time > '{_cutoff24h}'
+                    ORDER BY snapshot_time DESC LIMIT 1
+                """)
 
-        lines.append(f'── 涨跌全景 ──')
-        udr_v = breadth.get('udr')
-        udr_str = f'{udr_v:.2f}' if isinstance(udr_v, (int, float)) else str(udr_v or '-')
-        lines.append(f'  涨 {uc}  跌 {dc}  (涨跌比 {udr_str})')
-        lines.append(f'  涨停 {zt}  跌停 {dt_c}  炸板 {brk}  封板率 {fbl_v:.0f}%')
-        lines.append('')
+                # 默认值: None 表示"缺数据", 输出"暂无数据"标签, 不渲染虚假档位
+                day_zaf = zaf_lv = zaf_txt = None
+                udr = udr_lv = udr_txt = None
+                zt_dt = zt_lv = zt_txt = None
+                conclusion = risk = None
+                up = down = None
 
-        # ── 资金 ──
+                if df8801 is not None and not df8801.empty:
+                    r = df8801.iloc[0]
+                    up = int(r.get('UpHome') or 0)
+                    down = int(r.get('DownHome') or 0)
+                    zt = int(r.get('Outside') or 0)
+                    dt = int(r.get('Inside') or 0)
+                    now_px = r.get('Now') or 0
+                    open_px = r.get('Open') or 0
+                    day_zaf = (now_px - open_px) / open_px * 100 if open_px > 0 else None
+                    udr = (up / down) if down > 0 else None
+                    zt_dt = (zt / dt) if dt > 0 else ((999 if zt > 0 else None))
+
+                    # 涨跌比 (红=好, 绿=差)
+                    if udr >= 3.0:
+                        udr_lv, udr_txt = '🔴极强', '多方主导'
+                    elif udr >= 1.5:
+                        udr_lv, udr_txt = '🔴偏强', '利于多头'
+                    elif udr >= 1.0:
+                        udr_lv, udr_txt = '🟡中性', '观望为主'
+                    elif udr >= 0.5:
+                        udr_lv, udr_txt = '🟠偏弱', '控制仓位'
+                    else:
+                        udr_lv, udr_txt = '🟢极弱', '空方主导'
+
+                    # 涨跌停比 (红=好, 绿=差)
+                    if zt_dt >= 3.0:
+                        zt_lv, zt_txt = '🔴多头', '做多高涨'
+                    elif zt_dt >= 1.0:
+                        zt_lv, zt_txt = '🟡均衡', '分歧'
+                    elif zt_dt >= 0.5:
+                        zt_lv, zt_txt = '🟠偏弱', '恐慌'
+                    else:
+                        zt_lv, zt_txt = '🟢极弱', '极度恐慌'
+
+                    # 涨幅 (红涨绿跌)
+                    if day_zaf >= 2.0:
+                        zaf_lv, zaf_txt = '🔴大涨', '强势'
+                    elif day_zaf >= 0.5:
+                        zaf_lv, zaf_txt = '🔴上涨', '多头'
+                    elif day_zaf >= -0.5:
+                        zaf_lv, zaf_txt = '🟡震荡', '博弈'
+                    elif day_zaf >= -2.0:
+                        zaf_lv, zaf_txt = '🟢下跌', '空头'
+                    else:
+                        zaf_lv, zaf_txt = '🟢大跌', '恐慌'
+
+                    # 综合结论 (红=好, 绿=差)
+                    zaf_norm = max(0, min(1, (day_zaf + 5) / 10))
+                    score = udr / 3 * 0.4 + min(zt_dt / 3, 1) * 0.3 + zaf_norm * 0.3
+                    if score >= 0.7:
+                        conclusion, risk = '🔴强势', '低'
+                    elif score >= 0.4:
+                        conclusion, risk = '🟡中性', '中'
+                    elif score >= 0.2:
+                        conclusion, risk = '🟠偏弱', '高'
+                    else:
+                        conclusion, risk = '🟢极弱', '极高'
+
+                # 输出 (缺数据时显示"暂无数据", 不渲染虚假档位)
+                lines.append('━━ 全景总览 ━━')
+                if day_zaf is None or udr is None or zt_dt is None or up is None:
+                    lines.append('大盘: 暂无数据')
+                    lines.append('涨跌比/涨跌停比/家数: 待采集 (880001.SH 24h 内无快照)')
+                    if idx_parts:
+                        lines.append('  ' + '  '.join(idx_parts))
+                    lines.append('━━ 结论 ━━')
+                    lines.append('⚪ 数据不足, 跳过评级')
+                else:
+                    lines.append(f'大盘 {day_zaf:+.2f}% {zaf_lv}')
+                    lines.append(f'涨跌比 {udr:.2f} {udr_lv} | 涨停跌停比 {zt_dt:.2f} {zt_lv}')
+                    lines.append(f'涨 {up} 家 / 跌 {down} 家  ({udr_txt})')
+                    if idx_parts:
+                        lines.append('  ' + '  '.join(idx_parts))
+                    lines.append(f'━━ 结论 ━━')
+                    lines.append(f'{conclusion} | 风险{risk} | {zaf_txt},{zt_txt}')
+            except Exception as e:
+                logger.warning('读 880001/指数失败: {}', e)
+
+        # 主力资金 (红=流入, 绿=流出)
         mn = cap.get('main_net', 0)
         ccy = cap.get('consistency', 0)
-        mn_arrow = _arrow(mn, '🟢', '🔴', '⚪')
-        lines.append(f'── 主力资金 ──')
-        lines.append(f'  {mn_arrow} {_fmt_yi(mn)}  (一致率 {ccy:.0%})')
-        lines.append('')
+        mn_arrow = _arrow(mn, '🔴', '🟢', '⚪')
+        lines.append('━━ 主力资金 ━━')
+        lines.append(f'{mn_arrow} {_fmt_yi(mn)}  一致率 {ccy:.0%}')
 
-        # ── 拐点信号（突出）──
+        # 拐点
         if turn:
-            action = turn.get('action', '')
-            lines.append(f'── 拐点信号 ──')
-            lines.append(f'  {turn["type"]}: {turn["desc"]}')
-            lines.append(f'  ▶ {action}')
-            lines.append('')
+            lines.append('━━ 拐点 ━━')
+            lines.append(f'{turn["type"]}: {turn["desc"]}')
+            lines.append(f'▶ {turn.get("action", "")}')
 
-        # ── 背离/异常 ──
+        # 背离/异常
         if divs:
-            lines.append(f'── 异常信号 ({len(divs)}) ──')
+            lines.append(f'━━ 异常 ({len(divs)}) ━━')
             for d in divs:
                 p_mark = {'critical': '🚨', 'warning': '⚡', 'info': '📌'}
                 mark = p_mark.get(d.get('priority', 'info'), '📌')
-                lines.append(f'  {mark} {d["type"]}: {d["desc"]}')
-            lines.append('')
+                lines.append(f'{mark} {d["type"]}: {d["desc"]}')
 
-        lines.append('─' * 20)
-        lines.append(f'k4 深度情绪 | 5min 自动推送')
-
-        text = '\n'.join(lines)
-        return text
+        lines.append(f'k4 深度情绪 | 5min')
+        return '\n'.join(lines)
     except Exception as e:
         logger.warning('k4 全景推送失败: {}', e)
-        return '' 
+        return ''
 
 
-# ══════════════════════════════════════════════════════════════
-# 写入
-# ══════════════════════════════════════════════════════════════
 
 def _write_deep(con, now, result, dur_ms):
     """写 qd_sentiment_deep 一行"""
@@ -623,7 +701,9 @@ def run(con, ctx=None):
       1. 读全场数据: 4指数 + 涨跌家数 + 涨跌停 + 资金流
       2. 算 PG 恐慌/贪婪指数
       3. 检测背离/拐点信号
-      4. 写库 + 推飞书
+      4. 写库 (qd_sentiment_deep)
+
+    注: 飞书推送由 runner/k4_runner.py 调用 push_panoramic() 触发, 本函数不直接推送.
 
     Args:
         con: psycopg2 连接
@@ -667,6 +747,8 @@ def run(con, ctx=None):
         'divergences': divs,
         'divergence_count': len(divs),
         'turning_point': turn,
+        # 计算时刻 (供 Bitable 写入用, 避免下游再取 datetime.now() 造成时间错位)
+        'now': now.isoformat(timespec='seconds'),
     }
 
     dur_ms = int((time.time() - t0) * 1000)
@@ -707,7 +789,7 @@ if __name__ == '__main__':
             print(f'  拐点: {turn["type"]} → {turn["action"]}')
         for d in r.get('divergences', []):
             print(f'  信号: [{d["priority"]}] {d["type"]}: {d["desc"]}')
-        print(f'\n  全景推送: 已触发' if (turn or r.get('divergences'))
-              else f'\n  全景推送: 当前无异常, 静默写库')
+        has_anomaly = bool(turn or r.get('divergences'))
+        print(f'\n  本轮有异常: {has_anomaly} (k4_runner 据此决定是否触发 push_panoramic)')
     finally:
         con.close()

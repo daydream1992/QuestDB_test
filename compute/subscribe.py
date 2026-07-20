@@ -45,11 +45,12 @@ _SNAP_COLS = [
     'ZAF', 'ItemNum',
 ]
 
-# qd_stock_intraday 列 (主力资金字段)
+# qd_stock_intraday 列 (与 DDL 16_stock_intraday.sql 一致)
 _INTRA_COLS = [
-    'snapshot_time', 'code',
-    'ZAF', 'ZTPrice', 'DTPrice', 'fHSL', 'fLianB',
-    'FzAmo', 'Zjl', 'Fzhsl', 'FCAmo', 'FCb', 'vzangsu',
+    'code', 'code_type', 'snapshot_time',
+    'ZAF', 'ZTPrice', 'DTPrice', 'fLianB', 'ZTGPNum', 'LastStartZT',
+    'MA5Value', 'Wtb', 'fHSL', 'Fzhsl', 'FzAmo', 'Zjl', 'Zjl_HB',
+    'FCAmo', 'FCb', 'vzangsu',
 ]
 
 
@@ -173,10 +174,12 @@ class Subscriber:
                 executemany_batch(con, 'qd_stock_snapshot', _SNAP_COLS, [snap_row])
 
                 intra_row = (
-                    ts, code,
+                    code, 'stock', ts,
                     more.get('ZAF'), more.get('ZTPrice'), more.get('DTPrice'),
-                    more.get('fHSL'), more.get('fLianB'),
-                    more.get('FzAmo'), more.get('Zjl'), more.get('Fzhsl'),
+                    more.get('fLianB'), more.get('ZTGPNum'), more.get('LastStartZT'),
+                    more.get('MA5Value'), more.get('Wtb'),
+                    more.get('fHSL'), more.get('Fzhsl'), more.get('FzAmo'),
+                    more.get('Zjl'), more.get('Zjl_HB'),
                     more.get('FCAmo'), more.get('FCb'), more.get('vzangsu'),
                 )
                 executemany_batch(con, 'qd_stock_intraday', _INTRA_COLS, [intra_row])

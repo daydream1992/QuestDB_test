@@ -1,6 +1,6 @@
 """因子基类 + 注册表
 
-脚本路径: K:\QuestDB_test\\compute\\factors\\base.py
+脚本路径: K:/QuestDB_test//compute//factors//base.py
 用途: 定义因子层契约, 所有因子继承 FactorBase, 用 @FactorRegistry.register 注册
 依赖: abc / dataclasses / pandas / loguru
 设计要点:

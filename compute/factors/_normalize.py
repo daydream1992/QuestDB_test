@@ -1,6 +1,6 @@
 """因子归一化工具
 
-脚本路径: K:\QuestDB_test\\compute\\factors\\_normalize.py
+脚本路径: K:/QuestDB_test//compute//factors//_normalize.py
 用途: 提供 winsorize / zscore / rank_normalize 等归一化函数
 依赖: pandas / numpy
 说明:

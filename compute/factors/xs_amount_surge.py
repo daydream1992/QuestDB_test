@@ -1,6 +1,6 @@
 """横截面成交额异动因子
 
-脚本路径: K:\QuestDB_test\\compute\\factors\\xs_amount_surge.py
+脚本路径: K:/QuestDB_test//compute//factors//xs_amount_surge.py
 用途: 当日成交额横截面 z-score, 解决"无横截面排序"问题
 依赖: pandas / compute.factors
 数据源: ctx.snapshot_focus_df (含 Amount 字段)

@@ -243,8 +243,9 @@ def _compute_sector_ranking(raw_type, sector_zaf, stock_data):
             sz = {'zaf': zaf, 'now': 0.0, 'outside': 0}
         # 涨停家数: 优先用板块快照的 Outside (来源可靠), 无板块快照时成分股推算
         zt_cnt = int(sz.get('outside', 0)) if sz.get('outside', 0) > 0 else _compute_zt_count(code, stock_data)
+        # 2026-07-15 修复: 允许正涨幅的板块保留 (即使无涨停; 强势板块常正涨幅但未封板)
         if zt_cnt == 0 and sz['zaf'] <= 0:
-            continue  # 无涨停且负涨幅的板块不展示
+            continue  # 无涨停且非正涨幅的板块不展示
         scored.append({
             'code': code,
             'name': _get_sector_name(code),
@@ -301,6 +302,9 @@ def push_heatmap(result):
         bool
     """
     try:
+        # 全组无板块排行 → 空壳, 返回 '' 让 k4_runner 的 if _t: 跳过 (避免无内容刷屏)
+        if not any(result.get(f'{key}_ranking') for key, _, _ in _GROUP_CONFIG):
+            return ''
 
         lines = []
         ts = datetime.now().strftime('%H:%M')
@@ -431,6 +435,7 @@ def run(con, ctx=None):
     if ctx is not None:
         ctx.sector_heatmap = result
 
+    result['now'] = now.isoformat(timespec='seconds')
     return result
 
 

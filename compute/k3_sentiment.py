@@ -114,23 +114,27 @@ def rate_emotion(zt_cnt, fbl, max_lb, udr):
     return EMOTION_LABELS[worst], worst
 
 
-def _calc_market_breadth(pricevol_df):
-    """全场涨跌家数 + 涨跌比 (udr) — pricevol 全场口径 (向量化)"""
-    if pricevol_df is None or pricevol_df.empty:
-        return 0, 0, 0.0
-    df = pricevol_df
-    if 'snapshot_time' in df.columns:
-        df = df.sort_values('snapshot_time').groupby('code', as_index=False).last()
-    else:
-        df = df.groupby('code', as_index=False).last()
-    lc = pd.to_numeric(df['LastClose'], errors='coerce')
-    nw = pd.to_numeric(df['Now'], errors='coerce')
-    valid = (lc > 0) & (nw > 0)  # 排除停牌/退市
-    up = int(((nw > lc) & valid).sum())
-    down = int(((nw < lc) & valid).sum())
-    udr = (up / down) if down > 0 else (float('inf') if up > 0 else 1.0)
-    udr = min(udr, 99.0)
-    return up, down, udr
+def _calc_market_breadth(pricevol_df, con=None):
+    """全场涨跌家数 + 涨跌比 (udr) — 从 880001.SH 总市值指数读取"""
+    # 从 880001.SH 读取涨跌家数
+    if con is not None:
+        try:
+            from lib.qdb import query_df, cutoff
+            df_total = query_df(con,
+                f"SELECT UpHome, DownHome "
+                f"FROM qd_sector_snapshot "
+                f"WHERE code = '880001.SH' AND snapshot_time > '{cutoff(minutes=5)}' "
+                f"ORDER BY snapshot_time DESC LIMIT 1")
+            if df_total is not None and not df_total.empty:
+                r = df_total.iloc[0]
+                up = int(r.get('UpHome') or 0)
+                down = int(r.get('DownHome') or 0)
+                udr = (up / down) if down > 0 else (99.0 if up > 0 else 1.0)
+                return up, down, min(udr, 99.0)
+        except Exception as e:
+            logger.warning('读 880001.SH 失败: {}', e)
+    # fallback: 返回默认值
+    return 0, 0, 0.0
 
 
 def _calc_seal_stats(merged_df, _cls=None, lb_series=None):
@@ -145,12 +149,15 @@ def _calc_seal_stats(merged_df, _cls=None, lb_series=None):
             [fcamo > 0, fcamo < 0, (fcamo == 0) & (mx >= ztp * 0.999)],
             ['zt', 'dt', 'break'], default='normal')
     if lb_series is None:
-        if 'EverZTCount' in merged_df.columns:
-            lb_series = pd.to_numeric(
-                merged_df['fLianB'].fillna(merged_df['EverZTCount']),
-                errors='coerce').fillna(0).astype(int)
+        # 2026-07-14: 连板用 LastZTHzNum(几板,主)/EverZTCount(兜底), 绝不用 fLianB(=量比)
+        if 'LastZTHzNum' in merged_df.columns:
+            fill = merged_df['EverZTCount'] if 'EverZTCount' in merged_df.columns else 0
+            lb_series = pd.to_numeric(merged_df['LastZTHzNum'].fillna(fill),
+                                      errors='coerce').fillna(0).astype(int)
+        elif 'EverZTCount' in merged_df.columns:
+            lb_series = pd.to_numeric(merged_df['EverZTCount'], errors='coerce').fillna(0).astype(int)
         else:
-            lb_series = pd.to_numeric(merged_df['fLianB'], errors='coerce').fillna(0).astype(int)
+            lb_series = pd.Series([0]*len(merged_df), index=merged_df.index).astype(int)
     zt = int((_cls == 'zt').sum())
     dt = int((_cls == 'dt').sum())
     brk = int((_cls == 'break').sum())
@@ -178,11 +185,15 @@ def build_pools(merged_df, cls_arr=None, lb_arr=None,
     else:
         fcamo_v = fcamo_arr
     if lb_arr is None:
-        if 'EverZTCount' in merged_df.columns:
-            lb_arr = pd.to_numeric(merged_df['fLianB'].fillna(merged_df['EverZTCount']),
+        # 2026-07-14: 连板用 LastZTHzNum(主)/EverZTCount(兜底), 不用 fLianB(量比)
+        if 'LastZTHzNum' in merged_df.columns:
+            fill = merged_df['EverZTCount'] if 'EverZTCount' in merged_df.columns else 0
+            lb_arr = pd.to_numeric(merged_df['LastZTHzNum'].fillna(fill),
                                    errors='coerce').fillna(0).astype(int)
+        elif 'EverZTCount' in merged_df.columns:
+            lb_arr = pd.to_numeric(merged_df['EverZTCount'], errors='coerce').fillna(0).astype(int)
         else:
-            lb_arr = pd.to_numeric(merged_df['fLianB'], errors='coerce').fillna(0).astype(int)
+            lb_arr = pd.Series([0]*len(merged_df), index=merged_df.index).astype(int)
     if fcb_arr is None:
         fcb_arr = pd.to_numeric(merged_df['FCb'], errors='coerce').fillna(0)
     if fcamo_arr is None:
@@ -232,11 +243,15 @@ def build_sector_strength(merged_df, cls_arr=None, zaf_arr=None, lb_arr=None, zj
     if zaf_arr is None:
         zaf_arr = pd.to_numeric(merged_df['ZAF'], errors='coerce').fillna(0)
     if lb_arr is None:
-        if 'EverZTCount' in merged_df.columns:
-            lb_arr = pd.to_numeric(merged_df['fLianB'].fillna(merged_df['EverZTCount']),
+        # 2026-07-14: 连板用 LastZTHzNum(主)/EverZTCount(兜底), 不用 fLianB(量比)
+        if 'LastZTHzNum' in merged_df.columns:
+            fill = merged_df['EverZTCount'] if 'EverZTCount' in merged_df.columns else 0
+            lb_arr = pd.to_numeric(merged_df['LastZTHzNum'].fillna(fill),
                                    errors='coerce').fillna(0).astype(int)
+        elif 'EverZTCount' in merged_df.columns:
+            lb_arr = pd.to_numeric(merged_df['EverZTCount'], errors='coerce').fillna(0).astype(int)
         else:
-            lb_arr = pd.to_numeric(merged_df['fLianB'], errors='coerce').fillna(0).astype(int)
+            lb_arr = pd.Series([0]*len(merged_df), index=merged_df.index).astype(int)
     if zjl_hb_arr is None:
         zjl_hb_arr = pd.to_numeric(merged_df.get('Zjl_HB', merged_df.get('Zjl', pd.Series([0]*len(merged_df)))), errors='coerce').fillna(0)
 
@@ -268,7 +283,7 @@ def build_sector_strength(merged_df, cls_arr=None, zaf_arr=None, lb_arr=None, zj
 
 
 _INDEX_CODES = {
-    '000001.SH': '上证指数',
+    '999999.SH': '上证指数',
     '399001.SZ': '深证成指',
     '399006.SZ': '创业板指',
     '000688.SH': '科创50',
@@ -380,8 +395,8 @@ def run(con, ctx):
     from datetime import datetime
     now = datetime.now()
 
-    # 1. 全场涨跌 (pricevol)
-    up_cnt, down_cnt, udr = _calc_market_breadth(ctx.pricevol_df)
+    # 1. 全场涨跌 (从 880001.SH 总市值指数)
+    up_cnt, down_cnt, udr = _calc_market_breadth(None, con)
 
     # 2. 涨停/封板/连板 (snapshot_focus, C8 拆表后已合并完整, 取每 code 最新一行)
     _sdf = ctx.snapshot_focus_df

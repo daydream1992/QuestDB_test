@@ -62,24 +62,26 @@ CREATE TABLE IF NOT EXISTS qd_stock_snapshot (
     Sellv2          BIGINT,
     Sellv3          BIGINT,
     Sellv4          BIGINT,
-    Sellv5          BIGINT,
-    -- 以下为 intraday 高频字段 (来自 get_more_info intraday 模式)
-    ZTPrice         DOUBLE,
-    DTPrice         DOUBLE,
-    ZAF             DOUBLE,
-    fHSL            DOUBLE,
-    Fzhsl           DOUBLE,
-    FzAmo           DOUBLE,
-    Zjl             DOUBLE,
-    Zjl_HB          DOUBLE,
-    FCAmo           DOUBLE,
-    FCb             DOUBLE,
-    vzangsu         DOUBLE,
-    ZTGPNum         DOUBLE,
-    fLianB          DOUBLE,
-    MA5Value        DOUBLE,
-    Wtb             DOUBLE,
-    LastStartZT     VARCHAR
+    Sellv5          BIGINT
+    -- ⚠️ 以下字段已废弃 (C8 拆表后迁移到 qd_stock_intraday)
+    -- 原 c3 intraday 模式已改写 qd_stock_intraday, 本表不再写入以下字段
+    -- 查询 intraday 字段请读 qd_stock_intraday 表
+    -- ZTPrice       DOUBLE,  -- 已迁移
+    -- DTPrice       DOUBLE,  -- 已迁移
+    -- ZAF           DOUBLE,  -- 已迁移
+    -- fHSL          DOUBLE,  -- 已迁移
+    -- Fzhsl         DOUBLE,  -- 已迁移
+    -- FzAmo         DOUBLE,  -- 已迁移
+    -- Zjl           DOUBLE,  -- 已迁移
+    -- Zjl_HB        DOUBLE,  -- 已迁移
+    -- FCAmo         DOUBLE,  -- 已迁移
+    -- FCb           DOUBLE,  -- 已迁移
+    -- vzangsu       DOUBLE,  -- 已迁移
+    -- ZTGPNum       DOUBLE,  -- 已迁移
+    -- fLianB        DOUBLE,  -- 已迁移
+    -- MA5Value      DOUBLE,  -- 已迁移
+    -- Wtb           DOUBLE,  -- 已迁移
+    -- LastStartZT   VARCHAR, -- 已迁移
 ) TIMESTAMP(snapshot_time) PARTITION BY DAY
 DEDUP UPSERT KEYS(snapshot_time, code);
 

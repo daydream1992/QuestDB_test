@@ -85,6 +85,10 @@ SECTOR_TABLE_COLS = [
 ]
 _SECTOR_PLAIN = SECTOR_TABLE_COLS[3:]  # 21 字段 (跳过 code/code_type/snapshot_time)
 
+# === 额外板块代码 (接口不返回, 需硬编码采集) ===
+# 总市值指数 (880001): 代表所有A股的市值, 涵盖整个A股市场
+_EXTRA_SECTOR_CODES = ['880001.SH']
+
 # === qd_index_snapshot 列顺序 (13 列) ===
 INDEX_TABLE_COLS = [
     'code', 'code_type', 'snapshot_time',
@@ -188,6 +192,11 @@ def run(focus_codes=None, all_codes=None, con=None, limit=None, code_type_map=No
         for c in all_codes:
             if c not in todo:
                 todo.append(c)
+
+        # 补充额外板块代码 (接口不返回, 如总市值指数 880001)
+        for extra in _EXTRA_SECTOR_CODES:
+            if extra not in todo:
+                todo.append(extra)
         if limit:
             todo = todo[:limit]
             logger.info('测试模式: 仅取前 {} 只', limit)

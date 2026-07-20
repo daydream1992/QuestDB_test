@@ -85,6 +85,7 @@ CREATE TABLE IF NOT EXISTS qd_decisions (
     action          VARCHAR,
     position_size   DOUBLE,
     price           DOUBLE,
+    stock_name      VARCHAR,         -- P1 修复: 股票名称 (补飞书推送显示)
     reason          VARCHAR
 ) TIMESTAMP(decision_time) PARTITION BY DAY
 DEDUP UPSERT KEYS(decision_time, code, strategy_name);

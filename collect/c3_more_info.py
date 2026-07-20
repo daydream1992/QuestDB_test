@@ -56,6 +56,9 @@ from config.fields import (  # noqa: E402
 )
 from tqcenter import tq  # noqa: E402
 
+# === 额外板块代码 (接口不返回, 需硬编码采集) ===
+_EXTRA_SECTOR_CODES = ['880001.SH']
+
 _LOG_DIR = os.path.join(_PROJ_ROOT, 'logs')
 os.makedirs(_LOG_DIR, exist_ok=True)
 logger.add(os.path.join(_LOG_DIR, 'c3_more_info_{time:YYYYMMDD}.log'),
@@ -330,6 +333,10 @@ def main():
     from lib.tq_utils import fetch_all_codes
     meta = fetch_all_codes()
     codes = [c['code'] for c in meta]
+    # 补充额外板块代码 (接口不返回, 如总市值指数 880001)
+    for extra in _EXTRA_SECTOR_CODES:
+        if extra not in codes:
+            codes.append(extra)
     if args.limit:
         codes = codes[:args.limit]
     run(codes, mode=args.mode)

@@ -472,6 +472,10 @@ def push_ladder(result):
         bool
     """
     try:
+        # 全无涨停/连板 → 空壳, 返回 '' 让 k4_runner 的 if _t: 跳过 (避免 0 连板的空壳刷屏)
+        stats = result.get('stats', {})
+        if stats.get('total_zt', 0) == 0:
+            return ''
 
         lines = []
         ts = datetime.now().strftime('%H:%M')
@@ -479,7 +483,6 @@ def push_ladder(result):
         lines.append('')
 
         # 连板全景
-        stats = result.get('stats', {})
         lines.append('连板全景:')
         lines.append(f'  首板: {stats.get("total_1b", 0)}家  '
                      f'2板: {stats.get("total_2b", 0)}家  '
@@ -612,6 +615,7 @@ def run(con, ctx=None):
     if ctx is not None:
         ctx.ladder_tracker = result
 
+    result['now'] = now.isoformat(timespec='seconds')
     return result
 
 

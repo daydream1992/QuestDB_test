@@ -1,6 +1,6 @@
 """micro_order_imbalance: 委托单失衡 EMA 平滑因子
 
-脚本路径: K:\QuestDB_test\\compute\\factors\\micro_order_imbalance.py
+脚本路径: K:/QuestDB_test//compute//factors//micro_order_imbalance.py
 用途: 5 档买卖委托量比值 + EMA 平滑后的趋势失衡信号
 数据源: ctx.snapshot_focus_df (Buyp1-5/Buyv1-5/Sellp1-5/Sellv1-5)
 依赖: compute.factors.base, numpy

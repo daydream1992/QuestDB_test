@@ -1,6 +1,6 @@
 """xs_lhb_broker_rank: 龙虎榜营业部横截面因子
 
-脚本路径: K:\QuestDB_test\\compute\\factors\\xs_lhb_broker_rank.py
+脚本路径: K:/QuestDB_test//compute//factors//xs_lhb_broker_rank.py
 用途: 统计近 5 日知名游资营业部上榜的票的质量评分
 数据源: QuestDB qd_lhb_detail 表 (T+1 数据)
 依赖: compute.factors.base, config.broker_list
