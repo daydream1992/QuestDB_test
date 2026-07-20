@@ -1,6 +1,6 @@
 """tqcenter 客户端封装
 
-脚本路径: K:\QuestDB_test\\lib\\tq_client.py
+脚本路径: K:/QuestDB_test//lib//tq_client.py
 用途: 封装 tqcenter COM 调用, 提供线程安全的 init/close/retry
 依赖: tqcenter (K:\\txdlianghua\\PYPlugins\\sys\\tqcenter.py)
 数据源: tqcenter (通达信量化数据接口)

@@ -1,6 +1,6 @@
 """c5: 板块-个股关系图谱加载
 
-脚本路径: K:\QuestDB_test\\collect\\c5_mapping.py
+脚本路径: K:/QuestDB_test//collect//c5_mapping.py
 用途: 从 JSON 加载 6 维关系图谱 (行业/概念/地域/风格/指数 + 个股三级分类), 同步入库
 数据源: K:\\QuestDB_test\\data\\market_data\\市场数据\\*.json
 入库表 (6 张):

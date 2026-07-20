@@ -1,6 +1,6 @@
 """竞价监控
 
-脚本路径: K:\QuestDB_test\\runner\\auction_monitor.py
+脚本路径: K:/QuestDB_test//runner//auction_monitor.py
 用途: 竞价时段拉快照 → 竞价分析 → 信号推送
 执行时间: 09:15-09:30 / 14:57-15:00
 频率: 3-5s/轮

@@ -1,6 +1,6 @@
 """k4: 深度大盘情绪分析
 
-脚本路径: K:\QuestDB_test\\compute\\k4_sentiment.py
+脚本路径: K:/QuestDB_test//compute//k4_sentiment.py
 用途: 8 维度大盘情绪深度分析, 输出直观推送消息
 数据源: QuestDB 已有表 (全读库, 不读 tqcenter)
 写入表: qd_sentiment_deep (5min/轮)

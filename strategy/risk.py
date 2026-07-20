@@ -1,6 +1,6 @@
 """风控
 
-脚本路径: K:\QuestDB_test\\strategy\\risk.py
+脚本路径: K:/QuestDB_test//strategy//risk.py
 用途: 仓位上限校验 + 止损止盈出场判断 + 持仓 DB 持久化
 依赖: loguru, lib.qdb
 配置: config/strategies.yaml 的 risk 段

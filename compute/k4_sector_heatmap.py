@@ -1,6 +1,6 @@
 """k4: 板块热力图 + 最强个股梯队
 
-脚本路径: K:\QuestDB_test\\compute\\k4_sector_heatmap.py
+脚本路径: K:/QuestDB_test//compute//k4_sector_heatmap.py
 用途: 4 组板块排行 (行业一级/行业二级/行业三级/概念各 Top 5) +
       每组最强板块的个股梯队 Top 3
 数据源: qd_sector_snapshot + qd_stock_snapshot + lib.relation_graph

@@ -1,6 +1,6 @@
 """c1: 全市场批量价量采集
 
-脚本路径: K:\QuestDB_test\\collect\\c1_pricevol.py
+脚本路径: K:/QuestDB_test//collect//c1_pricevol.py
 用途: 1 次 get_pricevol 拿全场价量, 写 qd_pricevol
 数据源: tqcenter get_pricevol(stock_list)
 入库表: qd_pricevol (3 数据列)

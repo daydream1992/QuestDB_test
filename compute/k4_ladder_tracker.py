@@ -1,6 +1,6 @@
 """k4: 打板梯队 + 2进3 晋级监控
 
-脚本路径: K:\QuestDB_test\\compute\\k4_ladder_tracker.py
+脚本路径: K:/QuestDB_test//compute//k4_ladder_tracker.py
 用途:
   1. 连板全景 — 按板数分组显示全部连板股票
   2. 2进3 重点 — 今日 2 连板晋级概率评分 Top 5

@@ -1,6 +1,6 @@
 """盘前初始化
 
-脚本路径: K:\QuestDB_test\\runner\\daily_init.py
+脚本路径: K:/QuestDB_test//runner//daily_init.py
 用途: 9:25 盘前执行 1 次, 加载映射 + 刷新注册表 + 拉日级数据
 执行时间: 09:25 (交易日)
 流程:

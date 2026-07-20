@@ -1,6 +1,6 @@
 """lib.notify_dedup: 进程内推送频控 (Deduper)
 
-脚本路径: K:\\QuestDB_test\\lib\\notify_dedup.py
+脚本路径: K://QuestDB_test//lib//notify_dedup.py
 用途: 同 (code, type) 在 TTL 秒内只推一次, critical 事件豁免
 依赖: 标准库 time, threading
 配置: _DEFAULT_TTL = 180 秒

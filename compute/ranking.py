@@ -1,6 +1,6 @@
 """横截面排序
 
-脚本路径: K:\QuestDB_test\\compute\\ranking.py
+脚本路径: K:/QuestDB_test//compute//ranking.py
 用途: 把 alpha_df 排序为可执行的候选池, 支持行业中性
 依赖: pandas / loguru / lib.relation_graph
 说明:

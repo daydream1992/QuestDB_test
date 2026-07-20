@@ -1,6 +1,6 @@
 """c4: K 线直拉采集 (1m / 5m)
 
-脚本路径: K:\QuestDB_test\\collect\\c4_kline.py
+脚本路径: K:/QuestDB_test//collect//c4_kline.py
 用途: 调 get_market_data 拉 K 线, 转长格式后写 qd_kline_1m / qd_kline_5m
 数据源: tqcenter get_market_data(stock_list, period, count)
 入库表:

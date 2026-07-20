@@ -1,6 +1,6 @@
 """板块资金流监控
 
-脚本路径: K:\QuestDB_test\\strategy\\sector_flow.py
+脚本路径: K:/QuestDB_test//strategy//sector_flow.py
 用途: 聚合板块内个股资金流, 检测板块轮动, 识别资金流与价格的背离
 依赖: pandas, loguru
 数据源:

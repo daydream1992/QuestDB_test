@@ -1,6 +1,6 @@
 """k2: 原子信号检测
 
-脚本路径: K:\QuestDB_test\\compute\\k2_signals.py
+脚本路径: K:/QuestDB_test//compute//k2_signals.py
 用途: 读 qd_indicators, 检测 MACD 金叉/死叉 + 突破压力位/跌破支撑位, 写 qd_signals
 数据源: qd_indicators (技术指标表, 由 k1_indicators 产出)
 入库表: qd_signals

@@ -1,6 +1,6 @@
 """tqcenter 工具函数
 
-脚本路径: K:\QuestDB_test\\lib\\tq_utils.py
+脚本路径: K:/QuestDB_test//lib//tq_utils.py
 用途: 股票代码转换 / 标的类型判定 / 全市场代码获取 / 注册表刷新
 依赖: tqcenter (lib.tq_client), psycopg2, config.index_codes
 数据源: tqcenter get_stock_list(市场参数) + get_sector_list + get_stock_list_in_sector

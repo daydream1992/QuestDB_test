@@ -1,6 +1,6 @@
 """端到端验证脚本
 
-脚本路径: K:\QuestDB_test\\e2e.py
+脚本路径: K:/QuestDB_test//e2e.py
 用途: 验证全流程: 采集→计算→策略→推送
 执行: python e2e.py
 

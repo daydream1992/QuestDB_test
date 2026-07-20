@@ -1,6 +1,6 @@
 """盘面监工 (Overseer)
 
-脚本路径: K:\QuestDB_test\runner\overseer.py
+脚本路径: K:/QuestDB_test/runner/overseer.py
 用途: 非侵入式监控所有 runner 的运行状态 + 数据完整性 + 时间轴检查
 执行: python runner/overseer.py
 频率: 15 秒/轮，按交易阶段自适应

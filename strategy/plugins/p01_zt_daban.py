@@ -1,6 +1,6 @@
 """p01: 涨停打板
 
-脚本路径: K:\QuestDB_test\\strategy\\plugins\\p01_zt_daban.py
+脚本路径: K:/QuestDB_test//strategy//plugins//p01_zt_daban.py
 用途: 检测真封板 + 板块涨停潮 + 放量 + 换手充分的打板机会
 依赖: ctx.snapshot_focus_df (C8拆表后含快照列 + merge 的 intraday 列 FCAmo/fHSL/fLianB/Amount)
 入库: qd_decisions (由 runner 写入)

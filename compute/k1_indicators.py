@@ -1,6 +1,6 @@
 """k1: 技术指标计算
 
-脚本路径: K:\QuestDB_test\\compute\\k1_indicators.py
+脚本路径: K:/QuestDB_test//compute//k1_indicators.py
 用途: 读 5m K 线, 计算 MACD/BOLL/压力位/支撑位/MA, 写 qd_indicators
 数据源: qd_kline_5m (5 分钟 K 线)
 入库表: qd_indicators

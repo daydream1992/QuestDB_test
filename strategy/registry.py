@@ -1,6 +1,6 @@
 """策略注册器
 
-脚本路径: K:\QuestDB_test\\strategy\\registry.py
+脚本路径: K:/QuestDB_test//strategy//registry.py
 用途: 策略热插拔注册, 支持从 strategies.yaml 加载开关, 动态导入 plugins/ 目录
 依赖: pyyaml, loguru
 配置: config/strategies.yaml 的 strategies 段 (enabled 开关)

@@ -1,6 +1,6 @@
 """龙虎榜分析
 
-脚本路径: K:\QuestDB_test\\strategy\\lhb_analyzer.py
+脚本路径: K:/QuestDB_test//strategy//lhb_analyzer.py
 用途: 解析龙虎榜原始数据, 识别知名游资/机构/北向席位参与情况
 依赖: loguru, config.broker_list
 数据源: 龙虎榜原始数据 (list[dict]), 每项含 code/name/date/buyers/sellers 席位列表

@@ -1,6 +1,6 @@
 """k5: 当天 K 线本地合成 (1m / 5m)
 
-脚本路径: K:\QuestDB_test\\compute\\k5_kline_synth.py
+脚本路径: K:/QuestDB_test//compute//k5_kline_synth.py
 用途: tqcenter get_market_data 只返回历史 K (昨天及之前), 当天 K 拉不到;
       本模块用 qd_stock_snapshot 的高频 Now/Volume/Amount 按分钟桶聚合成 1m/5m K,
       写入 qd_kline_1m / qd_kline_5m (与 c4 历史K同表 DEDUP, 今天合成覆盖/补充)。

@@ -1,6 +1,6 @@
 """大单监控 (快照差分)
 
-脚本路径: K:\QuestDB_test\\strategy\\big_order.py
+脚本路径: K:/QuestDB_test//strategy//big_order.py
 用途: 对比相邻两帧快照, 检测大额成交单, 判定主动方向与信号类型
 依赖: loguru
 数据源: qd_stock_snapshot 相邻两帧 + more_info (Zjl 判方向)

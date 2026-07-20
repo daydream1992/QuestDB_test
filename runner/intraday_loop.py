@@ -1,6 +1,6 @@
 """盘中主循环
 
-脚本路径: K:\QuestDB_test\\runner\\intraday_loop.py
+脚本路径: K:/QuestDB_test//runner//intraday_loop.py
 用途: 9:30-15:00 盘中 10s 主循环, 采集→计算→策略→推送
 执行时间: 09:30-11:30 / 13:00-15:00
 频率: 10 秒/轮 (可从 strategies.yaml 读取)

@@ -1,6 +1,6 @@
 """p17: 大盘情绪
 
-脚本路径: K:\QuestDB_test\\strategy\\plugins\\p17_market_emotion.py
+脚本路径: K:/QuestDB_test//strategy//plugins//p17_market_emotion.py
 用途: 消费 ctx.sentiment (k3_sentiment 产出), 情绪极端时呈现市场级提示
 依赖: ctx.emotion_rating (0-4) + ctx.sentiment (dict)
 入库: qd_decisions (watch/warn 市场级提示, code=上证指数占位)

@@ -1,6 +1,6 @@
 """策略上下文
 
-脚本路径: K:\QuestDB_test\\strategy\\context.py
+脚本路径: K:/QuestDB_test//strategy//context.py
 用途: 一次采集全策略共享的数据容器, 避免各策略重复取数
 依赖: pandas, datetime
 数据源:

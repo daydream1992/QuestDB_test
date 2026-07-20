@@ -1,6 +1,6 @@
 """tests.test_3proc: 多进程并行 3 接口测试
 
-脚本路径: K:\\QuestDB_test\\tests\\test_3proc.py
+脚本路径: K://QuestDB_test//tests//test_3proc.py
 用途: 验证 tqcenter COM 跨进程是否安全 (H1 修复相关)
 依赖: multiprocessing, tqcenter (sys.path 注入)
 用法: python tests/test_3proc.py

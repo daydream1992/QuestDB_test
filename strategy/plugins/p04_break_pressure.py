@@ -1,6 +1,6 @@
 """p04: 突破压力位
 
-脚本路径: K:\QuestDB_test\\strategy\\plugins\\p04_break_pressure.py
+脚本路径: K:/QuestDB_test//strategy//plugins//p04_break_pressure.py
 用途: 突破压力位 + 放量 + 涨幅确认的趋势启动买点
 依赖: 策略上下文 ctx (signals_df / pricevol_df / snapshot_focus_df / more_info_df)
 入库: qd_decisions (由 runner 写入)

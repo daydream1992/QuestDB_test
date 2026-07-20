@@ -13,7 +13,7 @@ for f in $(git diff --cached --name-only --diff-filter=ACM | grep '\.py$'); do
     if python -c "
 import ast, sys
 try:
-    with open('$f', 'r') as fh:
+    with open('$f', 'r', encoding='utf-8') as fh:
         ast.parse(fh.read())
 except SyntaxError as e:
     print(f'  SYNTAX ERROR: $f:{e.lineno}: {e.msg}')

@@ -1,6 +1,6 @@
 """k4 深度情绪独立调度脚本
 
-脚本路径: K:\\QuestDB_test\\runner\\k4_runner.py
+脚本路径: K://QuestDB_test//runner//k4_runner.py
 用途: 5min/轮独立运行 k4 三个深度模块 (情绪 + 板块热力图 + 打板梯队) +
       飞书多维表格落盘, 与 intraday_loop 解耦, 由 scheduler 调度
 执行时间: 盘中 (09:30-15:00) 每 5 分钟

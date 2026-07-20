@@ -1,6 +1,6 @@
 """DDL 表结构校验
 
-脚本路径: K:\QuestDB_test\\scripts\\verify_tables.py
+脚本路径: K:/QuestDB_test//scripts//verify_tables.py
 用途: 对比 ddl/*.sql 的 CREATE TABLE 定义与 QuestDB 实际列结构, 发现列缺失/多余
 依赖: psycopg2
 数据源: ddl/*.sql (DDL 源) + QuestDB information_schema.columns (实际)

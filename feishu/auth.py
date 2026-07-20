@@ -1,6 +1,6 @@
 """feishu.auth: 飞书 tenant_access_token 管理
 
-脚本路径: K:\\QuestDB_test\\feishu\\auth.py
+脚本路径: K://QuestDB_test//feishu//auth.py
 用途: 自动获取/刷新 tenant_access_token (2h 有效, 提前 5min 刷新)
 依赖: 标准库 time/threading, 第三方 requests
 配置: LARK_APP_ID / LARK_APP_SECRET (从 config/.env 读)

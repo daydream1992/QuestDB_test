@@ -1,6 +1,6 @@
 """c3: 88 字段 more_info 采集 (日级 + 盘中高频)
 
-脚本路径: K:\QuestDB_test\\collect\\c3_more_info.py
+脚本路径: K:/QuestDB_test//collect//c3_more_info.py
 用途: 逐个 get_more_info 采集 88 字段, 按 route_type 分流到 daily / intraday 表
 数据源: tqcenter get_more_info(stock_code, field_list=[])
 入库表:

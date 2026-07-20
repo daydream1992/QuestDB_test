@@ -1,6 +1,6 @@
 """feishu.config: 飞书模块配置加载
 
-脚本路径: K:\\QuestDB_test\\feishu\\config.py
+脚本路径: K://QuestDB_test//feishu//config.py
 用途: 从 config/.env 读飞书应用凭据与目标资源 ID
 依赖: os / dotenv
 配置: LARK_APP_ID / LARK_APP_SECRET / LARK_SHEET_TOKEN / LARK_BITABLE_TOKEN /

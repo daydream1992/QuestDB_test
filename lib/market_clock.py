@@ -1,6 +1,6 @@
 """交易时钟
 
-脚本路径: K:\QuestDB_test\\lib\market_clock.py
+脚本路径: K:/QuestDB_test//lib/market_clock.py
 用途: 判断交易日 / 盘中 / 竞价时段, 返回当前交易阶段
 依赖: 系统本地时间 + tqcenter (H6, 交易日历) + .env FORCE_TRADE_DAY
 数据源: 系统本地时间 (Asia/Shanghai); 交易日历来自 tqcenter.get_trading_dates

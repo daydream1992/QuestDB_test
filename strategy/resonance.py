@@ -1,6 +1,6 @@
 """共振背离引擎
 
-脚本路径: K:\QuestDB_test\\strategy\\resonance.py
+脚本路径: K:/QuestDB_test//strategy//resonance.py
 用途: 多层共振分析 (大盘 + 板块 + 个股) 与背离检测, 供共振策略/背离预警策略调用
 依赖: pandas, loguru, lib.relation_graph
 数据源:

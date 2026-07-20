@@ -1,6 +1,6 @@
 """c5: 个股交易数据 (GP系列) 采集
 
-脚本路径: K:\QuestDB_test\\collect\\c5_gpjy.py
+脚本路径: K:/QuestDB_test//collect//c5_gpjy.py
 用途: 调 tqcenter get_gpjy_value 拉 GP 字段 (涨跌停/连板/次日红盘率/机构等),
       取每 code 最新日期值, 写 qd_stock_gpjy
 依赖: tqcenter (需客户端下载股票数据包)

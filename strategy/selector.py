@@ -1,6 +1,6 @@
 """选股器
 
-脚本路径: K:\QuestDB_test\\strategy\\selector.py
+脚本路径: K:/QuestDB_test//strategy//selector.py
 用途: 动态筛选重点监控池, 聚合涨幅/量比/换手/连板/接近涨停多维度, 去重后 300-500 只
 依赖: pandas, loguru
 数据源:

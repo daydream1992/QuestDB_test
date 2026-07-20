@@ -1,6 +1,6 @@
 """scripts.data_inventory: 数据资产盘点 - 字段能力骨架探测
 
-脚本路径: K:\\QuestDB_test\\scripts\\data_inventory.py
+脚本路径: K://QuestDB_test//scripts//data_inventory.py
 用途: 扫所有 qd_ 表的每个字段, 机器查真实数据状态 (非空率/distinct/min/max/样本)
 依赖: psycopg2 (lib.qdb), json
 输出: _deprecated/inventory/data_inventory.json

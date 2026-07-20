@@ -1,6 +1,6 @@
 """Alpha 组合引擎
 
-脚本路径: K:\QuestDB_test\\compute\\alpha_engine.py
+脚本路径: K:/QuestDB_test//compute//alpha_engine.py
 用途: 多因子加权组合, 输出 alpha_score + 横截面排名 + 十分位
 依赖: pandas / numpy / loguru / compute.factors
 配置: config/strategies.yaml 的 factor_model 段

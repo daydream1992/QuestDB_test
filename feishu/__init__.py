@@ -1,6 +1,6 @@
 """feishu.__init__: 飞书模块统一出口
 
-脚本路径: K:\\QuestDB_test\\feishu\\__init__.py
+脚本路径: K://QuestDB_test//feishu//__init__.py
 用途: re-export 所有子模块公开函数, 提供 log_signals 一站式入口
 依赖: feishu.{push,doc_writer,sheet_writer,bitable_writer,auth,config}
 入参: log_signals(signals, push=False, sheet=True, bitable=True)

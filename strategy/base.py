@@ -1,6 +1,6 @@
 """策略基类
 
-脚本路径: K:\QuestDB_test\\strategy\\base.py
+脚本路径: K:/QuestDB_test//strategy//base.py
 用途: 所有策略插件必须继承的抽象基类, 定义 Decision 决策结构与 evaluate 接口
 依赖: 标准库 abc / dataclasses / typing
 说明:

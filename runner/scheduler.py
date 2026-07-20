@@ -1,6 +1,6 @@
 """总调度器 (全天调度)
 
-脚本路径: K:\QuestDB_test\\runner\\scheduler.py
+脚本路径: K:/QuestDB_test//runner//scheduler.py
 用途: 全天自动调度, 按时间段启动不同模块
 调度时序:
   09:15-09:30  auction_monitor (竞价监控)

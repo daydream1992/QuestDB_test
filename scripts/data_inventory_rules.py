@@ -1,6 +1,6 @@
 """scripts.data_inventory_rules: 数据资产盘点 - 补业务规则
 
-脚本路径: K:\\QuestDB_test\\scripts\\data_inventory_rules.py
+脚本路径: K://QuestDB_test//scripts//data_inventory_rules.py
 用途: 用户授权威规则, 记入 inventory 字段 capability 与顶层 business_rules
 依赖: json, _deprecated/inventory/data_inventory.json (读)
 输出: 同上 (原地补充)

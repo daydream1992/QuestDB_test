@@ -1,6 +1,6 @@
 """k3: 大盘情绪监控
 
-脚本路径: K:\QuestDB_test\\compute\\k3_sentiment.py
+脚本路径: K:/QuestDB_test//compute//k3_sentiment.py
 用途: 三层情绪分析 (大盘层定仓位 / 板块层定方向 / 个股层6池定标的), 写 qd_sentiment_*
 数据源: ctx.pricevol_df (全场涨跌) + ctx.snapshot_focus_df (涨停/封单/连板) +
         ctx.index_snapshot (主指数) + relation_graph (板块映射)

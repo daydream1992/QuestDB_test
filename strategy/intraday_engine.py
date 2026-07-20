@@ -1,6 +1,6 @@
 """intraday_engine: 盘中异动检测 (实盘订阅模块)
 
-脚本路径: K:\QuestDB_test\\strategy\\intraday_engine.py
+脚本路径: K:/QuestDB_test//strategy//intraday_engine.py
 移植自 DB数据库_v2 01实盘监控/engine.py, 聚焦实用 4 类 (去粗取精, 见 ARCHITECTURE_REVIEW 批5):
   - surge_up/down: 5 分钟涨速 |Now/Before5MinNow - 1|*100 >= 2%
   - limit_seal:    封涨停 (FCAmo > 0 权威判定: 有封单才是真封板)

@@ -1,6 +1,6 @@
 """p08: 暗资金异动
 
-脚本路径: K:\QuestDB_test\\strategy\\plugins\\p08_dark_money.py
+脚本路径: K:/QuestDB_test//strategy//plugins//p08_dark_money.py
 用途: 暗资金撤单差分异常 + 委托买卖比偏高的关注信号
 依赖: 策略上下文 ctx (money_flow_df)
 入库: qd_decisions (由 runner 写入)

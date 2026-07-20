@@ -1,6 +1,6 @@
 """DDL ↔ 文档表名对账 (纯文件, 不连库)
 
-脚本路径: K:\\QuestDB_test\\scripts\\data_inventory_ddl_audit.py
+脚本路径: K://QuestDB_test//scripts//data_inventory_ddl_audit.py
 用途: 对比 ddl/*.sql 的 CREATE TABLE 表名 与 MAINTENANCE.md §3 表清单,
       检测文档漂移 (DDL 有/文档缺, 或 文档有/DDL 缺), 并交叉核对
       ddl/_reset_all.py 的 DDL_FILES 数组是否覆盖所有 .sql 文件。

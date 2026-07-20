@@ -1,6 +1,6 @@
 """c2: 3 类标的盘中高频快照采集
 
-脚本路径: K:\QuestDB_test\\collect\\c2_snapshot.py
+脚本路径: K:/QuestDB_test//collect//c2_snapshot.py
 用途: 逐个 get_market_snapshot 采集快照, 按 route_type 分流到 3 张表
 数据源: tqcenter get_market_snapshot(stock_code, field_list=[])
 入库表:
