@@ -96,3 +96,12 @@ def invalidate_token():
     with _get_lock:
         _cache['token'] = ''
         _cache['expires_at'] = 0.0
+
+
+# token 失效错误码 (飞书 API 返回 code 在此集合表示 token 过期/失效)
+_INVALID_TOKEN_CODES = {99991663, 99991664, 99991668, 99991671}
+
+
+def is_token_invalid(data: dict) -> bool:
+    """检查飞书 API 响应是否表示 token 失效 (供 push/bitable/sheet/doc 的 _api 复用)"""
+    return data.get('code', -1) in _INVALID_TOKEN_CODES

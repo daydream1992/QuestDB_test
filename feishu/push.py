@@ -14,6 +14,7 @@
 import os
 import sys
 import time
+import json
 import logging
 import threading
 from collections import deque
@@ -267,7 +268,7 @@ def _post_webhook(payload, _retries=3):
     return False
 
 
-_INVALID_TOKEN_CODES = {99991663, 99991664, 99991668, 99991671}
+_INVALID_TOKEN_CODES = _auth._INVALID_TOKEN_CODES  # 复用 feishu.auth 集中定义
 
 
 def _post_api(chat_id, msg_type, content, _retry=True, _retries=3):
@@ -289,7 +290,7 @@ def _post_api(chat_id, msg_type, content, _retry=True, _retries=3):
     body = {
         'receive_id': chat_id,
         'msg_type': msg_type,
-        'content': content,
+        'content': json.dumps(content, ensure_ascii=False),
     }
     last_err = None
     for attempt in range(1, _retries + 1):
@@ -333,7 +334,7 @@ def _send(payload, chat_id=None, critical=False):
     if _cfg.DRY_RUN:
         logger.info('[DRY-RUN] 拦截推送: {}', payload.get('msg_type'))
         _stats_inc('dry_run')
-        return True
+        return False  # 不污染频控表 (pushed=FALSE, 不计入跨进程频控)
     # 全局频控 (进程内滑动窗口)
     if not critical and not _global_rate_allow():
         logger.warning('全局频控拦截 (≤{}条/分钟)', _GLOBAL_MAX_PER_MIN)
@@ -346,7 +347,8 @@ def _send(payload, chat_id=None, critical=False):
         try:
             row = query_one(_qcon,
                 "SELECT COUNT(*) as cnt FROM qd_signal_log "
-                f"WHERE log_time > '{cutoff(minutes=1)}' AND pushed = TRUE")
+                "WHERE log_time > %s AND pushed = TRUE",
+                (cutoff(minutes=1),))
             if row and int(row.get('cnt', 0)) >= _GLOBAL_MAX_PER_MIN:
                 logger.warning('跨进程频控拦截 (已有%d条/分钟)', int(row.get('cnt', 0)))
                 _stats_inc('rate_limited')
@@ -419,19 +421,18 @@ def push_signal(signal, chat_id=None):
     code = signal.get('code', '')
     signal_type = signal.get('signal_type', '')
 
-    # 频控检查 (DB 查询) 在锁外, 避免锁住 I/O
+    # 频控检查 + 发送 + 日志写入 全部在锁内, 避免 TOCTOU 竞态
+    # (push_signal 不是高频路径, 锁内 DB 查询可接受)
     from lib.qdb import connect
     con = connect()
     try:
-        allowed = _allow_push(con, code, signal_type)
-        if not allowed:
-            logger.info('信号频控拦截: %s|%s', code, signal_type)
-            return False
-
-        card = _build_signal_card(signal)
-
-        # 锁只保护发送 + 频控日志写入 (原子 check-and-log)
         with _freq_lock:
+            allowed = _allow_push(con, code, signal_type)
+            if not allowed:
+                logger.info('信号频控拦截: %s|%s', code, signal_type)
+                return False
+
+            card = _build_signal_card(signal)
             ok = _send(
                 {'msg_type': 'interactive', 'card': card},
                 chat_id=chat_id,
@@ -518,6 +519,23 @@ def send_to_chat(chat_id, msg_type, content):
     return _post_api(chat_id, msg_type, content)
 
 
+def _resolve_name(code, fallback=''):
+    """代码 → 股票名称; 生产者未填 stock_name 时兜底解析 (读 名称映射.json)。
+
+    飞书推送模板里代码必须带名称, 否则用户看不出是谁。get_stock_name lazy-load
+    名称映射.json, 找不到时返回 code 本身, 故名称恒非空 (除非 code 也空)。
+    """
+    if fallback:
+        return fallback
+    if not code:
+        return ''
+    try:
+        from lib.relation_graph import get_stock_name
+        return get_stock_name(code)
+    except Exception:
+        return code
+
+
 def push_focus_pool(pool_df, chat_id=None):
     """推送 focus 池到飞书 (表格卡片)。
 
@@ -534,7 +552,7 @@ def push_focus_pool(pool_df, chat_id=None):
     rows = []
     for _, r in pool_df.iterrows():
         code = r.get('code', '')
-        name = r.get('name', r.get('stock_name', ''))
+        name = _resolve_name(code, r.get('name', r.get('stock_name', '')))
         # change_pct 计算: 如果传入的只有 pricevol 表 (只有 Now/LastClose)
         now = r.get('Now', 0)
         lc = r.get('LastClose', 0)
@@ -602,7 +620,7 @@ def _build_signal_card(signal):
     title = f'信号 · {stype or "unknown"}'
 
     code = signal.get('code', '')
-    name = signal.get('stock_name', '') or ''
+    name = _resolve_name(code, signal.get('stock_name', ''))
     price = signal.get('price', '')
     score = signal.get('signal_score', '')
     strategy = signal.get('strategy_name', '')
@@ -691,7 +709,7 @@ def _build_decision_card(decision):
     title = f'决策 · {action or "unknown"}'
 
     code = decision.get('code', '')
-    name = decision.get('stock_name', '') or ''
+    name = _resolve_name(code, decision.get('stock_name', ''))
     price = decision.get('price', '')
     pos = decision.get('position_size', '')
     strategy = decision.get('strategy_name', '')
@@ -858,7 +876,21 @@ def _flush_bucket(bucket: list, chat_id: str = None) -> bool:
             score = 0
         return (rank, -score)
     bucket.sort(key=_priority)
-    top = bucket[:_BUCKET_TOP_N]
+
+    # P1-8 修复: 同股票去重 (保留评分最高的)
+    seen_codes = set()
+    unique = []
+    for d in bucket:
+        code = d.get('code', '')
+        if not code or code in seen_codes:
+            continue
+        seen_codes.add(code)
+        unique.append(d)
+    if len(unique) < len(bucket):
+        logger.info('聚合去重: {} 条 -> {} 条 (剔除 {} 个重复)',
+                    len(bucket), len(unique), len(bucket) - len(unique))
+
+    top = unique[:_BUCKET_TOP_N]
 
     card = _build_aggregate_card(top, total=len(bucket))
     ok = _send({'msg_type': 'interactive', 'card': card}, chat_id=chat_id, critical=True)
@@ -932,7 +964,7 @@ def _build_aggregate_card(top: list, total: int) -> dict:
     for d in top:
         emoji = action_emoji.get(d.get('action', ''), '⚪')
         code = d.get('code', '')
-        name = d.get('stock_name', '') or ''
+        name = _resolve_name(code, d.get('stock_name', ''))
         price = d.get('price', '')
         score = d.get('score', '') or d.get('position_size', '')
         strategy = d.get('strategy_name', '')

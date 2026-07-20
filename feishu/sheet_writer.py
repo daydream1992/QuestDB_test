@@ -29,8 +29,8 @@ logger = logging.getLogger(__name__)
 SIGNAL_HEADERS = ['时间', '代码', '股票名称', '策略', '信号类型', '评分', '价格', '成交量', '原因']
 
 
-def _api(method, path, body=None, params=None):
-    """飞书 API 通用请求 (同 doc_writer, 为避免循环导入独立实现)"""
+def _api(method, path, body=None, params=None, _retry=True):
+    """飞书 API 通用请求 (含 token 失效重试; 同 doc_writer, 为避免循环导入独立实现)"""
     headers = _auth.auth_headers()
     if not headers:
         logger.error('飞书 API 认证不可用, 跳过请求')
@@ -42,6 +42,10 @@ def _api(method, path, body=None, params=None):
             json=body, params=params, timeout=15,
         )
         data = resp.json()
+        if _auth.is_token_invalid(data) and _retry:
+            logger.warning('token 失效 (code=%s), 刷新后重试', data.get('code'))
+            _auth.invalidate_token()
+            return _api(method, path, body=body, params=params, _retry=False)
         if data.get('code', -1) != 0:
             logger.error('飞书 API 错误 [%s %s]: %s', method, path, data)
             return None

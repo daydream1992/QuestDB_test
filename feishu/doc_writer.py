@@ -23,14 +23,15 @@ _auth = importlib.import_module('feishu.auth')
 logger = logging.getLogger(__name__)
 
 
-def _api(method, path, body=None, params=None):
-    """飞书 API 通用请求。
+def _api(method, path, body=None, params=None, _retry=True):
+    """飞书 API 通用请求 (含 token 失效重试)。
 
     Args:
         method: 'GET' / 'POST' / 'PUT' / 'PATCH'
         path: API 路径 (不含 BASE_URL)
         body: 请求体 dict
         params: 查询参数 dict
+        _retry: 内部参数, token 失效重试标记
 
     Returns:
         dict: 响应 JSON; 失败返回 None
@@ -46,6 +47,10 @@ def _api(method, path, body=None, params=None):
             json=body, params=params, timeout=15,
         )
         data = resp.json()
+        if _auth.is_token_invalid(data) and _retry:
+            logger.warning('token 失效 (code=%s), 刷新后重试', data.get('code'))
+            _auth.invalidate_token()
+            return _api(method, path, body=body, params=params, _retry=False)
         if data.get('code', -1) != 0:
             logger.error('飞书 API 错误 [%s %s]: %s', method, path, data)
             return None

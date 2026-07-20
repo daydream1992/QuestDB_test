@@ -93,6 +93,23 @@ def log_signals(signals, push=False, sheet=True, bitable=True):
 
     result = {'pushed': 0, 'sheet_ok': False, 'bitable_ok': False}
 
+    # Dry-Run 模式: 只走 push 通道 (push._send 内部已处理 DRY_RUN 拦截),
+    # Sheet/Bitable 跳过避免污染生产表格 (CLAUDE.md §4)
+    if _cfg.DRY_RUN:
+        _logger.info('[DRY-RUN] log_signals: 跳过 Sheet/Bitable 写入')
+        if push:
+            for s in signals:
+                try:
+                    if 'action' in s and 'signal_type' not in s:
+                        if push_decision(s):
+                            result['pushed'] += 1
+                    else:
+                        if push_signal(s):
+                            result['pushed'] += 1
+                except Exception as e:
+                    _logger.warning('推送信号失败: %s', e)
+        return result
+
     # 1. 推送卡片 (逐条, 含频控; 自动识别信号/决策格式)
     if push:
         for s in signals:

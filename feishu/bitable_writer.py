@@ -5,10 +5,11 @@
   - append_records:         追加记录到数据表
   - write_signal_batch:     批量写入信号 (自动格式化字段)
   - auto_daily_table:       按日期自动创建/切换数据表
-  - auto_panorama_table:    按类型创建/切换全景数据表 (情绪/板块/打板)
+  - auto_panorama_table:    按类型创建/切换全景数据表 (情绪/板块/打板/联动)
   - write_panorama_row:     写入全景情绪一行
   - write_heatmap_row:      写入板块热力图一行
   - write_ladder_row:       写入打板梯队一行
+  - write_linkage_row:      写入板块联动一行
 
 与 Sheet 的分工:
   - Sheet:  简单日志追加, 程序写入优先
@@ -16,6 +17,8 @@
 """
 
 import logging
+import time
+import threading
 from datetime import datetime
 
 import requests
@@ -26,6 +29,15 @@ _auth = importlib.import_module('feishu.auth')
 
 logger = logging.getLogger(__name__)
 
+# ── auto_panorama_table 表名查询缓存 ──────────────────────────
+# 模块级缓存: 避免每次写入都调 GET /bitable/v1/apps/{token}/tables
+# 正结果缓存: (app_token, table_name) → table_id, 表名含日期跨日自然失效
+# 负结果缓存: (app_token, table_name) → 失败时间戳, 5min TTL 避免短时重试
+_TABLE_CACHE: dict[tuple, str] = {}
+_TABLE_CACHE_NEG: dict[tuple, float] = {}
+_TABLE_CACHE_TTL = 300  # 负结果 5min 失效
+_TABLE_CACHE_LOCK = threading.Lock()  # 保护 check-then-act 原子性, 避免并发创建重复表
+
 # 信号表字段定义 (升级版: 日期时间/单选/多选/复选/公式)
 SIGNAL_FIELDS = [
     {'field_name': '时间', 'type': 5},            # 5=日期时间 (升级, 原为 1 文本)
@@ -34,14 +46,15 @@ SIGNAL_FIELDS = [
     {'field_name': '策略', 'type': 3},            # 3=单选 (升级, 原为 1 文本)
     {'field_name': '信号类型', 'type': 3},        # 3=单选 (保留)
     {'field_name': '评分', 'type': 2},            # 2=数字 (保留)
-    {'field_name': '涨跌幅%', 'type': 2},         # 新增: 涨跌幅
     {'field_name': '价格', 'type': 2},
     {'field_name': '成交量', 'type': 2},
-    {'field_name': '板块', 'type': 4},            # 新增: 4=多选
-    {'field_name': '是否涨停', 'type': 7},        # 新增: 7=复选框
-    {'field_name': '决策桶时间', 'type': 3},      # 新增: 3=单选 (09:30/09:35...)
-    {'field_name': '评分档位', 'type': 20},       # 新增: 20=公式 (优/良/中)
     {'field_name': '原因', 'type': 1},
+    # P0-5 修复: 以下为 Bitable 增强字段 (Sheet 没有)
+    {'field_name': '涨跌幅%', 'type': 2},
+    {'field_name': '板块', 'type': 4},            # 4=多选
+    {'field_name': '是否涨停', 'type': 7},        # 7=复选框
+    {'field_name': '决策桶时间', 'type': 3},      # 3=单选 (09:30/09:35...)
+    {'field_name': '评分档位', 'type': 20},       # 20=公式 (优/良/中)
 ]
 
 # 信号类型选项 (单选字段的可选值, 带颜色)
@@ -93,8 +106,8 @@ STRATEGY_OPTIONS = [
 BUCKET_TIME_OPTIONS = [f'{h:02d}:{m:02d}' for h in range(9, 15) for m in range(0, 60, 5) if not (h == 9 and m < 30) and not (h == 15 and m > 0)]
 
 
-def _api(method, path, body=None, params=None):
-    """飞书 API 通用请求"""
+def _api(method, path, body=None, params=None, _retry=True):
+    """飞书 API 通用请求 (含 token 失效重试)"""
     headers = _auth.auth_headers()
     if not headers:
         logger.error('飞书 API 认证不可用, 跳过请求')
@@ -103,13 +116,23 @@ def _api(method, path, body=None, params=None):
     try:
         resp = requests.request(
             method, url, headers=headers,
-            json=body, params=params, timeout=15,
+            json=body, params=params, timeout=5,  # 降低超时时间，防止卡死
         )
         data = resp.json()
+        if _auth.is_token_invalid(data) and _retry:
+            logger.warning('token 失效 (code=%s), 刷新后重试', data.get('code'))
+            _auth.invalidate_token()
+            return _api(method, path, body=body, params=params, _retry=False)
         if data.get('code', -1) != 0:
             logger.error('飞书 API 错误 [%s %s]: %s', method, path, data)
             return None
         return data
+    except requests.exceptions.Timeout as e:
+        logger.warning('飞书 API 超时 [%s %s]: %s', method, path, e)
+        return None
+    except requests.exceptions.RequestException as e:
+        logger.warning('飞书 API 网络异常 [%s %s]: %s', method, path, e)
+        return None
     except Exception as e:
         logger.exception('飞书 API 异常 [%s %s]: %s', method, path, e)
         return None
@@ -184,28 +207,38 @@ def append_records(app_token: str, table_id: str, records: list) -> bool:
     """
     if not records:
         return True
-    body = {'records': [{'fields': r} for r in records]}
+
+    # 写入前校验：只保留已存在的字段
+    existing_fields = _list_fields(app_token, table_id)
+    if not existing_fields:
+        logger.warning('无法获取多维表格字段列表, 跳过写入 %d 条', len(records))
+        return False
+
+    known = {f['field_name'] for f in existing_fields}
+    field_map = {f['field_name']: f for f in existing_fields}
+    validated = []
+    for r in records:
+        cleaned = {k: v for k, v in r.items() if k in known}
+        # 单字段类型不匹配: 剔除该字段而非整条记录 (避免一个无关字段丢失核心数据)
+        for k in list(cleaned.keys()):
+            v = cleaned[k]
+            if not _validate_record_field({k: v}, field_map[k]):
+                logger.warning('字段类型不匹配, 剔除: %s=%r (期望 type=%s)',
+                               k, v, field_map[k].get('type'))
+                del cleaned[k]
+        if cleaned:
+            validated.append(cleaned)
+
+    if not validated:
+        logger.warning('所有记录字段都不匹配, 跳过写入')
+        return False
+
+    body = {'records': [{'fields': r} for r in validated]}
     data = _api('POST', f'/bitable/v1/apps/{app_token}/tables/{table_id}/records/batch_create', body=body)
     if data:
         created = data.get('data', {}).get('records', [])
         logger.info('追加 %d 条记录到多维表格 %s/%s', len(created), app_token, table_id)
         return True
-
-    # failed — retry with unknown fields removed
-    if data is None and records:
-        try:
-            existing = _list_fields(app_token, table_id)
-            if existing:
-                known = {f['field_name'] for f in existing}
-                cleaned = [{k: v for k, v in r.items() if k in known} for r in records]
-                if cleaned:
-                    body2 = {'records': [{'fields': r} for r in cleaned]}
-                    data2 = _api('POST', f'/bitable/v1/apps/{app_token}/tables/{table_id}/records/batch_create', body=body2)
-                    if data2:
-                        logger.info('追加 %d 条(字段裁剪后)到多维表格 %s/%s', len(cleaned), app_token, table_id)
-                        return True
-        except Exception as e:
-            logger.warning('字段裁剪重试失败: %s', e)
     return False
 
 
@@ -405,8 +438,9 @@ def _signal_to_record(signal: dict) -> dict:
     # 3. 从 metadata 提取升级字段 (调用方需在 metadata 里带上)
     metadata = signal.get('metadata', {}) or {}
     change_pct = metadata.get('change_pct') or _extract_change_pct(signal.get('reason', ''))
-    sectors = metadata.get('sectors', []) or []
-    is_zt = metadata.get('is_zt', False) or signal_type in ('limit_seal', 'surge_up')
+    # P0-1 修复: 板块字段降级提取 (metadata → signal.sectors → signal.sector_name → reason)
+    sectors = _extract_sectors(signal, metadata)
+    is_zt = metadata.get('is_zt', False) or signal_type in ('limit_seal', 'surge_up') or _infer_is_zt(signal)
 
     # 4. 决策桶时间 (5 分钟一档)
     bucket_time = _get_bucket_time(raw_time)
@@ -418,14 +452,15 @@ def _signal_to_record(signal: dict) -> dict:
         '策略': str(signal.get('strategy_name', '')),
         '信号类型': str(signal_type),
         '评分': _safe_num(score),
-        '涨跌幅%': _safe_num(change_pct),
         '价格': _safe_num(signal.get('price')),
         '成交量': _safe_num(signal.get('volume')),
-        '板块': sectors if sectors else None,   # 多选: 传 list
-        '是否涨停': bool(is_zt),                 # 复选框: 传 bool
-        '决策桶时间': bucket_time,               # 单选: 传字符串
-        # 评分档位是公式字段, 不写入值, 飞书自动算
         '原因': str(signal.get('reason', '')),
+        # P0-5 修复: 以下字段 Sheet 没有, Bitable 增强字段
+        '涨跌幅%': _safe_num(change_pct),
+        '板块': sectors if sectors else None,
+        '是否涨停': bool(is_zt),
+        '决策桶时间': bucket_time,
+        # 评分档位是公式字段, 不写入值, 飞书自动算
     }
 
 
@@ -437,8 +472,11 @@ def _parse_time_to_ms(raw_time: str) -> int:
       - "2026-07-06 09:35:12"
       - "2026-07-06T09:35:12"
       - 已是时间戳数字 → 直接用
+
+    P0-6 修复: 解析失败时记录警告日志 (不再静默回退到当前时间)
     """
     if not raw_time:
+        logger.warning('时间字段为空, 使用当前时间: raw_time=%r', raw_time)
         return int(datetime.now().timestamp() * 1000)
     # 已是数字
     try:
@@ -460,7 +498,8 @@ def _parse_time_to_ms(raw_time: str) -> int:
             return int(dt.timestamp() * 1000)
         except ValueError:
             continue
-    # 解析失败, 用当前时间
+    # 解析失败, 用当前时间 + 警告日志
+    logger.warning('时间解析失败, 使用当前时间: raw_time=%r', raw_time)
     return int(datetime.now().timestamp() * 1000)
 
 
@@ -476,6 +515,51 @@ def _extract_change_pct(reason: str):
         except ValueError:
             return None
     return None
+
+
+def _extract_sectors(signal: dict, metadata: dict) -> list:
+    """降级提取板块字段 (P0-1 修复)
+
+    优先级:
+      1. metadata.sectors (调用方传入)
+      2. signal.sectors (直接传入)
+      3. signal.sector_name (单个板块名)
+      4. signal.board / signal.industry (其他可能的字段名)
+
+    Returns:
+        list[str]: 板块列表, 无可用值返回 []
+    """
+    # 1. metadata.sectors
+    if metadata.get('sectors') and isinstance(metadata['sectors'], list):
+        return metadata['sectors']
+    # 2. signal.sectors
+    if signal.get('sectors') and isinstance(signal['sectors'], list):
+        return signal['sectors']
+    # 3. signal.sector_name (单个)
+    if signal.get('sector_name'):
+        return [str(signal['sector_name'])]
+    # 4. 其他字段名
+    for key in ('board', 'industry', 'industry_name', 'concept'):
+        if signal.get(key):
+            return [str(signal[key])]
+    return []
+
+
+def _infer_is_zt(signal: dict) -> bool:
+    """降级推断是否涨停 (P0-1 修复辅助)
+
+    优先级:
+      1. signal_type / action in (limit_seal, surge_up)
+      2. reason 文本包含 '涨停'/'封板'/'+10%'
+
+    Returns:
+        bool
+    """
+    stype = signal.get('action', '') or signal.get('signal_type', '')
+    if stype in ('limit_seal', 'surge_up'):
+        return True
+    reason = signal.get('reason', '') or ''
+    return ('涨停' in reason) or ('封板' in reason) or ('+10%' in reason)
 
 
 def _get_bucket_time(raw_time: str) -> str:
@@ -499,6 +583,57 @@ def _safe_num(v) -> float | None:
         return float(v)
     except (TypeError, ValueError):
         return None
+
+
+# 飞书字段类型常量
+_FEISHU_TYPE_TEXT = 1       # 文本
+_FEISHU_TYPE_NUMBER = 2     # 数字
+_FEISHU_TYPE_SINGLE = 3     # 单选
+_FEISHU_TYPE_MULTI = 4      # 多选
+_FEISHU_TYPE_DATETIME = 5   # 日期时间
+_FEISHU_TYPE_CHECKBOX = 7   # 复选框
+_FEISHU_TYPE_FORMULA = 20   # 公式 (只读)
+
+# 飞书类型 -> Python 校验器
+_TYPE_VALIDATORS = {
+    _FEISHU_TYPE_TEXT:     lambda v: isinstance(v, str),
+    _FEISHU_TYPE_NUMBER:   lambda v: isinstance(v, (int, float)) and not isinstance(v, bool),
+    _FEISHU_TYPE_SINGLE:   lambda v: isinstance(v, str),
+    _FEISHU_TYPE_MULTI:    lambda v: isinstance(v, list) and all(isinstance(x, str) for x in v),
+    _FEISHU_TYPE_DATETIME: lambda v: isinstance(v, int),
+    _FEISHU_TYPE_CHECKBOX: lambda v: isinstance(v, bool),
+}
+
+
+def _validate_record_field(record: dict, field_def: dict) -> bool:
+    """校验记录字段类型是否匹配 (P0-3 修复)
+
+    Args:
+        record: {字段名: 值}
+        field_def: {field_name, type, ...}
+
+    Returns:
+        bool: True=校验通过或字段值不存在
+    """
+    fname = field_def.get('field_name', '')
+    ftype = field_def.get('type')
+    value = record.get(fname)
+
+    # 字段值为 None 视为有效 (写入空)
+    if value is None:
+        return True
+
+    # 公式字段不应写入
+    if ftype == _FEISHU_TYPE_FORMULA:
+        logger.debug('跳过公式字段写入: %s', fname)
+        return True
+
+    validator = _TYPE_VALIDATORS.get(ftype)
+    if validator is None:
+        logger.warning('未知字段类型: %s type=%s (跳过校验)', fname, ftype)
+        return True
+
+    return validator(value)
 
 
 def _set_public_permission(app_token: str):
@@ -597,10 +732,26 @@ LADDER_FIELDS = [
     {'field_name': '板块强度', 'type': 2},
 ]
 
+# 板块联动字段
+LINKAGE_FIELDS = [
+    {'field_name': '时间', 'type': 5},
+    {'field_name': '板块代码', 'type': 1},
+    {'field_name': '板块名称', 'type': 1},
+    {'field_name': '板块类型', 'type': 3},            # 3=单选
+    {'field_name': '联动评分', 'type': 2},
+    {'field_name': '净流入(亿)', 'type': 2},
+    {'field_name': '涨停家数', 'type': 2},
+    {'field_name': '龙头股', 'type': 1},
+    {'field_name': '龙头涨幅%', 'type': 2},
+    {'field_name': '共振板块', 'type': 1},
+    {'field_name': '切换信号', 'type': 1},
+]
+
 _PANORAMA_TABLE_NAMES = {
     'sentiment': '情绪全景',
     'heatmap': '板块梯队',
     'ladder': '打板梯队',
+    'linkage': '板块联动',
 }
 
 
@@ -610,37 +761,62 @@ def auto_panorama_table(app_token: str, table_type: str) -> str:
     table_type: 'sentiment' | 'heatmap' | 'ladder'
     每天一个表 (如 "情绪全景 2026-07-06"), 自动创建+加字段。
     返回 table_id; 失败返回 ''。
+
+    优化: 模块级缓存 _TABLE_CACHE 命中后直接返回, 避免每次写入都调 GET /tables。
+    表名含当天日期, 跨日时旧缓存 key 自然失效 (不会被新查询命中)。
     """
     today = datetime.now().strftime('%Y-%m-%d')
     base_name = _PANORAMA_TABLE_NAMES.get(table_type, table_type)
     table_name = f'{base_name} {today}'
+    cache_key = (app_token, table_name)
 
-    # 查已有表
-    data = _api('GET', f'/bitable/v1/apps/{app_token}/tables')
-    if data:
-        tables = data.get('data', {}).get('items', [])
-        for t in tables:
-            if t.get('name') == table_name:
-                logger.info('找到已有全景表: %s', table_name)
-                return t.get('table_id', '')
+    # 锁覆盖: 缓存 check → API 查表 → 创建表 → 缓存 write, 保证 check-then-act 原子
+    # _create_field 在锁外执行 (避免多字段创建长时间持锁; 表已缓存, 其他线程拿到 id 后
+    # 若字段未补齐, append_records 会因 _list_fields 校验跳过本轮写入, 下一轮再补)
+    with _TABLE_CACHE_LOCK:
+        # 1. 正结果缓存命中
+        cached_id = _TABLE_CACHE.get(cache_key)
+        if cached_id:
+            return cached_id
 
-    # 创建
-    table_id = _create_table(app_token, table_name)
-    if not table_id:
-        return ''
+        # 2. 负结果缓存命中 (5min 内创建失败过, 跳过避免短时重试)
+        neg_ts = _TABLE_CACHE_NEG.get(cache_key)
+        if neg_ts and (time.time() - neg_ts) < _TABLE_CACHE_TTL:
+            return ''
 
-    # 加字段
+        # 3. 查已有表
+        data = _api('GET', f'/bitable/v1/apps/{app_token}/tables')
+        if data:
+            tables = data.get('data', {}).get('items', [])
+            for t in tables:
+                if t.get('name') == table_name:
+                    table_id = t.get('table_id', '')
+                    if table_id:
+                        _TABLE_CACHE[cache_key] = table_id
+                        logger.info('找到已有全景表: %s', table_name)
+                        return table_id
+
+        # 4. 创建
+        table_id = _create_table(app_token, table_name)
+        if not table_id:
+            _TABLE_CACHE_NEG[cache_key] = time.time()
+            return ''
+        # 缓存先写入, 让其他线程能拿到 table_id (字段稍后补)
+        _TABLE_CACHE[cache_key] = table_id
+
+    # 加字段 (锁外, 避免长时间持锁阻塞其他线程)
     fields = {
         'sentiment': PANORAMA_FIELDS,
         'heatmap': HEATMAP_FIELDS,
         'ladder': LADDER_FIELDS,
+        'linkage': LINKAGE_FIELDS,
     }.get(table_type, PANORAMA_FIELDS)
     for fd in fields:
         _create_field(app_token, table_id, fd)
     return table_id
 
 
-def write_panorama_row(app_token: str, result: dict) -> bool:
+def write_panorama_row(app_token: str, result: dict, ts: str | None = None) -> bool:
     """写入全景情绪一行 (每 5min)
 
     从 k4.run() 返回的 result 中提取字段写到飞书多维表格。
@@ -648,6 +824,7 @@ def write_panorama_row(app_token: str, result: dict) -> bool:
     Args:
         app_token: 多维表格 token
         result: k4.run() 返回的 dict
+        ts: 可选时间字符串 (ISO 格式), 优先用 k4 计算时刻; None 则回退 datetime.now()
 
     Returns:
         bool: 是否成功
@@ -655,7 +832,7 @@ def write_panorama_row(app_token: str, result: dict) -> bool:
     table_id = auto_panorama_table(app_token, 'sentiment')
     if not table_id:
         return False
-    ts_ms = _parse_time_to_ms(datetime.now().strftime('%H:%M'))
+    ts_ms = _parse_time_to_ms(ts) if ts else _parse_time_to_ms(datetime.now().strftime('%H:%M'))
     pg = result.get('pg_index')
     sig = result.get('pg_signal', '')
     b = result.get('breadth', {})
@@ -665,10 +842,10 @@ def write_panorama_row(app_token: str, result: dict) -> bool:
     turn = result.get('turning_point') or {}
     turn_str = f'{turn.get("type", "")}: {turn.get("action", "")}' if turn else ''
 
-    # 四大指数
+    # 四大指数 (避 000001.SH 与平安银行混淆, 用 999999.SH)
     idx = result.get('index_readings', {}) or {}
     index_map = {
-        '000001.SH': '上证涨幅',
+        '999999.SH': '上证涨幅',
         '399001.SZ': '深证涨幅',
         '399006.SZ': '创业板涨幅',
         '000688.SH': '科创50涨幅',
@@ -695,12 +872,16 @@ def write_panorama_row(app_token: str, result: dict) -> bool:
     return append_records(app_token, table_id, [record])
 
 
-def write_heatmap_row(app_token: str, result: dict) -> bool:
-    """写入板块热力图一行 (每 5min)"""
+def write_heatmap_row(app_token: str, result: dict, ts: str | None = None) -> bool:
+    """写入板块热力图一行 (每 5min)
+
+    Args:
+        ts: 可选时间字符串 (ISO 格式), 优先用 k4 计算时刻; None 则回退 datetime.now()
+    """
     table_id = auto_panorama_table(app_token, 'heatmap')
     if not table_id:
         return False
-    ts_ms = _parse_time_to_ms(datetime.now().strftime('%H:%M'))
+    ts_ms = _parse_time_to_ms(ts) if ts else _parse_time_to_ms(datetime.now().strftime('%H:%M'))
 
     def _top1(ranking):
         return (ranking or [{}])[0]
@@ -733,12 +914,16 @@ def write_heatmap_row(app_token: str, result: dict) -> bool:
     return append_records(app_token, table_id, [record])
 
 
-def write_ladder_row(app_token: str, result: dict) -> bool:
-    """写入打板梯队一行 (每 5min)"""
+def write_ladder_row(app_token: str, result: dict, ts: str | None = None) -> bool:
+    """写入打板梯队一行 (每 5min)
+
+    Args:
+        ts: 可选时间字符串 (ISO 格式), 优先用 k4 计算时刻; None 则回退 datetime.now()
+    """
     table_id = auto_panorama_table(app_token, 'ladder')
     if not table_id:
         return False
-    ts_ms = _parse_time_to_ms(datetime.now().strftime('%H:%M'))
+    ts_ms = _parse_time_to_ms(ts) if ts else _parse_time_to_ms(datetime.now().strftime('%H:%M'))
     stats = result.get('stats', {})
     candidates = result.get('promotion_rankings', [])
     best = candidates[0] if candidates else {}
@@ -761,6 +946,86 @@ def write_ladder_row(app_token: str, result: dict) -> bool:
         '板块强度': _safe_num(best_detail.get('sector_score')),
     }
     return append_records(app_token, table_id, [record])
+
+
+def write_linkage_row(app_token: str, result: dict) -> bool:
+    """写入板块联动一行 (每 60s)
+
+    从 k6.run() 返回的 result 中提取字段写到飞书多维表格。
+
+    Args:
+        app_token: 多维表格 token
+        result: k6.run() 返回的 dict {
+            linkage_scores: {block_code: score},
+            stock_roles: {block_code: {龙头:[], 中军:[], ...}},
+            alerts: {opportunity: [], risk: []}
+        }
+
+    Returns:
+        bool: 是否成功
+    """
+    table_id = auto_panorama_table(app_token, 'linkage')
+    if not table_id:
+        return False
+    ts_ms = _parse_time_to_ms(datetime.now().strftime('%H:%M'))
+
+    linkage_scores = result.get('linkage_scores', {})
+    stock_roles = result.get('stock_roles', {})
+    block_metrics = result.get('block_metrics', {})
+
+    # 按评分排序，取 Top 10 写入
+    sorted_blocks = sorted(linkage_scores.items(), key=lambda x: -x[1])[:10]
+
+    # 从 relation_graph 获取板块名称和类型
+    try:
+        from lib.relation_graph import _sector_meta
+    except Exception:
+        _sector_meta = {}
+
+    records = []
+    for block_code, score in sorted_blocks:
+        roles = stock_roles.get(block_code, {})
+        leaders = roles.get('龙头', [])
+        metrics = block_metrics.get(block_code, {})
+
+        # 提取龙头代码和涨幅（优先用 block_metrics）
+        leader_code = metrics.get('leader_code', '')
+        leader_change = metrics.get('leader_change', 0)
+        if not leader_code and leaders:
+            try:
+                leader_str = leaders[0]  # "名称(code) +涨幅%"
+                code_start = leader_str.find('(') + 1
+                code_end = leader_str.find(')')
+                if code_start > 0 and code_end > code_start:
+                    leader_code = leader_str[code_start:code_end]
+                    leader_change_str = leader_str.split('+')[-1].replace('%', '')
+                    leader_change = _safe_num(leader_change_str)
+            except Exception:
+                pass
+
+        # 从 _sector_meta 获取板块名称和类型
+        meta = _sector_meta.get(block_code, {})
+        block_name = meta.get('sector_name', block_code) if meta else block_code
+        sector_type = meta.get('sector_type', '') if meta else ''
+
+        record = {
+            '时间': ts_ms,
+            '板块代码': block_code,
+            '板块名称': block_name,
+            '板块类型': sector_type,
+            '联动评分': _safe_num(score),
+            '净流入(亿)': (_safe_num(metrics.get('net_inflow', 0)) or 0) / 1e4,  # 万元→亿
+            '涨停家数': _safe_num(metrics.get('zt_count', 0)),
+            '龙头股': leader_code,
+            '龙头涨幅%': _safe_num(leader_change),
+            '共振板块': '',
+            '切换信号': '',
+        }
+        records.append(record)
+
+    if records:
+        return append_records(app_token, table_id, records)
+    return False
 
 
 # ══════════════════════════════════════════════════════════
