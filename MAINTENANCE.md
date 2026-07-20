@@ -202,7 +202,7 @@ K:\QuestDB_test\
 | 32 | qd_sentiment_daily | 13 | trade_date | 情绪日级 (盘后汇总) |
 | 33 | qd_intraday_event | 14 | event_time | 盘中异动 (涨速/封板/炸板/资金脉冲) |
 | 34 | qd_stock_intraday | 16 | snapshot_time | **C8 拆表** 个股盘中高频字段 (FCAmo/Zjl/Wtb/fHSL 等) |
-| 35 | qd_stock_gpjy | 17 | trade_date | GP 系列历史 (连板率/次日红盘率/机构买入) |
+| 35 | qd_stock_gpjy | 17 | date | GP 系列历史 (连板率/次日红盘率/机构买入) |
 | 36 | qd_sentiment_deep | 18 | snapshot_time | 深度情绪分析 (恐慌/贪婪指数/资金情绪/背离综合) |
 | 37 | qd_sector_heatmap | 19 | snapshot_time | 板块热力图 + 最强个股梯队 (4组Top5+个股Top3) |
 | 38 | qd_ladder_tracker | 20 | snapshot_time | 打板梯队 + 2进3 晋级监控 |
@@ -255,7 +255,7 @@ python scripts/data_inventory_ddl_audit.py --strict   # 任何漂移都失败
 | daily_init.py | `python runner/daily_init.py` | 09:25 | 盘前初始化 (映射+注册表+日级数据) |
 | auction_monitor.py | `python runner/auction_monitor.py` | 09:15-09:30 | 竞价监控 (3-5s/轮) |
 | intraday_loop.py | `python runner/intraday_loop.py` | 09:30-15:00 | 盘中主循环 (10s/轮) |
-| daily_close.py | `python runner/daily_close.py` | 15:05 | 盘后更新 (日级+龙虎榜+评估) |
+| daily_close.py | `python runner/daily_close.py` | 15:05 | 盘后更新 (日级+龙虎榜+评估; 龙虎榜带缺口自愈 run_catchup, 各环节故障隔离降级) |
 
 ### 4.2 采集层 (collect/)
 

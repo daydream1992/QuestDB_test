@@ -1,6 +1,6 @@
 """盘后更新
 
-脚本路径: K:\QuestDB_test\\runner\\daily_close.py
+脚本路径: K:/QuestDB_test//runner//daily_close.py
 用途: 15:05 盘后执行, 更新日级数据 + 龙虎榜 + 策略评估
 执行时间: 15:05 (交易日)
 流程:
@@ -84,11 +84,15 @@ def run(con=None):
     if own_con:
         con = connect()
     try:
-        # 1. 全场日级数据 (收盘 88 字段)
-        meta = fetch_all_codes()
-        codes = [c['code'] for c in meta]
-        n1 = c3.run(codes, mode='daily', con=con)
-        logger.info('c3 daily 完成: {}', n1)
+        # 1. 全场日级数据 (收盘 88 字段) — 失败不阻断后续环节, 日报显式标红
+        try:
+            meta = fetch_all_codes()
+            codes = [c['code'] for c in meta]
+            n1 = c3.run(codes, mode='daily', con=con)
+            logger.info('c3 daily 完成: {}', n1)
+        except Exception as e:
+            n1 = f'FAILED: {e}'
+            logger.error('c3 daily 失败 (日级数据缺当日): {}', e)
 
         # 1.5 GP 股性数据 (盘后日级, 次日盘中供 p01_zt_daban 读 qd_stock_gpjy)
         #     codes=None → c5_gpjy 自动从 qd_code_registry 取 stock; 失败不阻断
@@ -99,9 +103,16 @@ def run(con=None):
             n_gp = 0
             logger.error('c5 gpjy 失败 (p01 将退化为无 GP 维度): {}', e)
 
-        # 2. 龙虎榜
-        n2 = c6.run(date=datetime.now().date(), con=con)
-        logger.info('c6 lhb 完成: {}', n2)
+        # 2. 龙虎榜 (当日尝试 + 缺口自愈; QMT sqlite 当日数据落地晚, 靠补洞兜底)
+        try:
+            today_r = c6.run(date=datetime.now().date(), con=con)
+            catch_r = c6.run_catchup(con=con)
+            n2 = {'qd_lhb_detail': today_r.get('qd_lhb_detail', 0) + catch_r.get('qd_lhb_detail', 0),
+                  'qd_lhb_broker': today_r.get('qd_lhb_broker', 0) + catch_r.get('qd_lhb_broker', 0)}
+            logger.info('c6 lhb 完成: {} (补洞 {} 天)', n2, catch_r.get('days', 0))
+        except Exception as e:
+            n2 = {'qd_lhb_detail': 0, 'qd_lhb_broker': 0}
+            logger.error('c6 lhb 失败: {}', e)
 
         # 3. 策略评估
         n3 = _eval_strategies(con)
