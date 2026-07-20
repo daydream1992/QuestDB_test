@@ -60,7 +60,15 @@ class StrategyContext:
     emotion_rating: Optional[int] = None       # 0-4 (冰点/低迷/中性/活跃/过热)
     divergence_signals: Optional[list] = None
 
-    # 因子框架 (AlphaEngine 计算, p20-p26 消费)
+    # 吃肉系统 (k6 板块联动 / k7 票型分类 写入, p28 消费; intraday_loop 60s 块赋值)
+    linkage_scores: Optional[dict] = None        # 板块联动评分 {block_code: score}
+    linkage_metrics: Optional[dict] = None       # 板块详情 {block_code: {zt_count, leader_change, net_inflow, ...}}
+    linkage_thresholds: Optional[dict] = None    # 动态阈值 {opportunity: float, risk: float}
+    linkage_alerts: Optional[dict] = None        # 预警 {opportunity: [], risk: []}
+    stock_roles: Optional[dict] = None           # 板块内个股角色 {block_code: {龙头: [], 中军: [], ...}}
+    stock_types: Optional[dict] = None           # 票型分类 {code: {type: sentiment/trend/mixed, concept_heat, ...}}
+
+    # 因子框架 (AlphaEngine 纯内存计算; alpha 家族插件已废弃, top_candidates 暂无消费者)
     alpha_df: Optional[pd.DataFrame] = None    # 因子评分/排序
     top_candidates: Optional[list] = None      # 横截面候选池 [code, ...]
 

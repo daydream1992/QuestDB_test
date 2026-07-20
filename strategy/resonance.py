@@ -23,8 +23,8 @@ from loguru import logger
 
 from lib.relation_graph import get_stock_sectors
 
-# 大盘指数代码
-SH_INDEX = '000001.SH'   # 上证指数
+# 大盘指数代码 (避 000001.SH 与平安银行混淆, 用 999999.SH)
+SH_INDEX = '999999.SH'   # 上证指数
 SZ_INDEX = '399001.SZ'   # 深证成指
 CYB_INDEX = '399006.SZ'  # 创业板指
 

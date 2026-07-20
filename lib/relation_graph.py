@@ -294,17 +294,62 @@ def get_stock_sectors(stock_code):
 
 
 def get_stock_name(stock_code):
-    """查股票中文名称
+    """查股票或指数中文名称
 
     Args:
-        stock_code: 股票代码, 如 '002747.SZ'
+        stock_code: 股票代码 '002747.SZ' 或指数代码 '000001.SH'
     Returns:
-        str: 中文名称, 如 '埃斯顿'; 未找到时返回 stock_code 本身
+        str: 中文名称, 如 '埃斯顿' / '上证指数'; 未找到时返回 stock_code 本身
+
+    P2 修复: 自动 lazy-load (防止未初始化时返回 code 占位符)
     """
+    # lazy-load: 如果 _name_data 未初始化, 自动加载
+    if not _name_data:
+        try:
+            _load_name_data_default()
+        except Exception as e:
+            logger.debug('lazy-load 名称映射失败: {}', e)
+
     info = _name_data.get(stock_code)
     if info:
         return info.get('name', stock_code)
+    # 指数代码兜底 (config/index_codes.py 有完整映射)
+    try:
+        from config.index_codes import INDEX_CODES
+        if stock_code in INDEX_CODES:
+            return INDEX_CODES[stock_code]
+    except Exception:
+        pass
     return stock_code
+
+
+def _load_name_data_default():
+    """默认 JSON 目录加载名称映射 (lazy-load 用)"""
+    import os
+    try:
+        from lib.relation_graph import DEFAULT_JSON_DIR
+        json_dir = DEFAULT_JSON_DIR
+    except (ImportError, AttributeError):
+        # 防止循环导入或未定义, 用绝对路径
+        json_dir = os.path.join(
+            os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+            'data', 'market_data', '市场数据'
+        )
+
+    if not os.path.isdir(json_dir):
+        logger.debug('lazy-load 目录不存在: {}', json_dir)
+        return
+
+    name_path = os.path.join(json_dir, '名称映射.json')
+    if not os.path.exists(name_path):
+        logger.debug('lazy-load 文件不存在: {}', name_path)
+        return
+
+    name_data = _load_json(name_path)
+    if name_data:
+        _name_data.clear()
+        _name_data.update(name_data)
+        logger.info('lazy-load 名称映射: {} 条', len(_name_data))
 
 
 def get_sector_stocks(block_code):

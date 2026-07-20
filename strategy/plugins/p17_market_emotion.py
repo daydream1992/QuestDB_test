@@ -16,7 +16,7 @@ from typing import List
 from strategy.base import StrategyBase, Decision
 from strategy.registry import StrategyRegistry
 
-_MARKET_CODE = '000001.SH'  # 上证指数 (市场级提示占位 code)
+_MARKET_CODE = '999999.SH'  # 上证指数 (避 000001.SH 与平安银行混淆)
 
 
 @StrategyRegistry.register
@@ -36,7 +36,7 @@ class MarketEmotionStrategy(StrategyBase):
             # 冰点/低迷: 呈现事实 + 建议空仓 (不拦截 buy, 由用户自行决策)
             return [Decision(
                 action='watch', code=_MARKET_CODE, strategy=self.name,
-                reason=f'大盘情绪{emo}(冰点/低迷) 涨停{ctx.sentiment.get("zt_cnt", 0)} '
+                reason=f'[市场级] 大盘情绪{emo}(冰点/低迷) 涨停{ctx.sentiment.get("zt_cnt", 0)} '
                        f'涨跌比{ctx.sentiment.get("udr", 0):.2f} 建议空仓观望',
                 score=self.normalize_score(float(order), 0, 4),
             )]
@@ -44,7 +44,7 @@ class MarketEmotionStrategy(StrategyBase):
             # 过热: 高位风险提示 (高潮兑现风险, 警惕接盘)
             return [Decision(
                 action='warn', code=_MARKET_CODE, strategy=self.name,
-                reason=f'大盘情绪{emo}(过热) 高潮兑现风险 注意减仓警惕接盘',
+                reason=f'[市场级] 大盘情绪{emo}(过热) 高潮兑现风险 注意减仓警惕接盘',
                 score=self.normalize_score(float(order), 0, 4),
             )]
         return []

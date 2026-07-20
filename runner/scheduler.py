@@ -75,6 +75,7 @@ _IDLE_INTERVAL = 300
 MAX_CONSECUTIVE_CRASHES = 10
 
 # 子进程崩溃统计 (用于 _ensure_running 指数退避)
+_crash_count: dict[str, int] = {}
 _crash_count_lock = threading.Lock()
 
 # H4: 退避线程化 — 不阻塞主循环
@@ -454,14 +455,20 @@ def run():
                     logger.info('提前启动 auction_monitor (距收盘竞价约 %s)', format_countdown(14,57))
                     auction_proc = _start_proc(_AUCTION_SCRIPT)
 
-            # k4 深度情绪: 盘中时段 (morning/afternoon/lunch/pre_close) 每 5 分钟启动一次
-            # 用墙钟节流, 不依赖 round_idx, 跨重启自动重置
-            from datetime import timedelta
+            # k4 深度情绪推送时机:
+            # - 09:30-10:00 每分钟启动一次 (开盘密集推送)
+            # - 10:00-15:00 每 5 分钟启动一次
+            from datetime import timedelta, time as dtime
             in_intraday = phase in ('morning', 'afternoon', 'lunch', 'pre_close')
             if in_intraday:
+                # 判断推送间隔
+                interval_minutes = 1  # 默认 1 分钟
+                if now.time() >= dtime(10, 0):  # 10:00 后切换为 5 分钟
+                    interval_minutes = 5
+
                 need_run = (
                     _last_k4_run is None
-                    or (now - _last_k4_run) >= timedelta(minutes=5)
+                    or (now - _last_k4_run) >= timedelta(minutes=interval_minutes)
                 )
                 if need_run:
                     should_start = True
@@ -473,7 +480,8 @@ def run():
                         except Exception:
                             pass
                     if should_start:
-                        logger.info('启动 k4_runner (距上次 {} 分钟)',
+                        logger.info('启动 k4_runner [{}分钟间隔] (距上次 {} 分钟)',
+                                    interval_minutes,
                                     '?' if _last_k4_run is None else f'{(now - _last_k4_run).total_seconds() / 60:.1f}')
                         k4_runner_proc = _start_proc(_K4_RUNNER_SCRIPT)
                         _last_k4_run = now

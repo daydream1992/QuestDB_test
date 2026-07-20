@@ -47,42 +47,45 @@ def _latest_per_code(df) -> pd.DataFrame:
 
 
 def select_focus_pool(pricevol_df, more_info_df) -> Tuple[list, dict]:
-    """动态选重点池 (仅连板梯队)
+    """动态选重点池 (连板梯队)
+
+    连板判定 (2026-07-14 修正): LastZTHzNum(几板)>=1 或 EverZTCount(连板天)>0,
+    字段来自 qd_stock_daily。旧版用 fLianB 是双重 BUG: (1) fLianB=量比非连板
+    (docs/通达信量化平台说明书/.../获取股票更多信息.md:39); (2) 旧 _get_focus_codes
+    的 SQL 只 SELECT code, 连板字段根本没进来 → 池恒空 (与有无连板无关)。
+    正确连板字段 = LastZTHzNum(主)/EverZTCount(兜底), 已在 qd_stock_daily。
 
     Args:
-        pricevol_df: 全场价量 DataFrame (code/LastClose/Now/Volume)
-        more_info_df: 88 字段 DataFrame (code/fHSL/fLianB/ZTPrice 等)
+        pricevol_df: 全场价量 DataFrame (code/...)
+        more_info_df: qd_stock_daily 行 (含 LastZTHzNum/EverZTCount)
 
     Returns:
-        list[str]: 连板股票代码列表 (去重)
+        list[str]: 连板股票代码 (按连板高度降序, 截断 ≤800 防 c3 COM 过载)
     """
     if pricevol_df is None or pricevol_df.empty:
         logger.warning('选股器: pricevol_df 为空')
         return [], {}
 
     df = _latest_per_code(pricevol_df)
-
-    # 仅保留有板块映射的 code
     codes_in = set(df['code'].tolist())
+    pool_codes: list = []
 
-    pool = set()
-
-    # 合并 more_info
     mi = _latest_per_code(more_info_df) if more_info_df is not None else pd.DataFrame()
     if not mi.empty:
-        merge_cols = [c for c in ('fLianB',) if c in mi.columns]
-        if merge_cols:
-            mi_sub = mi[['code'] + merge_cols].drop_duplicates('code')
+        lb_cols = [c for c in ('LastZTHzNum', 'EverZTCount') if c in mi.columns]
+        if lb_cols:
+            mi_sub = mi[['code'] + lb_cols].drop_duplicates('code')
             df = df.merge(mi_sub, on='code', how='left')
+            for c in lb_cols:
+                df[c] = df[c].apply(_safe_float)
+            if 'LastZTHzNum' in df.columns and 'EverZTCount' in df.columns:
+                mask = (df['LastZTHzNum'].fillna(0) >= 1) | (df['EverZTCount'].fillna(0) > 0)
+                hit = df[mask].sort_values('LastZTHzNum', ascending=False)
+                pool_codes = hit['code'].head(800).tolist()
+            elif 'EverZTCount' in df.columns:
+                pool_codes = df[df['EverZTCount'].fillna(0) > 0]['code'].head(800).tolist()
 
-        # 仅保留连板梯队 (fLianB > 0)
-        if 'fLianB' in df.columns:
-            df['fLianB'] = df['fLianB'].apply(lambda v: _safe_float(v))
-            lianb = df[df['fLianB'] > 0]['code'].tolist()
-            pool.update(lianb)
-
-    # 仅保留 pricevol 中存在的 code
-    pool &= codes_in
+    pool = set(pool_codes) & codes_in
     result = sorted(pool)
     detail = {'lianban': len(result)}
     logger.info('选股器: 连板池 {} 只', len(result))

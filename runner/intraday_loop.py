@@ -56,6 +56,8 @@ import compute.k3_sentiment as k3  # noqa: E402
 import compute.k4_sector_heatmap as k4_heatmap  # noqa: E402
 import compute.k4_ladder_tracker as k4_ladder  # noqa: E402
 import compute.k5_kline_synth as k5  # noqa: E402
+import compute.k6_linkage as k6_linkage  # noqa: E402
+import compute.k7_stock_type as k7_stock_type  # noqa: E402
 import strategy.intraday_engine as intraday_engine  # noqa: E402
 # from strategy import dark_money  # ⚠️ 已禁用
 from strategy import big_order  # noqa: E402
@@ -82,7 +84,7 @@ logger.add(os.path.join(_LOG_DIR, 'runner_intraday_loop_{time:YYYYMMDD}.log'),
 
 # qd_decisions 列顺序 (与 DDL 06_signals.sql 一致)
 _DECISION_COLS = ['decision_time', 'code', 'strategy_name',
-                  'action', 'position_size', 'price', 'reason']
+                  'action', 'position_size', 'price', 'stock_name', 'reason']
 
 # qd_resonance 列顺序 (与 DDL 09_resonance.sql 一致)
 _RESONANCE_COLS = ['code', 'resonance_time', 'sector_resonance', 'index_resonance',
@@ -266,7 +268,8 @@ def _get_focus_codes(con, all_stocks):
                       f"SELECT code FROM qd_pricevol "
                       f"WHERE snapshot_time >= '{cutoff(minutes=5)}'")
         mi = query_df(con,
-                      f"SELECT code FROM qd_stock_daily "
+                      f"SELECT code, LastZTHzNum, EverZTCount, ConZAFDateNum, Ltsz "
+                      f"FROM qd_stock_daily "
                       f"WHERE date > '{cutoff(days=2)}'")
         focus_stocks, sel_detail = select_focus_pool(pv, mi) or ([], {})
         # 把板块/指数也加到 focus_all (c2/c3 需要, c4 K线不需要)
@@ -278,8 +281,8 @@ def _get_focus_codes(con, all_stocks):
                 focus_all = focus_all + extra if focus_all else extra
         except Exception:
             pass
-        result = (focus_all if focus_all else all_stocks,
-                  focus_stocks if focus_stocks else all_stocks)
+        result = (focus_all if focus_all else all_stocks,   # c2/c3 需非空池, 保留回退
+                  list(focus_stocks))                        # 不回退 all_stocks: 无连板即空, c4 自动跳过 (见 60s 块解耦)
         # 写入缓存 (退化时用)
         _FOCUS_CACHE.set(result[0], result[1])
         return result[0], result[1], sel_detail
@@ -351,10 +354,21 @@ def _build_context(con, graph):
         # c3 daily 写 qd_stock_daily (含 ZTPrice/fLianB/CJJEPre1 等日级字段)
         # c3 intraday 写 qd_stock_snapshot (含 ZAF/fHSL/Zjl 等实时字段, 由 snapshot_focus_df 承载)
         ctx.more_info_df = query_df(
-            con, f"SELECT code, date, LastZTHzNum, LastStartZT, EverZTCount, OpenAmo, OpenZTBuy FROM qd_stock_daily "
+            con, f"SELECT code, date, LastZTHzNum, LastStartZT, EverZTCount, OpenAmo, OpenZTBuy, "
+                 f"ZAFYesterday, CJJEPre1 FROM qd_stock_daily "
                  f"WHERE date >= '{cutoff(days=2)}'")
     except Exception:
         pass
+    # 把 daily 连板字段 merge 进 snapshot_focus_df, 供 k3/p01/p28 读连板梯队
+    # (2026-07-14: k3 旧版用 fLianB=量比 当连板 → max_lb 恒 0; 改读 LastZTHzNum)
+    try:
+        if (ctx.snapshot_focus_df is not None and not ctx.snapshot_focus_df.empty
+                and ctx.more_info_df is not None and 'LastZTHzNum' in ctx.more_info_df.columns):
+            lb_cols = [c for c in ('LastZTHzNum', 'EverZTCount') if c in ctx.more_info_df.columns]
+            daily_lb = ctx.more_info_df[['code'] + lb_cols].drop_duplicates('code')
+            ctx.snapshot_focus_df = ctx.snapshot_focus_df.merge(daily_lb, on='code', how='left')
+    except Exception as e:
+        logger.warning('daily 连板 merge 失败: {}', e)
     try:
         ctx.indicators_df = query_df(
             con, f"SELECT * FROM qd_indicators "
@@ -451,8 +465,10 @@ def _process_decisions(con, decisions, risk, ctx=None):
         reason = d.reason
         if d.score:
             reason = '{} [评分{:.0f}]'.format(reason, d.score)
+        # P1 修复: 写库时回填 stock_name (飞书推送端已现算, DB 不再为空)
+        stock_name = get_stock_name(d.code) or ''
         rows.append((now, d.code, d.strategy, d.action,
-                     d.position_pct, d.price, reason))
+                     d.position_pct, d.price, stock_name, reason))
         # 信号收集: buy/sell 必推, watch/warn 走频控
         if d.action in ('buy', 'sell', 'watch', 'warn'):
             from lib.notify_dedup import allow_push
@@ -487,7 +503,7 @@ def _process_decisions(con, decisions, risk, ctx=None):
 def _run_resonance(con, ctx):
     """共振分析 → qd_resonance (60s/轮)"""
     try:
-        df = scan_market(ctx.pricevol_df, ctx.index_snapshot, ctx.graph)
+        df = scan_market(ctx.pricevol_df, None, ctx.index_snapshot)
         if df is None or df.empty:
             return
         now = datetime.now()
@@ -543,7 +559,10 @@ def _run_sector_flow(con, ctx):
                 agg = sector_agg.setdefault(
                     bc, {'main_net': 0.0, 'total_flow': 0.0, 'count': 0})
                 _zjl = _safe_float(zjl)
-                if _zjl != 0 and (_zjl == _zjl):  # 跳过 NaN 和 0 (非 focus 池无 Zjl)
+                # 2026-07-14 P2.A: 放宽过滤 (原 _zjl != 0 把大量 Zjl=0/小幅小票全过滤,
+                # 导致 sector_agg 空 → sector_flow 24 轮 0 写入 → p28/k6 全饿死)。
+                # 改: 仅过滤 NaN; 0 与小幅主卖/主买都计入,板块资金强度完整。
+                if _zjl == _zjl:  # 仅 NaN 跳过
                     agg['main_net'] += _zjl
                 _amt = _safe_float(amt)
                 if _amt == _amt:  # 跳过 NaN
@@ -891,16 +910,24 @@ def run(con=None, max_rounds=None, force=False):
                     logger.error('intraday_engine 失败: {}', e)
 
             # === 60s 任务: K 线 → 指标 → 信号 → 情绪 → 策略 ===
-            if round_idx % kline_every == 0 and focus_stocks:
-                # c4_kline 自建连接, 不复用外部 con
-                try:
-                    c4.run(focus_stocks, period='1m', count=1)
-                except Exception as e:
-                    logger.error('c4 1m 失败: {}', e)
-                try:
-                    c4.run(focus_stocks, period='5m', count=1)
-                except Exception as e:
-                    logger.error('c4 5m 失败: {}', e)
+            # 解耦 (2026-07-14): 60s 分析管线只在 kline_every 节奏上跑, 不再要求 focus_stocks 非空。
+            # 原先 `and focus_stocks` 把整条管线 (指标/情绪/共振/k6/策略) 焊死在"必须有连板"上,
+            # 无连板日 sector_flow/indicators/sentiment 全饿死。c4 K线是唯一真正依赖 focus_stocks 的子块,
+            # 收窄到它内部; 管线其余部分 (line 917+) 照跑。
+            if round_idx % kline_every == 0:
+                # c4 K线子块: 仅 focus_stocks 非空且 <=800 时采集 (c4 自建连接, 不复用外部 con)
+                if focus_stocks and len(focus_stocks) <= 800:
+                    try:
+                        c4.run(focus_stocks, period='1m', count=1)
+                    except Exception as e:
+                        logger.error('c4 1m 失败: {}', e)
+                    try:
+                        c4.run(focus_stocks, period='5m', count=1)
+                    except Exception as e:
+                        logger.error('c4 5m 失败: {}', e)
+                elif focus_stocks:
+                    logger.info('focus_stocks {} > c4 上限 800, 跳过本轮 K线 (非错误)', len(focus_stocks))
+                # focus_stocks 为空 → 静默跳过 K线, 不打 ERROR; 下方 60s 分析管线照常执行
 
                 # 60s 块: 先取写/读连接
                 _writer = _ensure_writer()
@@ -951,6 +978,22 @@ def run(con=None, max_rounds=None, force=False):
                 # k4 已拆出独立进程, 跳过
                 # 共振分析 (写)
                 _run_resonance(_writer, ctx)
+                # 板块联动分析 (写 qd_sector_linkage)
+                try:
+                    linkage_result = k6_linkage.run(_writer, ctx)
+                    if linkage_result:
+                        ctx.linkage_scores = linkage_result.get('linkage_scores', {})
+                        ctx.stock_roles = linkage_result.get('stock_roles', {})
+                        ctx.linkage_alerts = linkage_result.get('alerts', {})
+                        ctx.linkage_thresholds = linkage_result.get('thresholds', {})
+                        ctx.linkage_metrics = linkage_result.get('block_metrics', {})
+                except Exception as e:
+                    logger.error('k6 板块联动失败: {}', e)
+                # 票型分类 (情绪票/趋势票, 只对强势板块成分股)
+                try:
+                    ctx.stock_types = k7_stock_type.run(_reader, ctx)
+                except Exception as e:
+                    logger.error('k7 票型分类失败: {}', e)
                 # 因子引擎 (纯内存)
                 try:
                     from compute.alpha_engine import AlphaEngine
@@ -960,7 +1003,7 @@ def run(con=None, max_rounds=None, force=False):
                     if _alpha_engine is not None:
                         alpha_df, coverage = _alpha_engine.compute(ctx)
                         ctx.alpha_df = alpha_df
-                        if coverage > 0:
+                        if coverage:
                             from compute.ranking import rank_sector_neutral
                             ctx.top_candidates = rank_sector_neutral(alpha_df, top_n=50)
                 except Exception as e:
@@ -1023,6 +1066,11 @@ def run(con=None, max_rounds=None, force=False):
     except KeyboardInterrupt:
         logger.info('Ctrl+C 退出盘中主循环')
     finally:
+        # 退出前刷出未推送的聚合决策桶 (避免尾盘 14:55 桶丢失)
+        try:
+            flush_pending_bucket()
+        except Exception as e:
+            logger.warning('intraday_loop 退出 flush 桶失败: {}', e)
         if _writer is not None:
             try:
                 _writer.close()

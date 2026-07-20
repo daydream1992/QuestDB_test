@@ -106,49 +106,8 @@ def run(con=None):
         # 3. 策略评估
         n3 = _eval_strategies(con)
 
-        # 4. k4 盘后深度情绪日结写入 + Bitable 落盘
-        k4_sentiment_result = {}
-        try:
-            import compute.k4_sentiment as k4  # noqa: E402
-            deep = k4.run(con)
-            k4_sentiment_result = deep
-            logger.info('k4 盘后深度情绪: PG={} 资金={} 背离={}',
-                        deep.get('pg_index'), deep.get('capital_sentiment'), deep.get('divergence_count'))
-        except Exception as e:
-            logger.error('k4 盘后深度情绪失败: {}', e)
-
-        # 4b. k4 板块热力图 + 打板梯队盘后收官
-        k4_extra = {}
-        try:
-            import compute.k4_sector_heatmap as k4_h  # noqa: E402
-            k4_extra['heatmap'] = k4_h.run(con)
-            logger.info('k4 盘后板块热力图完成')
-        except Exception as e:
-            logger.error('k4 盘后板块热力图失败: {}', e)
-        try:
-            import compute.k4_ladder_tracker as k4_l  # noqa: E402
-            k4_extra['ladder'] = k4_l.run(con)
-            logger.info('k4 盘后打板梯队完成')
-        except Exception as e:
-            logger.error('k4 盘后打板梯队失败: {}', e)
-
-        # 4c. k4 Bitable 收盘落盘 (确保最后一帧入库)
-        try:
-            from feishu.bitable_writer import write_panorama_row, write_heatmap_row, write_ladder_row
-            from feishu.config import BITABLE_TOKEN
-            bt = BITABLE_TOKEN
-            if bt:
-                if k4_sentiment_result:
-                    write_panorama_row(bt, k4_sentiment_result)
-                if k4_extra.get('heatmap'):
-                    write_heatmap_row(bt, k4_extra['heatmap'])
-                if k4_extra.get('ladder'):
-                    write_ladder_row(bt, k4_extra['ladder'])
-                logger.info('k4 Bitable 收盘落盘完成')
-            else:
-                logger.debug('BITABLE_TOKEN 未配置, 跳过收盘 Bitable 落盘')
-        except Exception as e:
-            logger.warning('k4 Bitable 收盘落盘失败: {}', e)
+        # 4. k4 Bitable 收盘落盘 — 已由 k4_runner 盘中覆盖（09:30-10:00 每分钟,
+        #    10:00-15:00 每 5 分钟一次, 14:55 为最后一轮写入, 无需盘后再写避免重复行）
 
         # 5. 飞书汇报当日总结 + 生成日终报告文档
         msg = ('[daily_close] 当日总结\n'

@@ -47,8 +47,8 @@ class ZtDabanStrategy(StrategyBase):
     version = '1.0'
 
     def required_fields(self):
-        # 均在 snapshot_focus_df (C8拆表后 intraday 列已 merge 进来)
-        return ['Now', 'FCAmo', 'ZTPrice', 'fLianB', 'fHSL', 'Amount']
+        # 均在 snapshot_focus_df (C8拆表后 intraday/daily 连板列已 merge 进来)
+        return ['Now', 'FCAmo', 'ZTPrice', 'fLianB', 'fHSL', 'Amount', 'LastZTHzNum']
 
     def evaluate(self, ctx) -> List[Decision]:
         decisions: List[Decision] = []
@@ -122,12 +122,14 @@ class ZtDabanStrategy(StrategyBase):
             red_rate = _safe_float(r.get('gp39_next_red_rate'))
             if gp_lb_rate_ok and (lb_rate < _GP40_LB_RATE_MIN or red_rate < _GP39_NEXT_RED_MIN):
                 continue
-            # 评分: 封单额 + 板块潮 + 量比 + 连板率 + 次日红盘率
+            # 评分: 封单额 + 板块潮 + 量比 + 连板率 + 次日红盘率 + 当前板位 (2026-07-14)
+            lb_now = _safe_float(r.get('LastZTHzNum'))   # 当前几板 (1=首板, 2=二板...)
+            lb_tag = ('首板' if lb_now < 1.5 else ('2板' if lb_now < 2.5 else f'{int(lb_now)}板+'))
             score = min(100.0, 50.0 + fcamo / 1e4 + cnt * 3 + lianb * 2
-                        + lb_rate * 0.3 + (red_rate - 70) * 0.5)
+                        + lb_rate * 0.3 + (red_rate - 70) * 0.5 + max(0, lb_now - 1) * 3)
             decisions.append(Decision(
                 action='buy', code=code, strategy=self.name,
-                reason=f'涨停打板: 封单{fcamo / 1e4:.0f}万 量比{lianb:.1f} '
+                reason=f'涨停打板: {lb_tag} 封单{fcamo / 1e4:.0f}万 量比{lianb:.1f} '
                        f'板块涨停{cnt}只 成交额{amt / 1e8:.2f}亿 换手{hsl:.1f}% '
                        f'连板率{lb_rate:.0f}% 次日红盘{red_rate:.0f}%',
                 position_pct=10, stop_loss=5, stop_profit=10,

@@ -31,14 +31,19 @@ from loguru import logger
 
 
 def cutoff(seconds=0, minutes=0, hours=0, days=0):
-    """本地 now 倒推的 ISO 时间字符串 (供 SQL WHERE timestamp > '...' 用)
+    """UTC now 倒推的 ISO 时间字符串 (供 SQL WHERE timestamp > '...' 用)
 
-    QuestDB now() 返回 UTC, 与 Python 本地 (北京) 写入的 TIMESTAMP 字面值差 8h,
-    用 SQL now()/dateadd(..., now()) 会错位 8h 导致 WHERE 命中数据范围与预期不符
-    (偏多, 读到全部当天而非近 N 分钟)。统一用本函数替代。
+    2026-07-15 修复: Python datetime.now() 是北京时间 (UTC+8), c2/c3 写库字面值
+    也是北京时间; 但 QuestDB now() 与所有 timestamp 列都按 UTC 比较, 字面值
+    直接进入 WHERE 等于被当作 UTC, 导致 cutoff 比数据还"未来" → 命中 0 行。
+
+    统一用 datetime.now(timezone.utc) 输出 UTC 时间字面, 与 QuestDB now()/列值
+    在同一时区基准, c2/c3 写入的北京时间字面在 SQL 比较时也会按 UTC 解释,
+    全链路时区自洽。
     """
+    from datetime import timezone
     delta = timedelta(seconds=seconds, minutes=minutes, hours=hours, days=days)
-    return (datetime.now() - delta).strftime('%Y-%m-%dT%H:%M:%S')
+    return (datetime.now(timezone.utc).replace(tzinfo=None) - delta).strftime('%Y-%m-%dT%H:%M:%S')
 
 # 加载 config/.env
 _ENV_PATH = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),

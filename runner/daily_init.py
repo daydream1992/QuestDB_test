@@ -36,7 +36,9 @@ def _c4_with_retry(codes, period, count, con, retries=3):
     import time
     for i in range(retries):
         try:
-            return c4.run(codes, period=period, count=count, con=con)
+            # c4_kline.run 自建连接 (见 collect/c4_kline.py:143, 不接受 con),
+            # 与 intraday_loop 的调用方式一致; 传 con 会触发 TypeError.
+            return c4.run(codes, period=period, count=count)
         except Exception as e:
             logger.warning('c4 {} 第{}次失败: {}', period, i + 1, e)
             if i < retries - 1:

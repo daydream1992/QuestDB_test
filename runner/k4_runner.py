@@ -24,6 +24,7 @@ k4 模块集成:
 """
 
 import os
+import signal
 import sys
 from datetime import datetime
 
@@ -78,7 +79,7 @@ def _run_k4_once(con):
         if bitable_token and r:
             try:
                 from feishu.bitable_writer import write_panorama_row
-                write_panorama_row(bitable_token, r)
+                write_panorama_row(bitable_token, r, ts=r.get('now'))
             except Exception as e:
                 logger.warning('Bitable 情绪全景写入失败: {}', e)
     except Exception as e:
@@ -99,7 +100,7 @@ def _run_k4_once(con):
         if bitable_token and r:
             try:
                 from feishu.bitable_writer import write_heatmap_row
-                write_heatmap_row(bitable_token, r)
+                write_heatmap_row(bitable_token, r, ts=r.get('now'))
             except Exception as e:
                 logger.warning('Bitable 板块梯队写入失败: {}', e)
     except Exception as e:
@@ -122,7 +123,7 @@ def _run_k4_once(con):
         if bitable_token and r:
             try:
                 from feishu.bitable_writer import write_ladder_row
-                write_ladder_row(bitable_token, r)
+                write_ladder_row(bitable_token, r, ts=r.get('now'))
             except Exception as e:
                 logger.warning('Bitable 打板梯队写入失败: {}', e)
     except Exception as e:
@@ -135,7 +136,7 @@ def _run_k4_once(con):
     if _r_sent:
         try:
             from compute.k4_sentiment import push_panoramic
-            _t = push_panoramic(_r_sent)
+            _t = push_panoramic(_r_sent, con)  # 传入 con 用于查 880001
             if _t:
                 _feishu_texts.append(_t)
         except Exception as e:
@@ -177,6 +178,14 @@ def main():
       - 心跳保活由 scheduler 做
       - 5min 窗口靠 scheduler 调度而非内部计数器
     """
+    # 优雅退出: scheduler stop_proc 会先发 SIGBREAK/SIGTERM, 等 5s 再 terminate
+    # 收到信号后 raise KeyboardInterrupt, 让 finally 块关闭 con, 避免半写入状态
+    def _graceful_exit(signum, frame):
+        raise KeyboardInterrupt
+    if os.name == 'nt':
+        signal.signal(signal.SIGBREAK, _graceful_exit)
+    signal.signal(signal.SIGTERM, _graceful_exit)
+
     logger.info('===== k4_runner 启动 {} =====', datetime.now())
 
     con = None
@@ -184,8 +193,16 @@ def main():
         con = connect()
         summary = _run_k4_once(con)
         logger.info('===== k4_runner 完成: {} =====', summary)
+    except KeyboardInterrupt:
+        logger.warning('k4_runner 收到终止信号, 优雅退出')
     except Exception as e:
         logger.error('k4_runner 异常退出: {}', e)
+        # 飞书告警: 用户感知数据缺口, 不会错过 k4 异常
+        try:
+            from feishu import push_text
+            push_text(f'⚠ k4_runner 异常退出: {str(e)[:200]}')
+        except Exception as notify_err:
+            logger.warning('飞书告警发送失败: {}', notify_err)
     finally:
         if con is not None:
             con.close()

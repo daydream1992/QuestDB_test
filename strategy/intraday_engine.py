@@ -3,8 +3,8 @@
 脚本路径: K:\QuestDB_test\\strategy\\intraday_engine.py
 移植自 DB数据库_v2 01实盘监控/engine.py, 聚焦实用 4 类 (去粗取精, 见 ARCHITECTURE_REVIEW 批5):
   - surge_up/down: 5 分钟涨速 |Now/Before5MinNow - 1|*100 >= 2%
-  - limit_seal:    封涨停 (现价 >= ZTPrice*0.999 且 卖一量 Sellv1 <= 100 手)
-  - limit_break:   炸板 [critical] (封板后跌离涨停价)
+  - limit_seal:    封涨停 (FCAmo > 0 权威判定: 有封单才是真封板)
+  - limit_break:   炸板 [critical] (封板后 FCAmo 转 <=0, 封单消失)
   - capital_in/out: 主力 Zjl 流入/流出 >= 2000 万
 
 去粗取精 (Agent 3 建议, 本次不实现):
@@ -37,7 +37,6 @@ _EVENT_COLS = ['event_time', 'code', 'event_type', 'description', 'critical']
 
 # 阈值 (集中, 调阈值不改逻辑)
 SURGE_PCT = 1.0           # 5 分钟涨速绝对值 >= 1%
-LIMIT_SELLV_MAX = 500     # 卖一量 <= 500 手 视为封死 (卖一被吃光)
 CAPITAL_FLOW_MIN = 5e6    # 主力 |Zjl| >= 500 万
 
 
@@ -121,8 +120,6 @@ def detect_all(snapshot_df, watchlist=None):
         st = _STATES.setdefault(code, MonitorState())
         now = _safe_float(r.get('Now'))
         before5min = _safe_float(r.get('Before5MinNow'))
-        zt_price = _safe_float(r.get('ZTPrice'))
-        sellv1 = _safe_float(r.get('Sellv1'))
         zjl = _safe_float(r.get('Zjl'))
         fcamo = _safe_float(r.get('FCAmo'))
         for res in (detect_surge(now, before5min),
@@ -174,8 +171,8 @@ def run(con, snapshot_df, watchlist=None):
                     'price': None,
                     'position_size': 0,
                 })
-            # 异动只推+写表格, 不再单独 push_text (log_signals 内含推送)
-            log_signals(feishu_signals, sheet=True, bitable=True)
+            # 异动写入表格 + 推送卡片 (log_signals 内含频控)
+            log_signals(feishu_signals, push=True, sheet=True, bitable=True)
         except Exception as e:
             logger.warning('异动飞书写入失败: {}', e)
     logger.info('intraday_engine: 检测 {} 事件, 推送 {}', len(events), len(pushed))

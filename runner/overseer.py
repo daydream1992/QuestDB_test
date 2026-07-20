@@ -71,7 +71,8 @@ _THRESHOLDS = {
     'qd_indicators':        {'minutes': 30,'min_rows': 5000, 'consecutive': 3},
     'qd_signals':           {'minutes': 30,'min_rows': 50,   'consecutive': 3},
     'qd_decisions':         {'minutes': 30,'min_rows': 1,    'consecutive': 3},
-    'qd_sector_flow':       {'minutes': 10,'min_rows': 500,  'consecutive': 2},
+    # 'qd_sector_flow':     {'minutes': 10,'min_rows': 500,  'consecutive': 2},  # 2026-07-14 移除: 连板依赖型表, 无连板日诚实为空, 500 阈值只会误报
+    'qd_sector_linkage':    {'minutes': 30,'min_rows': 1000, 'consecutive': 3},  # k6 板块联动 (60s/轮写全板块, 阈值取保守值)
     'qd_resonance':         {'minutes': 30,'min_rows': 5000, 'consecutive': 3},
 }
 
@@ -112,6 +113,7 @@ def _timestamp_col(table):
         'qd_signals': 'signal_time',
         'qd_decisions': 'decision_time',
         'qd_sector_flow': 'flow_time',
+        'qd_sector_linkage': 'linkage_time',
         'qd_resonance': 'resonance_time',
         'qd_auction_snapshot': 'auction_time',
         'qd_money_flow': 'flow_time',
