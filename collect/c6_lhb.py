@@ -1,6 +1,6 @@
 """c6: 龙虎榜采集
 
-脚本路径: K:\QuestDB_test\\collect\\c6_lhb.py
+脚本路径: K:/QuestDB_test//collect//c6_lhb.py
 用途: 盘后拉龙虎榜明细 + 识别知名营业部, 写 qd_lhb_detail + qd_lhb_broker
 数据源: K:\\QTM\\longhubang.db3 (sqlite)
 入库表:
@@ -118,6 +118,74 @@ def _get_latest_date(con):
         logger.warning('获取最新龙虎榜日期失败: {}', e)
         pass
     return None
+
+
+def _missing_dates(latest_in_db, sqlite_dates, cap=30):
+    """计算需补洞的交易日列表 (纯函数, 便于单测)
+
+    Args:
+        latest_in_db: QuestDB qd_lhb_detail 最新 lhb_date ('YYYY-MM-DD'), 空表为 None
+        sqlite_dates: QMT longhubang 全部 DISTINCT trade_date (升序, 'YYYY-MM-DD')
+        cap: 最多补最近 N 天 (防止空表时拉全量历史)
+
+    Returns:
+        升序缺失日期列表 (sqlite 有、DB 无、且 > latest_in_db, 截尾 cap 天)
+    """
+    if not sqlite_dates:
+        return []
+    if latest_in_db is None:
+        return list(sqlite_dates[-cap:])
+    missing = [d for d in sqlite_dates if d > latest_in_db]
+    return missing[-cap:]
+
+
+def run_catchup(con=None, max_gap_days=30):
+    """缺口回填: 把 QMT sqlite 有而 QuestDB 缺的最近交易日补齐 (幂等, DEDUP UPSERT 保证)
+
+    背景: QMT longhubang.db3 当日数据盘后晚些才落地, daily_close 15:05 跑必扑空;
+    靠本入口兜底 (漏跑/DB 停摆多日也能自愈, 上限 max_gap_days 防全量)。
+
+    Args:
+        con:  psycopg2 连接, None 则自建
+        max_gap_days: 最多回填最近 N 个交易日
+
+    Returns:
+        {'days': int, 'missing': list[str], 'qd_lhb_detail': int, 'qd_lhb_broker': int}
+    """
+    own_con = con is None
+    if own_con:
+        con = connect()
+    result = {'days': 0, 'missing': [], 'qd_lhb_detail': 0, 'qd_lhb_broker': 0}
+    try:
+        latest = _get_latest_date(con)
+        conn = sqlite3.connect(QMT_LHB_PATH)
+        conn.text_factory = lambda b: b.decode('utf-8', errors='ignore')
+        try:
+            df_dates = pd.read_sql(
+                "SELECT DISTINCT trade_date FROM longhubang ORDER BY trade_date", conn)
+        finally:
+            conn.close()
+        missing = _missing_dates(latest, df_dates['trade_date'].tolist(), max_gap_days)
+        if not missing:
+            logger.debug('c6 无需补洞 (DB 最新 {})', latest)
+            return result
+        logger.info('c6 龙虎榜补洞 {} 天: {}', len(missing), missing)
+        for d in missing:
+            try:
+                r = run(date=datetime.strptime(d, '%Y-%m-%d').date(), con=con)
+                result['qd_lhb_detail'] += r.get('qd_lhb_detail', 0)
+                result['qd_lhb_broker'] += r.get('qd_lhb_broker', 0)
+            except Exception as e:
+                logger.error('c6 补洞日期 {} 失败: {}', d, e)
+                continue
+        result['days'] = len(missing)
+        result['missing'] = missing
+        logger.info('c6 补洞完成: {} 天, detail {} / broker {} 行',
+                    len(missing), result['qd_lhb_detail'], result['qd_lhb_broker'])
+    finally:
+        if own_con:
+            con.close()
+    return result
 
 
 def run(date=None, con=None, dry_run=False):
