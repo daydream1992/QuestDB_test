@@ -1,76 +1,106 @@
 strategies:
+  # ── 活跃插件 (2026-07-14 瘦身重构后仅存 5 个, 与 strategy/plugins/ 一致) ──
   zt_daban:
     enabled: true
     name: 涨停打板
-  zha_fanbao:
-    enabled: true
-    name: 炸板反包
   break_pressure:
     enabled: true
     name: 突破压力位
-  sector_rotation:
-    enabled: true
-    name: 板块轮动
-  resonance_triple:
-    enabled: true
-    name: 多层共振
-  divergence_warn:
-    enabled: true
-    name: 背离预警
   dark_money_anomaly:
-    enabled: true
+    enabled: false  # 休眠: p08 保留但 dark_money 数据源已禁用 (intraday_loop 不写 qd_money_flow)
     name: 暗资金异动
-  auction_rush:
-    enabled: true
-    name: 竞价抢筹
-  auction_gap:
-    enabled: true
-    name: 竞价缺口异动
-  auction_close:
-    enabled: true
-    name: 尾盘竞价异动
-  big_order_pulse:
-    enabled: true
-    name: 大单跟单
-  lhb_institution:
-    enabled: true
-    name: 机构龙虎榜
-  lhb_hotmoney:
-    enabled: true
-    name: 游资龙虎榜
-  stop_loss:
-    enabled: true
-    name: 止损退出
-  stop_profit:
-    enabled: true
-    name: 止盈退出
   market_emotion:
     enabled: true
     name: 大盘情绪
-  turn_alert:
+  sector_focus_signal:
     enabled: true
-    name: 变盘预警
-  alpha_breakout:
+    name: 强势板块信号
+  # 已废弃插件 (p02,p05,p06,p07,p09-p16,p18,p20-p27) 移入 _deprecated/,
+  # 其 yaml 开关条目同步删除。恢复需走 _deprecated/README.md 的 [plan] 评审流程。
+
+# 板块联动分析配置 (compute/k6_linkage.py 使用)
+linkage:
+  enabled: true
+  # 评分权重 (4 维度, 总和=1.0)
+  weights:
+    net_inflow: 0.40      # 资金净流入
+    zt_count: 0.25        # 涨停家数
+    ladder_height: 0.20   # 连板高度
+    leader_change: 0.15   # 龙头涨幅
+  # 评分满分门槛 (各维度达到此值得满分)
+  # ⚠️ 单位: net_inflow=万元 (Zjl聚合), ladder=板数, leader=涨幅%
+  thresholds:
+    net_inflow_full: 10000        # 资金满分门槛: 1亿元 (=10000万元)
+    ladder_full: 3           # 连板满分: 3板
+    leader_full: 5.0         # 龙头涨幅满分: 5%
+  # 动态阈值 (基于全市场评分分位数, 避免硬编码)
+  dynamic:
     enabled: true
-    name: Alpha突破
-  leader_echelon:
-    enabled: true
-    name: 龙头梯队接力
-  sector_rotation_relay:
-    enabled: true
-    name: 板块轮动接力
-  capital_flow_divergence:
-    enabled: true
-    name: 资金流背离
-  lhb_broker_network:
-    enabled: true
-    name: 龙虎榜营业部网络
-  sentiment_extreme_reversal:
-    enabled: true
-    name: 情绪极端反转
-  late_session_raid:
-    enabled: true
-    name: 尾盘突袭
+    opportunity_pct: 90      # 机会阈值 = P90 分位数
+    risk_pct: 15             # 风险阈值 = P15 分位数
+    opportunity_min: 40.0    # 机会阈值下限 (避免弱势市场也触发)
+    risk_max: 35.0           # 风险阈值上限 (避免强势市场过度敏感)
+    min_sample: 10           # 样本不足时回退固定阈值
+  # 固定阈值 (dynamic.enabled=false 或样本不足时使用)
+  fixed:
+    opportunity_score: 50.0
+    opportunity_leader_change: 5.0
+    risk_score_low: 25.0
+    risk_outflow: 200000          # 净流出 20亿 (=200000万元)
+  # 板块规模分层 (按成分股数量, 大/小盘阈值不一致)
+  size_tiers:
+    large:
+      component_min: 500     # 成分股 >= 500
+      zt_count_full: 10      # 涨停满分门槛 (大盘要求高)
+    medium:
+      component_min: 100     # 100 <= 成分股 < 500
+      zt_count_full: 5
+    small:
+      component_min: 0       # 成分股 < 100
+      zt_count_full: 3       # 小盘涨停少, 门槛低
+# 票型分类配置 (compute/k7_stock_type.py 使用)
+# ⚠️ 单位: Ltsz=亿元, Zjl=万元
+stock_type:
+  sentiment:
+    ltsz_max: 100          # 流通市值<100亿(小盘) → +2
+    hsl_min: 8.0           # 换手>8% → +2
+    lianb_min: 2.0         # 量比>2 → +2
+    ever_zt_min: 10        # 历史涨停>10次 → +2
+    beta_min: 1.3          # Beta>1.3 → +1
+  trend:
+    ltsz_min: 200          # 流通市值>200亿(大盘) → +2
+    hsl_low: 2.0           # 换手2-8% → +2
+    hsl_high: 8.0
+    zjl_min: 5000          # 主力净额>5000万 → +2 (万元)
+    beta_max: 1.2          # Beta<1.2 → +1
+    pe_min: 10.0           # PE 10-40 → +1
+    pe_max: 40.0
+  classify_gap: 2          # 分差>2才明确分类, 否则混合
+  concept_heat_pct: 70
+
+# 4种信号阈值 (strategy/plugins/p28 使用, 按票型差异化)
+# ⚠️ 单位: Zjl=万元, 涨幅=%
+stock_signal:
+  surge:                   # 急涨(5分钟涨速)
+    sentiment_min: 3.0     # 情绪票激进
+    trend_min: 1.5         # 趋势票温和
+    exclude_zt: true       # 排除已涨停
+  butian:                  # 补涨埋伏
+    sentiment_sector_zt: 3      # 情绪票:板块涨停≥3家
+    sentiment_self_zaf_max: 3.0 # 且自身涨幅<3%
+    trend_sector_score_ratio: 0.8
+    trend_self_zaf_max: 2.0
+  dixi:                    # 龙头低吸(回踩5日线)
+    ma5_deviation: 0.02
+    sentiment_zaf_max: 5.0      # 情绪票:涨幅<5%(没大涨)
+    sentiment_zjl_min: 500      # 情绪票:主力Zjl>500万(回踩有承接)
+    trend_zjl_min: 5000         # 趋势票:主力回流>5000万(机构承接,与dadan一致)
+  dadan:                   # 大单跟单(主力Zjl, 万元)
+    sentiment_zjl_min: 1000
+    trend_zjl_min: 5000
+  output:
+    max_buy_per_round: 2   # 每轮最多2条buy(频控≤2条/分钟)
+
 risk:
   max_total_position: 80
   max_single_position: 30
@@ -92,6 +122,10 @@ watchlist:
 - 002580.SZ
 - 002008.SZ
 factor_model:
+  enabled: true   # 纯内存 alpha 候选池: 每轮算 ctx.alpha_df/top_candidates。
+                  # 现状 (2026-07-14): alpha 家族插件 p20/22/24/25/26 已移 _deprecated/,
+                  # top_candidates 暂无插件消费; qd_alpha_score 表无活跃写入方 (factor_store.py 已废弃)。
+                  # 保留为后续回测/IC 分析的内存底座, 关闭可省每轮算力。
   weights:
     ts_momentum_5m: 0.15
     ts_acceleration: 0.08

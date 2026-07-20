@@ -50,6 +50,9 @@ DDL_FILES = [
     '20_ladder_tracker.sql',
     '22_alpha_score.sql',
     '23_positions_v2.sql',
+    '24_focus_log.sql',
+    '25_divergence.sql',
+    '26_sector_linkage.sql',
 ]
 
 def main():

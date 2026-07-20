@@ -1,7 +1,8 @@
 -- 22_alpha_score.sql
 -- 因子 alpha 快照表 (每轮 alpha_df 落库, 供回测/复盘/IC 分析)
--- 写入: compute/factor_store.py::store_alpha_snapshot
--- 读取: backtest/ic_analysis.py, runner/daily_summary.py
+-- 写入: 无活跃写入方 (2026-07-14 compute/factor_store.py 移 _deprecated/;
+--       compute/alpha_engine.py 仅纯内存计算 ctx.alpha_df)
+-- 表状态: 休眠表 (保留 schema 供后续回测/IC 分析启用)
 
 CREATE TABLE IF NOT EXISTS qd_alpha_score (
     calc_time     TIMESTAMP,

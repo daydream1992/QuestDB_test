@@ -52,14 +52,24 @@ INDEX_DAILY_FIELDS = [
     'ZAFPre20', 'ZAFPre60', 'ZAFYear', 'Zsz', 'Ltsz', 'MA5Value',
 ]
 
-# === more_info 盘中高频 (个股, 15字段) ===
+# === more_info 盘中高频 (个股, 17字段, 与 DDL 16_stock_intraday.sql 一致) ===
 STOCK_INTRADAY_FIELDS = [
     'ZAF', 'ZTPrice', 'DTPrice', 'fLianB', 'ZTGPNum', 'LastStartZT',
     'MA5Value', 'Wtb', 'fHSL', 'Fzhsl', 'FzAmo',
     'Zjl', 'Zjl_HB', 'FCAmo', 'FCb', 'vzangsu',
 ]
 
+# === 派生表: qd_sector_linkage (compute/k6_linkage.py 写, ddl/26, 60s/轮) ===
+SECTOR_LINKAGE_FIELDS = [
+    'block_code', 'block_name', 'block_type',
+    'linkage_score', 'net_inflow', 'zt_count', 'ladder_height',
+    'leader_code', 'leader_change',
+    'resonance_sectors', 'stock_roles', 'calc_duration_ms',
+]
+
 # === 字段类型映射 (DDL 定义用) ===
+# 注: 下方集合兼收 tqcenter 原始字段 (PascalCase) 与派生表字段 (snake_case,
+#     如 qd_sector_linkage), 供 scripts/verify_fields_consistency.py 做一致性校验。
 DOUBLE_FIELDS = {
     'ItemNum', 'LastClose', 'Open', 'Max', 'Min', 'Now', 'Amount', 'Average',
     'TickDiff', 'Jjjz', 'Before5MinNow', 'Zangsu', 'ZAFPre3',
@@ -73,6 +83,8 @@ DOUBLE_FIELDS = {
     'CJJEPre1', 'CJJEPre3', 'FDEPre1', 'FDEPre2', 'OpenZTBuy', 'OpenZAF', 'VOpenZAF',
     'MA5Value', 'Wtb', 'HisHigh', 'HisLow', 'IPO_Price', 'SafeValue', 'ShineValue',
     'ShapeValue', 'vzangsu', 'fHSL', 'Fzhsl', 'FzAmo', 'Zjl', 'Zjl_HB', 'FCAmo', 'FCb',
+    # qd_sector_linkage 派生字段
+    'linkage_score', 'net_inflow', 'leader_change',
 }
 
 BIGINT_FIELDS = {
@@ -83,8 +95,12 @@ BIGINT_FIELDS = {
 
 INT_FIELDS = {
     'InOutFlag', 'XsFlag', 'UpHome', 'DownHome', 'ErrorId',
+    # qd_sector_linkage 派生字段
+    'zt_count', 'ladder_height', 'calc_duration_ms',
 }
 
 VARCHAR_FIELDS = {
     'LastStartZT', 'MainBusiness', 'HqDate',
+    # qd_sector_linkage 派生字段
+    'block_code', 'block_name', 'block_type', 'leader_code',
 }

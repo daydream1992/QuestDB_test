@@ -1,7 +1,7 @@
 -- 23_positions_v2.sql
 -- 持仓表 v2 (替代/补充现有 qd_positions)
--- 写入: strategy/portfolio.py::persist_open / persist_close
--- 读取: strategy/portfolio.py::load_from_db
+-- 写入/读取: 无活跃方 (2026-07-14 strategy/portfolio.py 移 _deprecated/)
+-- 表状态: 休眠表 (当前持仓逻辑: risk.py 内存 positions + risk.check_exit 出场)
 -- 说明:
 --   - 每次开仓/平仓/状态变更都写一行, status 区分 open/closed
 --   - DEDUP UPSERT KEYS(updated_time, code, status): 同时刻同code同状态幂等
