@@ -16,6 +16,10 @@ cp _deprecated/probes/_probe_api.py 1_collect/_probe_api.py
 |---|---|---|
 | `probes/` | `1_collect/_probe_*.py`、`_smoke_test.py`、`_test_write.py` | 探测时代产物，业务无引用 |
 | `markers/` | `tests/_h7_marker.txt` | H7 任务占位符，无业务含义 |
+| `p02,p05,p06,p07,p09-p16,p18,p20-p27` (根级 `pNN_*.py`) | `strategy/plugins/` | 2026-07-14 瘦身废弃：被吃肉系统 k6/k7/p28 + `risk.check_exit`(p15/p16) 取代 |
+| `dark_money.py` | `strategy/` | 2026-07-14 废弃：个股明暗资金计算，`qd_money_flow` 已停写（p08 插件保留休眠） |
+| `portfolio.py` | `strategy/` | 2026-07-14 废弃：持仓持久化，现由 `risk.py` 内存 positions + `check_exit` 承担 |
+| `factor_store.py` | `compute/` | 2026-07-14 废弃：alpha 落库，`qd_alpha_score` 成休眠表（alpha_engine 纯内存保留） |
 
 ## 守卫规则
 
