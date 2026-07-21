@@ -43,7 +43,7 @@ from loguru import logger  # noqa: E402
 
 from lib.qdb import connect, query_df, executemany_batch, cutoff, _ensure_alive  # noqa: E402
 from lib.tq_client import init  # noqa: E402
-from feishu import push_decision_aggregated, log_signals  # noqa: E402
+from feishu import push_decision_aggregated, log_signals, flush_pending_bucket  # noqa: E402
 from lib.market_clock import is_trading_time, is_trading_day  # noqa: E402
 
 import collect.c1_pricevol as c1  # noqa: E402
