@@ -101,6 +101,32 @@ stock_signal:
   output:
     max_buy_per_round: 2   # 每轮最多2条buy(频控≤2条/分钟)
 
+# 动态订阅池配置 (lib/subscribe_pool.py + runner/sub_pool_supervisor.py 使用)
+# 触发即弃 + 动态轮换: 100 个 tqcenter 名额留给临界股票, 触发即弃腾位给下个候补.
+subscribe_pool:
+  enabled: false           # 默认 false, 不影响现有 subscribe.py; 真盘用改 true
+  cap: 95                  # 订阅容量上限 (≤100, 留 5 冗余防边界卡 tqcenter 拒单)
+  enter_zaf_low: 5.0       # 入池涨幅下界 (%)
+  enter_zaf_high: 9.0      # 入池涨幅上界 (%, 接近涨停但未封)
+  enter_score: 60.0        # 综合评分入池门槛 (0~100)
+  keep_score: 40.0         # 临界监控保持评分下沿 (跌破 + 超时 → 让位)
+  hold_max_sec: 300        # 临界监控最长保持 (5min, 无信号则腾位)
+  cooldown_sec: 300        # 触发卸载后禁再提名时长
+  debounce_sec: 10         # L1 抖动闸 (code+etype, 内存 dict)
+  break_drop_pct: 3.0      # 破位判定: 峰值回撤 ≥ 此值算破位
+  div_vol_ratio: 2.0       # 量价背离判定: 量比下限
+  div_zaf_stall: 0.5       # 量价背离判定: 5min 涨幅停滞上限 (%)
+  refill_max_sec: 2        # 腾退到下次补充的最长等待 (秒)
+  candidate_fresh_sec: 600 # 候选有效窗口, 过期不被 top_candidates 返回 (秒)
+  history_dedup_keys: true # qd_subscription_pool_history 用 DEDUP UPSERT (DDL 已配)
+  score_weights:           # 综合评分权重, 总和 = 1.0
+    near_limit: 0.35       # 距涨停临界度 (Stage-1 主力)
+    vol_surge:  0.25       # 量放大 (Stage-1)
+    zjl:       0.25        # 主力净额 (订阅后精算, Stage-1=0)
+    gene:      0.15        # 涨停基因 (订阅时缓存一次)
+  fallback_min_count: 5    # 候选池空时维持的低分兜底观察位数
+  dry_run: false           # true = 只打分不订阅, EOD 验证用
+
 risk:
   max_total_position: 80
   max_single_position: 30
