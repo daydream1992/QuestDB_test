@@ -1,5 +1,7 @@
 # testv10.2 飞书信号语义设计书
 
+> ⚠️ **已砍除 (2026-08-10)**: 本设计的 signal_extractor 模块 + 4 卡体系 (on_summary/on_first_seal/on_ebb/on_v101_summary) 在 6-phase 重构时删除 (publisher.py:84 注释为证)。现用 publisher 8 卡 (机会/预警/炸板回封)。**别按本文找代码**。
+
 > 定位: 内容语义设计, 解决"推送没参考、不知道表达什么、只是刷屏"。
 > 来源: planner agent 规划 (2026-08-07), 依据用户三次反馈轨迹 + board_pool/meso_radar 已有能力。
 

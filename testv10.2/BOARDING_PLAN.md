@@ -1,5 +1,7 @@
 # testv10.2 双轨策略 — 9:30 极速突击打板 实现计划
 
+> ⚠️ **未实现蓝图 (2026-08-10 标记)**: 本计划的 boarding_strategy.py + on_boarding_pioneer/team 2 卡 + 5 闸过滤**均未实现**。当前机会事件走 opportunity_engine 3 正卡。**别按本文找代码**。
+
 > 来源: planner agent (2026-08-07)。在防守型看盘底座上叠加打板策略, **底座零侵入**。
 
 ## 底座不动 — 证据

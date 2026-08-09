@@ -8,6 +8,13 @@
 A 股盘中实时量化监控与**信号呈现**系统（不做自动交易）。
 单一数据源（tqcenter）→ QuestDB 单库 → 5 个策略插件（2026-07-14 瘦身：p01/p04/p08[休眠]/p17/p28）→ 飞书三通道推送。
 
+### ⭐ v10.2 独立新系统（重点, 与上述老管线无关）
+
+`testv10.2/` 是**独立新系统**（采集统一→计算并联→预警统一→5 时段调度），替代老 intraday_loop 全量写入崩溃。仅依赖 `lib/`，**不写 QuestDB 业务表**（输出飞书 8 表 + DuckDB 本地快照 + 实时推卡）。
+- **生产入口**: `python testv10.2/radar_main.py --push`（或根目录 `run_v10.2.bat --push`）
+- **读文档顺序**: `testv10.2/README.md`（架构+模块+字段单位速查+扩展指南）→ `VERIFY_CHECKLIST.md`（盘中验证）
+- **已砍蓝图**: `testv10.2/SIGNAL_DESIGN.md`(signal_extractor 体系已删) / `BOARDING_PLAN.md`(5闸未实现) — 别按它们找代码
+
 ## 二、目录分工（高频）
 
 | 目录 | 作用 | 命名 |

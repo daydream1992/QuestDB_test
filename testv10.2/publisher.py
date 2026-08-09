@@ -80,6 +80,23 @@ class Publisher:
     def __init__(self, dry_run: bool = True):
         self.dry_run = dry_run
         self.bucket = TokenBucket(cfg.PUSH_TEXT_MAX_PER_MIN)
+        self.send_ok = 0        # 推送成功计数 (健康度汇总用)
+        self.send_fail = 0      # 推送失败计数 (飞书挂可查)
+        self.bucket_dropped = 0 # 限频丢弃计数
+
+    def _dispatch(self, title: str, lines: list, now: datetime, lane: int = 0) -> bool:
+        """统一发送入口: bucket 检查 (带丢弃日志) + 计数。各卡调用。"""
+        if not self.bucket.allow(now, lane=lane):
+            self.bucket_dropped += 1
+            logger.debug('限频丢弃 (≤{}/min): {}', self.bucket.max, title)
+            return False
+        ok = _send(title, lines, self.dry_run)
+        if ok:
+            self.send_ok += 1
+        else:
+            self.send_fail += 1
+            logger.warning('推送失败计数 {}: {}', self.send_fail, title)
+        return ok
 
     # 旧梯队/首封/退潮/盘点卡 (on_summary/on_first_seal/on_ebb/on_v101_summary) 随 signal_extractor 砍除
     # 现用: on_dive_alert (alert_engine 大盘跳水) / on_open_surge (open_monitor 开盘拉升) / on_blast_alert (尾盘炸板)
@@ -102,7 +119,7 @@ class Publisher:
             lines.append(f'▼ 个股梯队异动 (L3)')
             for name, zaf, role in payload['stocks']:
                 lines.append(f'├─ {name} {zaf:+.1f}% {role}')
-        return _send(f'🔴 大盘跳水预警 | {now.strftime("%H:%M")}', lines, self.dry_run)
+        return self._dispatch(f'🔴 大盘跳水预警 | {now.strftime("%H:%M")}', lines, now, lane=1)
 
     # ⑥ 🚀 开盘拉升 (传导链①龙头异动; 事件, ≤2/min bucket; send_warn 另走客户端)
     def on_open_surge(self, code: str, name: str, price: float, rise: float,
@@ -111,7 +128,7 @@ class Publisher:
             return False
         lines = [f'🚀 开盘拉升 | {now.strftime("%H:%M")}', '',
                  f'{name}({code}) {price:.2f}  相对开盘 {rise:+.1f}%']
-        return _send(f'🚀 开盘拉升 {name}', lines, self.dry_run)
+        return self._dispatch(f'🚀 开盘拉升 {name}', lines, now, lane=1)
 
     # ⑦ 💥 个股炸板预警 (tail 段; 事件, ≤2/min)
     def on_blast_alert(self, tail: dict, now: datetime) -> bool:
@@ -120,7 +137,7 @@ class Publisher:
         lines = [f'💥 尾盘炸板预警 | {now.strftime("%H:%M")}', '',
                  f'封板候选 {tail.get("sealed_n", 0)} 只, 炸板 {tail.get("blast_n", 0)} 只',
                  tail.get('blast_s', '-')]
-        return _send(f'💥 尾盘炸板 | {now.strftime("%H:%M")}', lines, self.dry_run)
+        return self._dispatch(f'💥 尾盘炸板 | {now.strftime("%H:%M")}', lines, now, lane=1)
 
     # 💥 个股炸板实时 (blindspot 盲区 6s 粒度; FCAmo 封→开瞬间; 盘中/tail)
     def on_seal_break(self, code: str, name: str, prev: float,
@@ -130,7 +147,7 @@ class Publisher:
         lines = [f'💥 炸板 | {now.strftime("%H:%M")}', '',
                  f'{name}({code})  封单 {prev:.0f}万→0'
                  + (f'  [今日炸板{break_n}次]' if break_n else '')]
-        return _send(f'💥 炸板 {name}', lines, self.dry_run)
+        return self._dispatch(f'💥 炸板 {name}', lines, now, lane=1)
 
     # 🔁 炸板回封实时 (blindspot 盲区 6s 粒度; FCAmo 开→封瞬间)
     def on_seal_back(self, code: str, name: str, cur: float,
@@ -140,7 +157,7 @@ class Publisher:
         lines = [f'🔁 回封 | {now.strftime("%H:%M")}', '',
                  f'{name}({code})  回封 {cur:.0f}万'
                  + (f'  [今日回封{back_n}次]' if back_n else '')]
-        return _send(f'🔁 回封 {name}', lines, self.dry_run)
+        return self._dispatch(f'🔁 回封 {name}', lines, now, lane=1)
 
     # ============ 机会类事件 (盘中决策最缺; 与负向共用 ≤2/min bucket) ============
 
@@ -153,7 +170,7 @@ class Publisher:
             lines.append(f'{b["name"]}  涨幅{b["zaf"]:+.1f}%  涨停{b["zt"]}')
             if b.get('lights'):
                 lines.append(f'  [探照灯: {" ".join(b["lights"])}]')
-        return _send(f'🟢 新主线 {len(boards)} 板块', lines, self.dry_run)
+        return self._dispatch(f'🟢 新主线 {len(boards)} 板块', lines, now, lane=0)
 
     # 🔥 板块趋势确认 (连续 N 轮 HOT, 非单轮脉冲)
     def on_hot_streak(self, board: dict, now: datetime) -> bool:
@@ -162,7 +179,7 @@ class Publisher:
         lines = [f'🔥 趋势确认 | {now.strftime("%H:%M")}', '',
                  f'{board["name"]}  连续{board["rounds"]}轮HOT  动能分{board["score"]:.0f}',
                  f'涨停 {board["zt_prev"]}→{board["zt_cur"]}']
-        return _send(f'🔥 趋势确认 {board["name"]}', lines, self.dry_run)
+        return self._dispatch(f'🔥 趋势确认 {board["name"]}', lines, now, lane=0)
 
     # 🚀 龙头封板 (drilled 涨停股; 封单/封成比/首次封板时间)
     def on_limit_up(self, stocks: list, now: datetime) -> bool:
@@ -176,7 +193,7 @@ class Publisher:
                 lines.append(f'  ⏱ 首次封板 {s["first_limit"]}')
             if s.get('boards'):
                 lines.append(f'  [{" ".join(s["boards"][:3])}]')
-        return _send(f'🚀 龙头封板 {len(stocks)} 只', lines, self.dry_run)
+        return self._dispatch(f'🚀 龙头封板 {len(stocks)} 只', lines, now, lane=0)
 
 
 if __name__ == '__main__':

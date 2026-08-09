@@ -93,8 +93,10 @@ def _reconnect():
     try:
         tq.initialize(TQCENTER_PATH)
         _initialized = True
-    except Exception:
+        logger.warning('tqcenter 重连成功 ({})', TQCENTER_PATH)
+    except Exception as e:  # noqa: BLE001
         _initialized = False
+        logger.warning('tqcenter 重连失败: {}', e)
 
 
 def retry(func):

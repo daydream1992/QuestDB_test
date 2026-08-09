@@ -5,3 +5,6 @@ loguru>=0.7.0
 requests>=2.31
 python-dotenv>=1.0
 pyyaml>=6.0
+duckdb>=1.0          # v10.2 DuckDB 本地快照 (防飞书挂 + 盘后分析)
+pyarrow>=14.0        # v10.2 parquet 映射读写 (refresh_mapping)
+openpyxl>=3.1        # v10.2 导出 Excel (export_main_data)

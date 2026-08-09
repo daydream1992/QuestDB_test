@@ -15,6 +15,7 @@ bootstrap.ensure_paths()
 
 import argparse
 import os  # noqa: E402
+import sys  # noqa: E402
 import time  # noqa: E402
 from datetime import datetime  # noqa: E402
 
@@ -37,6 +38,7 @@ from stock_ranking import StockRanking  # noqa: E402
 from blindspot_monitor import BlindspotMonitor  # noqa: E402
 from ladder_tracker import LadderTracker  # noqa: E402
 from opportunity_engine import OpportunityEngine  # noqa: E402
+from duckdb_snapshot import DuckdbSnapshot  # noqa: E402
 from alert_engine import AlertEngine  # noqa: E402
 import data_provider  # noqa: E402  统一采集层 (bundle)
 
@@ -48,6 +50,53 @@ logger.add(os.path.join(cfg.LOG_DIR, 'testv10.2_radar_{time:YYYYMMDD}.log'),
            rotation='50 MB', retention='30 days', encoding='utf-8')
 # 池内 行业:概念 比例 CSV (连续观察, 判定混排是否打架; 见 memory: 行业分层观察)
 POOL_RATIO_CSV = os.path.join(cfg.LOG_DIR, 'pool_ratio.csv')
+# 心跳文件 (外部监控判"今天跑没跑"; mtime 新鲜度 = 假死检测)
+HEARTBEAT_TS = os.path.join(cfg.LOG_DIR, 'heartbeats', 'radar_main.ts')
+os.makedirs(os.path.dirname(HEARTBEAT_TS), exist_ok=True)
+
+
+def _touch_heartbeat() -> None:
+    """每轮写心跳时间戳 (轻量 touch, 供 watch_radar.ps1 判假死)。"""
+    try:
+        with open(HEARTBEAT_TS, 'w', encoding='utf-8') as f:
+            f.write(datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
+    except OSError:  # noqa: BLE001  心跳失败不影响雷达
+        pass
+
+
+def _preflight(push: bool) -> None:
+    """--push 启动预检: 校验推送武装状态, 缺关键凭据即 exit(1) 不静默假成功。
+
+    覆盖: ①webhook ②飞书 APP_ID/SECRET ③parquet 映射 ④通达信探针 (tq.initialize)。
+    打印 push=ARMED/DRY, 任一 --push 必需项缺失 → 中文提示 + exit(1)。"""
+    import os as _os
+    from dotenv import load_dotenv
+    _dot = _os.path.join(_os.path.dirname(_os.path.dirname(_os.path.abspath(__file__))),
+                         'config', '.env')
+    load_dotenv(_dot)
+    webhook = _os.getenv('LARK_WEBHOOK_URL', '')
+    app_id = _os.getenv('LARK_APP_ID', '')
+    app_secret = _os.getenv('LARK_APP_SECRET', '')
+    parquet_ok = _os.path.exists(cfg.MAPPING_PARQUET)
+    if not push:
+        logger.info('启动预检: dry-run 模式 (禁推, 守红线); webhook={} parquet={}',
+                    'SET' if webhook else 'EMPTY', 'OK' if parquet_ok else 'MISSING')
+        return
+    # --push: 校验武装
+    missing = []
+    if not webhook:
+        missing.append('LARK_WEBHOOK_URL (预警卡 webhook)')
+    if not (app_id and app_secret):
+        missing.append('LARK_APP_ID/LARK_APP_SECRET (飞书多维表)')
+    if not parquet_ok:
+        missing.append(f'sector_mapping.parquet (先跑 refresh_mapping.py)')
+    if missing:
+        logger.error('🚫 --push 启动失败, 缺: {}', '; '.join(missing))
+        logger.error('   (dry-run 模式可跳过: python radar_main.py)')
+        sys.exit(1)
+    # 通达信探针 (COM 在线检查, 失败不 exit 让 init 兜底)
+    logger.info('启动预检: push=ARMED (webhook={} 飞书={} parquet={})',
+                'SET' if webhook else 'EMPTY', 'SET' if app_id else 'EMPTY', 'OK')
 
 
 def _append_pool_ratio(now: datetime, pool_lv: dict, total: int) -> None:
@@ -86,7 +135,7 @@ def select_drill_candidates(hot_codes: list[str], ms, pct_map: dict[str, float],
 def run_one_round(round_idx: int, ms, radar: MesoRadar, pool: BoardPool,
                   sentiment, rotations: list, auction_monitor, tail_monitor,
                   stock_ranking, alert_engine, blindspot, opportunity, ladder,
-                  is_close: bool, now: datetime) -> dict:
+                  duck, is_close: bool, now: datetime) -> dict:
     """跑一轮 funnel + 计算层并联 (per-module try 故障隔离), 返回摘要 dict。"""
     t0 = time.time()
     rows = radar.scan()
@@ -113,6 +162,13 @@ def run_one_round(round_idx: int, ms, radar: MesoRadar, pool: BoardPool,
     # === 分时段统一采集 + 计算层并联 (per-module try 故障隔离) ===
     stage = cfg.get_stage(now)
     bundle = data_provider.fetch_bundle(stage, df)
+    # DuckDB 本地快照 (每轮: 池 + 钻取; 情绪在下面计算后)
+    if duck:
+        try:
+            duck.snapshot_pool(pool, now)
+            duck.snapshot_drilled(drilled, ms, now)
+        except Exception:  # noqa: BLE001
+            logger.debug('DuckDB 快照失败, 跳过')
     # 大盘情绪 (close 段 force_push 收盘定格绕门控; 否则 maybe_push)
     if sentiment:
         try:
@@ -120,6 +176,9 @@ def run_one_round(round_idx: int, ms, radar: MesoRadar, pool: BoardPool,
                 sentiment.force_push(bundle, rows, now)
             else:
                 sentiment.maybe_push(bundle, rows, now)
+            # DuckDB 情绪快照 (last_result 计算后已有)
+            if duck and sentiment.last_result:
+                duck.snapshot_sentiment(sentiment.last_result, now)
         except Exception:  # noqa: BLE001
             logger.exception('sentiment 模块异常, 跳过 (故障隔离)')
     # 板块轮动 (close 定格 / 盘中+tail maybe_push)
@@ -163,6 +222,10 @@ def run_one_round(round_idx: int, ms, radar: MesoRadar, pool: BoardPool,
             # 盲区事件消费: 炸板/回封 → 实时卡 + 涨停梯队落表 (带计数+板块映射)
             for ev in blindspot.drain_events():
                 try:
+                    # DuckDB 事件快照 (防飞书挂时本地留痕)
+                    if duck:
+                        duck.record_event(ev['type'], ev['code'], ev['name'],
+                                          f"封单{ev.get('prev',0):.0f}→{ev.get('cur',0):.0f}", now)
                     # 涨停梯队落表 (概念/行业映射 + 封板/炸板/回封计数)
                     if ladder:
                         ladder.record_event(ev, blindspot, now)
@@ -207,6 +270,11 @@ def run_one_round(round_idx: int, ms, radar: MesoRadar, pool: BoardPool,
                 sum(1 for s in pool.boards.values() if s.state == 'HOT'),
                 pool_ratio, new_entries[:5], len(drilled), time.time() - t0)
     _append_pool_ratio(now, pool_lv, len(pool.boards))
+    _touch_heartbeat()
+    # 单轮耗时告警 (接近 60s 预算, 可能轮次重叠)
+    _dt = time.time() - t0
+    if _dt > 50:
+        logger.warning('⚠️ 轮 {} 耗时 {:.0f}s, 接近 60s 预算, 可能轮次重叠!', round_idx, _dt)
     return {'round': round_idx, 'new_entries': new_entries, 'hot': hot,
             'pool_stats': pool.stats(), 'leaders': leaders}
 
@@ -240,7 +308,13 @@ def run(rounds: int | None = None, force: bool = False, push: bool = False) -> N
     blindspot = BlindspotMonitor(ms, dry_run=not push)
     ladder = LadderTracker(ms, dry_run=not push)
     opportunity = OpportunityEngine(ms, pub, dry_run=not push)
-    init()
+    duck = DuckdbSnapshot(dry_run=not push)   # DuckDB 本地快照 (防飞书挂 + 盘后分析)
+    # init 保护: 通达信 COM 初始化失败给友好提示, 不裸 traceback
+    try:
+        init()
+    except Exception as e:  # noqa: BLE001
+        logger.error('🚫 通达信初始化失败: {} (请确认通达信客户端已打开)', e)
+        sys.exit(1)
     round_idx = 0
     last_poll: datetime | None = None   # 开盘段 run_one_round 降频计时
     close_done = False                   # 收盘定格只跑一次
@@ -284,7 +358,7 @@ def run(rounds: int | None = None, force: bool = False, push: bool = False) -> N
                         res = run_one_round(round_idx, ms, radar, pool,
                                             sentiment, rotations, auction_mon, tail_mon,
                                             stock_ranking, alert_engine, blindspot,
-                                            opportunity, ladder, False, now)
+                                            opportunity, ladder, duck, False, now)
                         _print_summary(res, ms)
                         round_idx += 1
                         last_poll = datetime.now()
@@ -298,7 +372,7 @@ def run(rounds: int | None = None, force: bool = False, push: bool = False) -> N
                 res = run_one_round(round_idx, ms, radar, pool,
                                     sentiment, rotations, auction_mon, tail_mon,
                                     stock_ranking, alert_engine, blindspot,
-                                    opportunity, ladder, is_close, now)
+                                    opportunity, ladder, duck, is_close, now)
                 _print_summary(res, ms)
                 if is_close:
                     close_done = True
@@ -313,6 +387,8 @@ def run(rounds: int | None = None, force: bool = False, push: bool = False) -> N
             open_mon.stop()
         if blindspot.started:
             blindspot.stop()
+        if duck:
+            duck.close()
         close()
         logger.info('===== radar_main 退出 (共 {} 轮) =====', round_idx)
 
@@ -330,6 +406,7 @@ def main():
     parser.add_argument('--rounds', type=int, default=None, help='跑 N 轮退出')
     parser.add_argument('--push', action='store_true', help='真推飞书 (默认 dry-run 禁推, 守红线)')
     args = parser.parse_args()
+    _preflight(args.push)
     run(rounds=args.rounds, force=args.force, push=args.push)
 
 
