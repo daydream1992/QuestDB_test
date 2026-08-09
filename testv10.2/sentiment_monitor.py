@@ -213,7 +213,16 @@ class SentimentMonitor:
             logger.exception('sentiment force_push 失败')
             return False
         self._write(result, now)
+        # close 段是当日最后时段, 显式 flush 尾盘聚合行 (段末无切换触发)
+        self.flush_slot(now)
         return True
+
+    def flush_slot(self, now: datetime) -> None:
+        """显式 flush 当前时段聚合 (close 段调用, 补尾盘最后一行)。"""
+        if self._slot_name and self._slot_results:
+            self._write_slot_row(self._slot_name, self._slot_results, now)
+        self._slot_name = None
+        self._slot_results = []
 
     # ============ 算分 (纯计算; raw 来自采集层 data_provider bundle) ============
     def compute(self, bundle: dict, rows: list[dict]) -> dict:
@@ -233,7 +242,9 @@ class SentimentMonitor:
 
         br = raw['breadth']
         up5, down5 = br['up5'], br['down5']
-        loss_ratio = (down5 / up5) if up5 > 0 else (2.0 if down5 > 0 else 0.5)
+        # 双零 (无涨跌超5%) = 中性 1.0 → 50 分, 不虚抬满分
+        loss_ratio = ((down5 / up5) if up5 > 0 else
+                      (2.0 if down5 > 0 else 1.0))
         d3 = 100 * (1.0 - _norm(loss_ratio, *NORM['loss_ratio']))
 
         cand = raw['candidates']

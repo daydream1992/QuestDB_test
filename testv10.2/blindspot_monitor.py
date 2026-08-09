@@ -13,6 +13,7 @@ import bootstrap
 bootstrap.ensure_paths()
 
 import json  # noqa: E402
+import time  # noqa: E402
 from queue import Queue, Empty  # noqa: E402
 from datetime import datetime  # noqa: E402
 
@@ -91,10 +92,14 @@ class BlindspotMonitor:
         self.started = False
 
     # ── 主循环调用: 串行消化 queue (回调只在盲区内触发, 不占主循环时间) ──
-    def process_pending(self, max_n: int = 30) -> int:
-        """消化回调队列 → 单只 get_more_info 判 FCAmo 状态变更。返回处理数。"""
+    def process_pending(self, max_n: int = 200, time_budget: float = 5.0) -> int:
+        """消化回调队列 → 单只 get_more_info 判 FCAmo 状态变更。返回处理数。
+
+        时间预算优先: 主动行情回调积压时 (Top20 高频回调) 排空队列而非只取 max_n,
+        避免"6s 补盲"退化。time_budget 防止单轮处理过久拖累 funnel。"""
         n = 0
-        while n < max_n:
+        t0 = time.time()
+        while n < max_n and time.time() - t0 < time_budget:
             try:
                 code = self.signal_q.get_nowait()
             except Empty:
@@ -115,30 +120,34 @@ class BlindspotMonitor:
         self.prev_fcamo[code] = fcamo
         if prev is None:
             # 基线: 订阅建立时已封的股, 记 1 次封板 (开板前就封, 算基线)
+            # 注意: 不记 first_limit_time — 基线时刻是订阅建立(9:45), 非真实首封,
+            # 记了会污染"前排原则"判断 (把 9:31 封死的龙头标成 9:45 首封).
             if fcamo > 0:
                 self.zt_count[code] = self.zt_count.get(code, 0) + 1
-                if code not in self.first_limit_time:
-                    self.first_limit_time[code] = datetime.now().strftime('%H:%M:%S')
-                    logger.info('⏱ 基线封板 {} ({}) {}',
-                                self.ms.stock_name(code) if self.ms else code,
-                                code, self.first_limit_time[code])
+                logger.info('⏱ 基线封板 {} ({}) (订阅时已封, 不计首封时间)',
+                            self.ms.stock_name(code) if self.ms else code, code)
             return
-        # 状态变更: 涨停(封)→炸板(开) / 炸板(开)→回封(封)
+        # 状态变更: 封→开=炸板; 开→封 (今日首次封板 vs 回封)
         kind = _classify(prev, fcamo)
         if not kind:
             return
         name = self.ms.stock_name(code) if self.ms else code
-        self.events.append({'code': code, 'name': name, 'type': kind,
+        # 开→封 区分: 今日从未封过 (无首次封板记录) = 封板, 否则 = 回封
+        is_first_limit = (kind == '回封' and code not in self.first_limit_time
+                          and self.zt_count.get(code, 0) == 0)
+        event_type = '封板' if is_first_limit else kind
+        self.events.append({'code': code, 'name': name, 'type': event_type,
                             'prev': prev, 'cur': fcamo})
-        # 计数: 封板(开→封) / 炸板(封→开) / 回封(炸板后再次封)
+        # 计数: 封板(开→封, 含首次) / 炸板(封→开) / 回封(炸板后再次封)
         if kind == '回封':
             self.zt_count[code] = self.zt_count.get(code, 0) + 1
-            self.back_count[code] = self.back_count.get(code, 0) + 1
-            # 首次封板时间戳 (自建): 开→封 那一刻记录 (回调~6s精度, 对应"前排原则")
-            if code not in self.first_limit_time:
+            if is_first_limit:
+                # 首次封板时间戳 (自建): 开→封 那一刻记录 (回调~6s精度, 前排原则)
                 self.first_limit_time[code] = datetime.now().strftime('%H:%M:%S')
                 logger.info('⏱ 首次封板 {} ({}) {}', name, code,
                             self.first_limit_time[code])
+            else:
+                self.back_count[code] = self.back_count.get(code, 0) + 1
         elif kind == '炸板':
             self.break_count[code] = self.break_count.get(code, 0) + 1
         logger.warning('💥 盲区补盲: {} ({}) {} (封单 {:.0f}→{:.0f})',

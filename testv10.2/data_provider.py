@@ -15,6 +15,8 @@ bootstrap.ensure_paths()
 
 import time  # noqa: E402
 
+from loguru import logger  # noqa: E402
+
 import ticker as tk  # noqa: E402
 import sentiment_fetcher as fetcher  # noqa: E402
 import settings as cfg  # noqa: E402
@@ -86,11 +88,16 @@ def fetch_bundle(stage: str, df_hint=None) -> dict:
     bundle = {'stage': stage, 'df': df}
     # 盘中/尾盘/收盘: 大盘情绪 + 候选钻取 (sentiment_fetcher 复用, 含 market/amount/main_net/candidates/breadth)
     if stage in ('intraday', 'tail', 'close', 'off'):
-        bundle['sentiment_raw'] = fetcher.fetch_sentiment_raw(df)
+        try:
+            bundle['sentiment_raw'] = fetcher.fetch_sentiment_raw(df)
+        except Exception:  # noqa: BLE001  故障隔离: 情绪采集失败降级, 不拖垮整轮
+            logger.exception('sentiment 采集失败, 降级为空 (本轮情绪/候选缺失)')
+            bundle['sentiment_raw'] = None
     # 竞价: 板块竞价榜 + 一字候选 (给 open_monitor)
     if stage == 'auction':
-        bundle['auction_raw'] = fetch_auction_raw()
-    # TODO Phase2: 盘中 rotation 板块采集 (meso rows 按 level) 入 bundle
-    # TODO Phase3: 开盘 subscribe_hq + snapshot(Open/Before5MinNow) 入 bundle
-    # TODO Phase4: 竞价 more_info(OpenAmo/OpenZTBuy) 入 bundle
+        try:
+            bundle['auction_raw'] = fetch_auction_raw()
+        except Exception:  # noqa: BLE001  故障隔离: 竞价采集失败降级, 不拖垮整轮
+            logger.exception('auction 采集失败, 降级为空 (本轮竞价榜/候选缺失)')
+            bundle['auction_raw'] = None
     return bundle

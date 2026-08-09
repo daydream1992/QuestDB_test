@@ -57,11 +57,19 @@ class TailMonitor:
         sealed = [c for c in cands if c['FCAmo'] > 0]
         # 炸板: 上轮 FCAmo>0, 本轮 ≤0 (曾封现开)
         blast: list[tuple] = []   # (code, prev_fcamo, cur_fcamo)
+        cur_codes: set[str] = set()
         for c in cands:
+            cur_codes.add(c['code'])
             prev = self.prev_fcamo.get(c['code'])
             if prev is not None and prev > 0 and c['FCAmo'] <= 0:
                 blast.append((c['code'], prev, c['FCAmo']))
+            elif prev is None and c['FCAmo'] > 0:
+                # 基线: 首轮/tail 首见已封的股, 设基线防首轮误判 (不记炸板)
+                pass
             self.prev_fcamo[c['code']] = c['FCAmo']
+        # 清理: 不在本轮候选的 code 移除 prev (防跌出后回候选误判为炸板)
+        for c in [c for c in self.prev_fcamo if c not in cur_codes]:
+            self.prev_fcamo.pop(c, None)
         self._write(sealed, blast, now)
         return True
 

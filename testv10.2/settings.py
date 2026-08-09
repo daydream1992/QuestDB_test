@@ -13,10 +13,7 @@ PROJ_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 LOG_DIR = os.path.join(PROJ_ROOT, 'logs')
 
 # === 交易时段 (生产模式门控, radar_main) ===
-TRADING_CLOSE = dtime(15, 0)   # 收盘退出时刻 (盘中无值守时自动停)
-OPEN_BURST_START = dtime(9, 30)   # 开盘加密窗口 (前几分钟最宝贵, 加密扫描抓密集轮动)
-OPEN_BURST_END = dtime(9, 36)
-OPEN_BURST_SLEEP = 15         # 加密窗口内每轮间隔 (秒; 常规时段 60s 对齐分钟整点)
+TRADING_CLOSE = dtime(15, 0)   # 收盘退出时刻 (盘中无值守时自动停; 先跑一次 close 定格再退)
 
 # === 板块-个股映射 (Layer 0 数据源) ===
 # 现有 sector_mapping.parquet (refresh_mapping.py 已生成, 长表 5 列):
@@ -33,10 +30,10 @@ DRILL_TOP_PER_BOARD = 8        # 每 HOT/NEW 板钻取 TopN 成分股 (lean 化,
 DRILL_TOP_PER_HOT_BOARD = 15   # 涨停≥DRILL_HOT_ZT_THRESH 的热点板块动态扩 TopN (涨停潮覆盖)
 DRILL_HOT_ZT_THRESH = 10       # 板块涨停家数 ≥ N 视为热点, TopN 8→15
 DRILL_RETRY_BUDGET_SEC = 1.5   # 钻取超时重试预算 (秒; 只重试未完成股, 防关键股静默丢弃)
+DRILL_GLOBAL_TOP_N = 20        # 全市场 pct 前 N 补钻 (池外最强票可见, 找最牛股盲区)
 
 # === 推送 (publisher: alert_engine / open_monitor / rotation 等各模块共用) ===
 PUSH_TEXT_MAX_PER_MIN = 2   # 事件通道 ≤2 条/分钟 (人类注意力上限, CLAUDE.md §四)
-PUSH_DEDUP_TTL = 180        # 同 (板, 事件) 180s 内只推一次
 WEBHOOK_TIMEOUT = 5         # 飞书 webhook HTTP 超时 (秒)
 
 
@@ -93,7 +90,6 @@ DIVE_BLAST_DOUBLE_MIN = 5           # 炸板数翻倍且绝对增量 ≥ N → �
 DIVE_LOSS_RATIO = 1.5               # 亏钱比突破 N (且较前放大) → 触发
 DIVE_SCORE_FROM = 55.0              # 综合分从 ≥ N 跌破 DIVE_SCORE_TO → 触发
 DIVE_SCORE_TO = 40.0
-DIVE_ALERT_MAX_PER_MIN = 2          # 联动警报 ≤N/min (人类注意力上限, 复用 bucket)
 
 # === 板块轮动 (rotation; 传导链②跟风③分化) ===
 ROTATION_INTERVAL_SEC = 180        # 轮动榜频率 (3min/行; 比 sentiment 慢, 轮动不需1min)

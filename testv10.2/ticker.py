@@ -146,6 +146,8 @@ def drill_stocks(codes: list[str], budget_sec: float | None = None,
         out[code] = {
             'ZAF': _to_float(mi.get('ZAF')),
             'FCAmo': _to_float(mi.get('FCAmo')),
+            'FCb': _to_float(mi.get('FCb')),          # 封成比 (龙头封板卡/封板质量用)
+            'EverZTCount': _to_float(mi.get('EverZTCount')),  # 连板高度 (龙头排序/梯队)
             'fLianB': _to_float(mi.get('fLianB')),
             'fHSL': _to_float(mi.get('fHSL')),
             'Zjl': _to_float(mi.get('Zjl')),          # 主买净额 (全档位主动性口径; 探针保留)

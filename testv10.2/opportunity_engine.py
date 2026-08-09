@@ -54,8 +54,8 @@ class OpportunityEngine:
     def _check_board_new(self, new_entries, pool, rows, now) -> int:
         if not new_entries or not self.pub:
             return 0
-        # 新入池未推过的板块, 取前 2
-        fresh = [c for c in new_entries if c not in self._pushed_new][:2]
+        # 新入池未推过的板块, 取前 N
+        fresh = [c for c in new_entries if c not in self._pushed_new][:cfg.OPP_NEW_MAX]
         if not fresh:
             return 0
         rmap = {r['code']: r for r in rows}
@@ -69,8 +69,8 @@ class OpportunityEngine:
                 'zt': int(r.get('ZTGPNum', 0)),
                 'lights': sorted(r.get('searchlights', set()))[:4],
             })
-            self._pushed_new.add(c)
         if boards and self.pub.on_board_new(boards, now):
+            self._pushed_new.update(c for c in fresh if c in rmap)  # 成功才去重
             logger.info('🟢 机会: 新主线 {}', [b['name'] for b in boards])
             return 1
         return 0
@@ -86,10 +86,10 @@ class OpportunityEngine:
         if not cands:
             return 0
         best = max(cands, key=lambda s: s.score)
-        self._pushed_streak.add(best.code)
         if self.pub.on_hot_streak({
                 'name': best.name, 'rounds': best.rounds_in, 'score': best.score,
                 'zt_prev': best.zt_num_prev, 'zt_cur': best.zt_num}, now):
+            self._pushed_streak.add(best.code)   # 成功才去重 (bucket满/失败下次重试)
             logger.info('🔥 机会: 趋势确认 {}', best.name)
             return 1
         return 0
@@ -104,11 +104,19 @@ class OpportunityEngine:
               and c not in self._pushed_limit]
         if not zt:
             return 0
-        zt.sort(key=lambda kv: kv[1].get('FCAmo', 0), reverse=True)
-        top = zt[:2]
+        # 龙头排序 (前排原则): 首封时间早 > 连板高 > 封单大
+        # (首封时间缺失的排后, 连板 EverZTCount 已在 drilled)
+        def _sort_key(item):
+            c, d = item
+            fl = None
+            if blindspot and hasattr(blindspot, 'first_limit_time'):
+                fl = blindspot.first_limit_time.get(c)
+            return (0 if fl else 1, fl or '', -d.get('EverZTCount', 0),
+                    -d.get('FCAmo', 0))
+        zt.sort(key=_sort_key)
+        top = zt[:cfg.OPP_LIMIT_MAX]
         stocks = []
         for c, d in top:
-            self._pushed_limit.add(c)
             first_limit = None
             if blindspot and hasattr(blindspot, 'first_limit_time'):
                 first_limit = blindspot.first_limit_time.get(c)
@@ -123,6 +131,7 @@ class OpportunityEngine:
                 'boards': boards,
             })
         if stocks and self.pub.on_limit_up(stocks, now):
+            self._pushed_limit.update(c for c, _ in top)   # 成功才去重
             logger.info('🚀 机会: 龙头封板 {}',
                         [s['name'] for s in stocks])
             return 1

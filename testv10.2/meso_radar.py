@@ -103,10 +103,12 @@ class MesoRadar:
         无 floor 的灯 (gain/lianb) 仍固定 TopN。缓冲带 TopN+3: 排名 N+1~N+3 与第 N
         差距极小时保留, 防边缘误裁。纯内存排序, 0 COM 开销。"""
         def top(key: str, n: int, reverse: bool = True, filt=None,
-                floor: float | None = None) -> list[dict]:
+                floor: float | None = None, le: bool = False) -> list[dict]:
+            """按 key 排序取 TopN+3。floor 绝对阈值: 默认取 >= floor (下界);
+            le=True 时取 <= floor (上界, 用于跌幅/低吸这类越小越强的维度)。"""
             cands = [r for r in rows if (filt is None or filt(r))]
             if floor is not None:
-                cands = [r for r in cands if r[key] >= floor]
+                cands = [r for r in cands if (r[key] <= floor if le else r[key] >= floor)]
             cands.sort(key=lambda r: r[key], reverse=reverse)
             return cands[:n + 3]   # TopN+3 缓冲带 (防排名边缘误裁)
 
@@ -118,7 +120,7 @@ class MesoRadar:
             'lianb': top('fLianB', TOP_LIANB, floor=1.5),   # 量比≥1.5
             'amp':   top('amplitude', TOP_AMP, floor=3.0),  # 振幅≥3%
             'drop':  top('ZAF', TOP_DROP, reverse=False, filt=lambda r: r['ZAF'] < 0,
-                         floor=-2.0),                       # 跌幅≥-2%
+                         floor=-2.0, le=True),              # 跌幅≥2% (ZAF ≤ -2, 上界)
         }
         for lname, winners in lights.items():
             for r in winners:

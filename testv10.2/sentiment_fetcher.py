@@ -18,6 +18,7 @@ import bootstrap
 bootstrap.ensure_paths()
 
 import time  # noqa: E402
+from datetime import datetime  # noqa: E402
 
 from loguru import logger  # noqa: E402
 
@@ -87,14 +88,31 @@ def _fetch_main_net() -> float:
         return 0.0
 
 
+# 日级留存: 进过候选池 (曾 pct≥9.5) 的 code 全天跟踪, 炸板跌出 9.5% 仍钻取
+# (否则炸板股跌出样本 → 封板率被高估/炸板被低估, 钝化跳水预警)
+_SEEN_CANDIDATES: set[str] = set()
+_SEEN_DATE: str = ''
+
+
 def _drill_limit_candidates(df) -> tuple[list, bool]:
     """df.pct≥9.5 候选 → more_info(EverZTCount/FCAmo/FCb/ZTPrice) + snapshot(Max)。
+
+    日级留存: 当轮 pct≥9.5 的 code ∪ 今日曾进过候选的 code (炸板跌出仍跟踪)。
     Max+ZTPrice 用于真炸板判定 (Max≥ZTPrice 且 FCAmo≤0 = 曾封现开)。带预算超时 break。
     Returns: (candidates, degraded)。"""
+    global _SEEN_CANDIDATES, _SEEN_DATE
     if df is None or len(df) == 0:
         return [], False
+    # 跨日重置
+    today = datetime.now().strftime('%Y-%m-%d')
+    if _SEEN_DATE != today:
+        _SEEN_CANDIDATES = set()
+        _SEEN_DATE = today
     cand_df = df[df['pct'] >= cfg.NEAR_LIMIT_CAND_PCT].sort_values('pct', ascending=False)
-    cand_codes = cand_df['code'].tolist()[:200]
+    fresh_codes = cand_df['code'].tolist()[:200]
+    _SEEN_CANDIDATES.update(fresh_codes)
+    # 钻取 = 当轮新进 + 今日留存 (含炸板跌出者), 受预算 break
+    cand_codes = [c for c in list(_SEEN_CANDIDATES)[:300]]
     out: list[dict] = []
     degraded = False
     t0 = time.time()

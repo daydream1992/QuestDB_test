@@ -28,16 +28,25 @@ _CIRCLED = '①②③④⑤⑥⑦⑧⑨⑩'
 
 
 class TokenBucket:
-    def __init__(self, max_per_min: int):
-        self.max = max_per_min
-        self._times: deque = deque()
+    """令牌桶: 支持分桶 (机会类/预警类各 ≤1/min, 共 2/min 人类注意力红线)。
+    机会类 (新主线/趋势确认/龙头封板) 与预警类 (跳水/炸板/回封) 分开,
+    避免负向事件挤光配额饿死正向机会卡。"""
 
-    def allow(self, now: datetime) -> bool:
+    def __init__(self, max_per_min: int, lanes: int = 2):
+        self.max = max_per_min
+        self.lanes = lanes
+        # 每 lane 独立 deque: 均分 max_per_min (如 2/min ÷ 2 lanes = 每桶 1/min)
+        self._times: list[deque] = [deque() for _ in range(lanes)]
+
+    def allow(self, now: datetime, lane: int = 0) -> bool:
+        lane = lane % self.lanes
+        q = self._times[lane]
         cutoff = now - timedelta(seconds=60)
-        while self._times and self._times[0] < cutoff:
-            self._times.popleft()
-        if len(self._times) < self.max:
-            self._times.append(now)
+        while q and q[0] < cutoff:
+            q.popleft()
+        per_lane = max(1, self.max // self.lanes)
+        if len(q) < per_lane:
+            q.append(now)
             return True
         return False
 
@@ -77,7 +86,7 @@ class Publisher:
 
     # 🔴 大盘跳水联动预警 (L1大盘→L2板块→L3个股; 事件, ≤2/min)
     def on_dive_alert(self, payload: dict, now: datetime) -> bool:
-        if not self.bucket.allow(now):
+        if not self.bucket.allow(now, lane=1):
             return False
         lines = [f'🔴 大盘跳水预警 | {now.strftime("%H:%M")}', '',
                  '触发: ' + ' · '.join(payload['reasons'])]
@@ -98,7 +107,7 @@ class Publisher:
     # ⑥ 🚀 开盘拉升 (传导链①龙头异动; 事件, ≤2/min bucket; send_warn 另走客户端)
     def on_open_surge(self, code: str, name: str, price: float, rise: float,
                       now: datetime) -> bool:
-        if not self.bucket.allow(now):
+        if not self.bucket.allow(now, lane=1):
             return False
         lines = [f'🚀 开盘拉升 | {now.strftime("%H:%M")}', '',
                  f'{name}({code}) {price:.2f}  相对开盘 {rise:+.1f}%']
@@ -106,7 +115,7 @@ class Publisher:
 
     # ⑦ 💥 个股炸板预警 (tail 段; 事件, ≤2/min)
     def on_blast_alert(self, tail: dict, now: datetime) -> bool:
-        if not self.bucket.allow(now):
+        if not self.bucket.allow(now, lane=1):
             return False
         lines = [f'💥 尾盘炸板预警 | {now.strftime("%H:%M")}', '',
                  f'封板候选 {tail.get("sealed_n", 0)} 只, 炸板 {tail.get("blast_n", 0)} 只',
@@ -116,7 +125,7 @@ class Publisher:
     # 💥 个股炸板实时 (blindspot 盲区 6s 粒度; FCAmo 封→开瞬间; 盘中/tail)
     def on_seal_break(self, code: str, name: str, prev: float,
                       break_n: int = 0, now: datetime | None = None) -> bool:
-        if not self.bucket.allow(now):
+        if not self.bucket.allow(now, lane=1):
             return False
         lines = [f'💥 炸板 | {now.strftime("%H:%M")}', '',
                  f'{name}({code})  封单 {prev:.0f}万→0'
@@ -126,7 +135,7 @@ class Publisher:
     # 🔁 炸板回封实时 (blindspot 盲区 6s 粒度; FCAmo 开→封瞬间)
     def on_seal_back(self, code: str, name: str, cur: float,
                      back_n: int = 0, now: datetime | None = None) -> bool:
-        if not self.bucket.allow(now):
+        if not self.bucket.allow(now, lane=1):
             return False
         lines = [f'🔁 回封 | {now.strftime("%H:%M")}', '',
                  f'{name}({code})  回封 {cur:.0f}万'

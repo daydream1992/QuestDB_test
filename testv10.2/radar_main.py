@@ -104,6 +104,11 @@ def run_one_round(round_idx: int, ms, radar: MesoRadar, pool: BoardPool,
         zt_map = {r['code']: r.get('ZTGPNum', 0) for r in rows}   # 热点板涨停数 (动态扩Top)
         candidates = select_drill_candidates(hot, ms, pct_map, zt_map)
         drilled = tk.drill_stocks(candidates, df=df) if candidates else {}
+        # 全市场 pct 前 N 补钻 (池外最强票可见): 单日最牛股可能不在池板块内
+        global_top = df.sort_values('pct', ascending=False)['code'].tolist()[:cfg.DRILL_GLOBAL_TOP_N]
+        extra = [c for c in global_top if c not in drilled and c in pct_map]
+        if extra:
+            drilled.update(tk.drill_stocks(extra, df=df))
 
     # === 分时段统一采集 + 计算层并联 (per-module try 故障隔离) ===
     stage = cfg.get_stage(now)
@@ -243,16 +248,16 @@ def run(rounds: int | None = None, force: bool = False, push: bool = False) -> N
     try:
         while True:
             now = datetime.now()
-            # 退出: 跑完指定轮 / 15:00 收盘
+            # 退出: 跑完指定轮 / 15:00 收盘 (但先跑一次 close 定格)
             if rounds is not None and round_idx >= rounds:
                 logger.info('跑完 {} 轮, 退出', rounds); break
-            if rounds is None and now.time() >= cfg.TRADING_CLOSE:
-                logger.info('15:00 收盘, 退出'); break
-            # 非交易门控 (生产; force 跳过)
+            if rounds is None and now.time() >= cfg.TRADING_CLOSE and close_done:
+                logger.info('15:00 收盘定格完成, 退出'); break
+            # 非交易门控 (生产; force 跳过): 用 get_stage 覆盖竞价+盘中+尾盘+收盘
             if not force and rounds is None:
                 if not tc.is_trading_day(now):
                     logger.info('非交易日, 退出'); break
-                if not tc.is_trading_time(now):
+                if cfg.get_stage(now) == 'off':
                     if now.minute % 5 == 0 and now.second < 10:
                         logger.info('非交易时段, 等待 (现在 {})', now.strftime('%H:%M'))
                     time.sleep(10); continue
@@ -302,12 +307,7 @@ def run(rounds: int | None = None, force: bool = False, push: bool = False) -> N
             round_idx += 1
             # 生产模式 sleep 到下一分钟 (force --rounds 连跑无 sleep)
             if rounds is None:
-                _t = datetime.now().time()
-                if cfg.OPEN_BURST_START <= _t < cfg.OPEN_BURST_END:
-                    logger.debug('开盘加密: sleep {}s', cfg.OPEN_BURST_SLEEP)
-                    time.sleep(cfg.OPEN_BURST_SLEEP)
-                else:
-                    _sleep_until_next_minute()
+                _sleep_until_next_minute()
     finally:
         if open_mon.started:
             open_mon.stop()
