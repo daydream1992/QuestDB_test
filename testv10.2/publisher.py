@@ -146,11 +146,14 @@ class Publisher:
     # 💥 个股炸板实时 (blindspot 盲区 6s 粒度; FCAmo 封→开瞬间; 盘中/tail)
     def on_seal_break(self, code: str, name: str, prev: float,
                       break_n: int = 0, ever_zt: int = 0, boards: list | None = None,
+                      zaf: float = 0, fhsl: float = 0,
                       now: datetime | None = None) -> bool:
         lines = [f'💥 炸板 | {now.strftime("%H:%M")}', '']
         lb = f'  {int(ever_zt)}连板' if ever_zt >= 2 else ''
         hb = '  [高标]' if ever_zt >= 3 else ''
-        lines.append(f'{name}{lb}{hb}  封单 {prev:.0f}万→0'
+        zaf_s = f'  {zaf:+.1f}%' if zaf else ''
+        hsl_s = f'  [换手{fhsl:.0f}%]' if fhsl > 8 else ''
+        lines.append(f'{name}{lb}{hb}{zaf_s}  封单 {prev:.0f}万→0'
                      + (f'  [今日炸板{break_n}次]' if break_n else ''))
         if boards:
             lines.append(f'  [{" ".join(boards)}]')
@@ -159,10 +162,12 @@ class Publisher:
     # 🔁 炸板回封实时 (blindspot 盲区 6s 粒度; FCAmo 开→封瞬间)
     def on_seal_back(self, code: str, name: str, cur: float,
                      back_n: int = 0, ever_zt: int = 0, boards: list | None = None,
+                     zaf: float = 0, fhsl: float = 0,
                      now: datetime | None = None) -> bool:
         lines = [f'🔁 回封 | {now.strftime("%H:%M")}', '']
         lb = f'  {int(ever_zt)}连板' if ever_zt >= 2 else ''
-        lines.append(f'{name}{lb}  回封 {cur:.0f}万'
+        zaf_s = f'  {zaf:+.1f}%' if zaf else ''
+        lines.append(f'{name}{lb}{zaf_s}  回封 {cur:.0f}万'
                      + (f'  [今日回封{back_n}次]' if back_n else ''))
         if boards:
             lines.append(f'  [{" ".join(boards)}]')
@@ -171,11 +176,13 @@ class Publisher:
     # ⚠️ 封单衰竭前兆 (blindspot 6s 粒度; FCAmo 连续2轮降≥40% 仍封, 炸板前兆)
     def on_seal_fade(self, code: str, name: str, prev: float, cur: float,
                      ever_zt: int = 0, boards: list | None = None,
+                     zaf: float = 0, fhsl: float = 0,
                      now: datetime | None = None) -> bool:
         lines = [f'⚠️ 封单衰竭 | {now.strftime("%H:%M")}', '']
         lb = f'  {int(ever_zt)}连板' if ever_zt >= 2 else ''
         hb = '  [高标]' if ever_zt >= 3 else ''
-        lines.append(f'{name}{lb}{hb}  封单 {prev:.0f}万→{cur:.0f}万 (缩{f"{(1-cur/prev)*100:.0f}"}%)')
+        zaf_s = f'  {zaf:+.1f}%' if zaf else ''
+        lines.append(f'{name}{lb}{hb}{zaf_s}  封单 {prev:.0f}万→{cur:.0f}万 (缩{f"{(1-cur/prev)*100:.0f}"}%)')
         if boards:
             lines.append(f'  [{" ".join(boards)}]')
         lines.append(f'  ⚠️ 连续2轮缩量, 有炸板风险, 注意减仓')
@@ -192,9 +199,23 @@ class Publisher:
                 lines.append(f'  [探照灯: {" ".join(b["lights"])}]')
         return self._dispatch(f'🟢 新主线 {len(boards)} 板块', lines, now, lane=0)
 
-    # 🔔 竞价定调 (9:25 竞价结束一次; 一字候选+放量板块, 当日定调)
+    # 🔔 竞价定调 (9:25 竞价结束一次; 汇总通道不占 2/min 配额)
     def on_auction_preview(self, lines: list, now: datetime) -> bool:
-        return self._dispatch('🔔 竞价定调', lines, now, lane=0)
+        ok = _send('🔔 竞价定调', lines, self.dry_run)
+        if ok:
+            self.send_ok += 1
+        else:
+            self.send_fail += 1
+        return ok
+
+    # 🚀 龙头涨停预测 (9:25 竞价结束一次; 汇总通道不占 2/min 配额)
+    def on_zt_forecast(self, lines: list, now: datetime) -> bool:
+        ok = _send('🚀 龙头涨停预测', lines, self.dry_run)
+        if ok:
+            self.send_ok += 1
+        else:
+            self.send_fail += 1
+        return ok
 
     # 🔥 板块趋势确认 (连续 N 轮 HOT, 非单轮脉冲)
     def on_hot_streak(self, board: dict, now: datetime) -> bool:

@@ -256,16 +256,19 @@ def run_one_round(round_idx: int, ms, radar: MesoRadar, pool: BoardPool,
                         opportunity.pub.on_seal_break(
                             ev['code'], ev['name'], ev['prev'],
                             break_n=blindspot.break_count.get(ev['code'], 0),
-                            ever_zt=_ever, boards=_boards, now=now)
+                            ever_zt=_ever, boards=_boards, zaf=ev.get('zaf', 0),
+                            fhsl=ev.get('fHSL', 0), now=now)
                     elif ev['type'] == '回封':
                         opportunity.pub.on_seal_back(
                             ev['code'], ev['name'], ev['cur'],
                             back_n=blindspot.back_count.get(ev['code'], 0),
-                            ever_zt=_ever, boards=_boards, now=now)
+                            ever_zt=_ever, boards=_boards, zaf=ev.get('zaf', 0),
+                            fhsl=ev.get('fHSL', 0), now=now)
                     elif ev['type'] == '衰竭':
                         opportunity.pub.on_seal_fade(
                             ev['code'], ev['name'], ev['prev'], ev['cur'],
-                            ever_zt=_ever, boards=_boards, now=now)
+                            ever_zt=_ever, boards=_boards, zaf=ev.get('zaf', 0),
+                            fhsl=ev.get('fHSL', 0), now=now)
                 except Exception:  # noqa: BLE001  单事件失败不崩
                     logger.debug('盲区事件处理失败: {}', ev)
         except Exception:  # noqa: BLE001
@@ -330,7 +333,7 @@ def run(rounds: int | None = None, force: bool = False, push: bool = False,
     rotations = [RotationMonitor(lvls, label, table_base, dry_run=not push)
                  for label, table_base, lvls in cfg.ROTATION_LEVELS.values()]
     open_mon = OpenMonitor(ms, pub, dry_run=not push)
-    auction_mon = AuctionMonitor(dry_run=not push, pub=pub)
+    auction_mon = AuctionMonitor(dry_run=not push, pub=pub, ms=ms)
     tail_mon = TailMonitor(ms, dry_run=not push)
     stock_ranking = StockRanking(ms, dry_run=not push)
     duck = DuckdbSnapshot(dry_run=not push)   # DuckDB 本地快照 (防飞书挂 + 盘后分析)

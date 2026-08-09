@@ -41,12 +41,13 @@ def _bitable_fields() -> list:
 class AuctionMonitor:
     """竞价: 放量板块榜 + 一字候选 → 飞书表; last_candidates 供 open_monitor。"""
 
-    def __init__(self, dry_run: bool | None = None, pub=None):
+    def __init__(self, dry_run: bool | None = None, pub=None, ms=None):
         self.dry_run = cfg.SENTIMENT_DRY_RUN if dry_run is None else dry_run
         self.pub = pub
+        self.ms = ms
         self.last_candidates: list[str] = []   # 一字候选 code (给 open_monitor 订阅)
         self.last_push_ts: datetime | None = None
-        self._preview_pushed = False           # 竞价定调卡只推一次
+        self._preview_pushed = False           # 竞价预测卡只推一次
         self._bw = None
 
     @property
@@ -65,19 +66,88 @@ class AuctionMonitor:
         raw = bundle['auction_raw']
         self.last_candidates = [c['code'] for c in raw['candidates']]
         self._write(raw, now)
-        # 竞价定调卡: 9:24 后竞价快结束推一次 (一字候选+放量板块+涨停板块数)
+        # 竞价预测卡: 9:24 后推一次 (预测今日最强行业/概念/共振板块 + 最强梯队)
         if self.pub and now.time() >= dtime(9, 24) and not self._preview_pushed:
             self._preview_pushed = True
             tb = raw['top_boards']
             cands = raw['candidates']
-            lines = [f'🔔 竞价定调 | {now.strftime("%H:%M")}', '',
-                     f'竞价涨停板块 {raw["zt_board_n"]} 只, 一字候选 {len(cands)} 只',
-                     '放量Top: ' + ' / '.join(
-                         f"{b['code']}(×{b['ratio']},{b['open_amo']/1e8:.1f}亿)"
-                         for b in tb[:3]) or '-',
-                     '一字候选: ' + ' / '.join(c['code'] for c in cands[:5]) or '-']
+            lines = self._forecast_lines(raw, tb, cands, now)
             self.pub.on_auction_preview(lines, now)
+            # 龙头涨停预测卡: 建议关注个股梯队 (基于一字候选 + 板块强度)
+            self.pub.on_zt_forecast(self._zt_forecast_lines(tb, cands, now), now)
         return True
+
+    def _zt_forecast_lines(self, tb: list, cands: list, now: datetime) -> list:
+        """龙头涨停预测: 建议关注个股梯队 1-6。
+
+        预测开盘可能封板的龙头 = 一字候选 (竞价涨停买入 OpenZTBuy>0, 竞价抢筹
+        开盘大概率封) + 板块强度加权。梯队排序: 一字候选 openzt 降序 (抢筹最凶的
+        排前), 带连板 lb + 所属板块 (强势板块的候选优先)。"""
+        lines = [f'🚀 龙头涨停预测 | {now.strftime("%H:%M")}', '']
+        if not cands:
+            lines.append('建议关注: 无一字候选 (竞价无涨停, 观望)')
+            return lines
+        # 强势板块 code 集 (竞价涨停家数≥2 的, 给候选加权)
+        strong_boards = {b['code'] for b in tb if b.get('outside', 0) >= 2}
+        # 候选排序: openzt 降序 (竞价抢筹最凶排前), 加连板辅助
+        ranked = sorted(cands, key=lambda c: (-c.get('openzt', 0), -c.get('lb', 0)))
+        top = ranked[:6]
+        # 所属板块 (候选 code → 板块名)
+        for i, c in enumerate(top, 1):
+            name = self.ms.stock_name(c['code']) if self.ms else c['code']
+            boards = []
+            if self.ms:
+                boards = [self.ms.board_name(b) for b in
+                          sorted(self.ms.boards_of(c['code']))[:2]]
+            lb = c.get('lb', 0)
+            lb_s = f' {int(lb)}连板' if lb >= 2 else ''
+            openzt_s = f' 竞价{c["openzt"]/1e4:.0f}万' if c.get('openzt') else ''
+            lines.append(f'  {i}. {name}{lb_s}{openzt_s}'
+                         + (f'  [{"/".join(boards)}]' if boards else ''))
+        lines.append(f'  (竞价抢筹 Top{len(top)}, 开盘盯封板)')
+        return lines
+
+    def _forecast_lines(self, raw: dict, tb: list, cands: list, now: datetime) -> list:
+        """竞价预测: 行业Top6/概念Top6/共振Top3/最强梯队Top6。
+
+        板块强度 = 竞价涨停家数 Outside 主导 + 昨量比 ratio 辅助 (放量确认)。
+        行业/概念按 ms.board_meta 的 行业级别 分类。共振 = 行业∩概念同强。
+        最强梯队 = 一字候选 (竞价涨停成分股, OpenZTBuy>0, 给 open 订阅)。"""
+        lines = [f'🔮 竞价预测今日最强 | {now.strftime("%H:%M")}', '']
+        # 板块分类: 行业(三级) vs 概念
+        ind, con = [], []
+        for b in tb:
+            lv = self.ms.board_meta.get(b['code'], {}).get('行业级别', '') if self.ms else ''
+            score = b['outside'] * 100 + b['ratio'] * 10   # 涨停家数主导 + 量比辅助
+            name = self.ms.board_name(b['code']) if self.ms else b['code']
+            entry = (name, score, b['outside'], b['ratio'])
+            (ind if lv == '三级' else con).append(entry)
+        ind.sort(key=lambda x: -x[1]); con.sort(key=lambda x: -x[1])
+        ind_s = ' '.join(f'{n}({o}停)' for n, s, o, r in ind[:6]) or '-'
+        con_s = ' '.join(f'{n}({o}停)' for n, s, o, r in con[:6]) or '-'
+        lines.append(f'行业板块: {ind_s}')
+        lines.append(f'概念板块: {con_s}')
+        # 共振: 行业Top3 与 概念Top3 题材重叠 (PCB vs PCB概念 = 包含关系)
+        ind3 = [(n, s) for n, s, o, r in ind[:3]]
+        con3 = [(n, s) for n, s, o, r in con[:3]]
+        reso = []
+        for iname, iscore in ind3:
+            for cname, cscore in con3:
+                # 题材关联: 概念名包含行业名 或 行业名包含概念名 (去 '概念' 后缀)
+                i_kw = iname.replace('概念', '')
+                c_kw = cname.replace('概念', '')
+                if i_kw and c_kw and (i_kw in c_kw or c_kw in i_kw):
+                    reso.append(f'{iname}+{cname}')
+                    break
+        lines.append(f'共振板块: ' + (' '.join(reso[:3]) if reso else '-'))
+        # 最强梯队: 一字候选 (按 openzt 降序)
+        if cands:
+            c_s = ' '.join(f'{self.ms.stock_name(c["code"]) if self.ms else c["code"]}'
+                           for c in cands[:6])
+            lines.append(f'最强梯队: {c_s}')
+        else:
+            lines.append('最强梯队: 无一字候选 (竞价无涨停)')
+        return lines
 
     def _write(self, raw: dict, now: datetime) -> None:
         tb = raw['top_boards']

@@ -119,13 +119,18 @@ class BlindspotMonitor:
         fcamo = float(mi.get('FCAmo') or 0)
         prev = self.prev_fcamo.get(code)
         self.prev_fcamo[code] = fcamo
+        # 通用个股字段 (events 携带, 卡片显示涨幅/换手/连板)
+        zaf = float(mi.get('ZAF') or 0)
+        fhsl = float(mi.get('fHSL') or 0)
+        ever = int(float(mi.get('EverZTCount') or 0))
         # 封单衰竭检测 (炸板前兆): 连续 2 轮 FCAmo 降≥40% 且仍>0
         if fcamo > 0 and prev is not None and prev > 0:
             hist = self.fcamo_hist.setdefault(code, [])
             hist.append(fcamo)
             if len(hist) >= 3 and hist[-1] <= hist[-2] * 0.6 and hist[-2] <= hist[-3] * 0.6:
                 self.events.append({'code': code, 'name': self.ms.stock_name(code) if self.ms else code,
-                                    'type': '衰竭', 'prev': prev, 'cur': fcamo})
+                                    'type': '衰竭', 'prev': prev, 'cur': fcamo,
+                                    'zaf': zaf, 'fHSL': fhsl, 'ever_zt': ever})
                 hist.clear()   # 已报一次, 防重复
                 logger.warning('⚠️ 封单衰竭 {} ({}) {:.0f}→{:.0f}', code, code, prev, fcamo)
         if prev is None:
@@ -147,7 +152,8 @@ class BlindspotMonitor:
                           and self.zt_count.get(code, 0) == 0)
         event_type = '封板' if is_first_limit else kind
         self.events.append({'code': code, 'name': name, 'type': event_type,
-                            'prev': prev, 'cur': fcamo})
+                            'prev': prev, 'cur': fcamo,
+                            'zaf': zaf, 'fHSL': fhsl, 'ever_zt': ever})
         # 计数: 封板(开→封, 含首次) / 炸板(封→开) / 回封(炸板后再次封)
         if kind == '回封':
             self.zt_count[code] = self.zt_count.get(code, 0) + 1
