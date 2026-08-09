@@ -41,7 +41,7 @@ class BoardState:
 class BoardPool:
     """板块生命周期状态机 (NEW→HOT→WARN→DEAD, 带宽限期)。"""
 
-    def __init__(self, grace: int = 3, hard_cap: int = 20, min_per_light: int = 2):
+    def __init__(self, grace: int = 3, hard_cap: int = 30, min_per_light: int = 2):
         self.boards: dict[str, BoardState] = {}
         self.grace = grace
         self.hard_cap = hard_cap
@@ -129,7 +129,8 @@ class BoardPool:
 
     def _enforce_cap(self) -> None:
         """裁到 hard_cap: 每探照灯保证 TopK (min_per_light) 留存 (防 score-cap 踢掉
-        错杀/反转低分板), WARN 板 grace 期内不裁 (让状态机先观察企稳), 其余按分升序裁。"""
+        错杀/反转低分板), WARN 板 grace 期内不裁 (让状态机先观察企稳), 其余按分升序裁。
+        状态优先级淘汰: NEW > HOT > WARN (新热点优先保留, HOT 次之, WARN 可牺牲)。"""
         light_codes: dict[str, list[str]] = {}
         for c, s in self.boards.items():
             for l in s.searchlights:
@@ -141,7 +142,10 @@ class BoardPool:
                 guaranteed.add(c)
         candidates = [c for c, s in self.boards.items()
                       if s.state != 'WARN' and c not in guaranteed]
-        candidates.sort(key=lambda k: self.boards[k].score)  # 升序, 先裁低分
+        # 状态优先级: HOT(0) 最后裁 > NEW(1) > 其他(2); 同状态按分升序先裁低分
+        _PRIO = {'HOT': 0, 'NEW': 1}
+        candidates.sort(key=lambda k: (_PRIO.get(self.boards[k].state, 2),
+                                       self.boards[k].score))
         overflow = len(self.boards) - self.hard_cap
         for c in candidates[:overflow]:
             self.boards.pop(c, None)
@@ -175,7 +179,7 @@ if __name__ == '__main__':
         return {'code': code, 'name': f'b{code}', 'score': score, 'ZTGPNum': zt,
                 'velocity': 0.0, 'searchlights': lights or {'gain'}}
 
-    pool = BoardPool(grace=3, hard_cap=20)
+    pool = BoardPool(grace=3, hard_cap=30)
 
     # R0: A/B/C 入池 → 全 NEW
     pool.update([_row('A', 50), _row('B', 40), _row('C', 30)], 0)
@@ -208,13 +212,16 @@ if __name__ == '__main__':
     assert pool.boards['D'].state == 'NEW'
     print(f'R4: {pool.stats()}  B->DEAD popped, new={new} (D 起涨信号)')
 
-    # 硬上限测试: 塞 25 个板, 应裁到 20 (留分最高 20)
-    big = [_row(f'X{i}', 100 - i) for i in range(25)]
-    pool2 = BoardPool(grace=3, hard_cap=20)
+    # R5: 硬上限 30: 塞 35 个板, 裁到 30 (留分最高 30, 状态优先级 HOT>NEW)
+    big = [_row(f'X{i}', 100 - i) for i in range(35)]
+    pool2 = BoardPool(grace=3, hard_cap=30)
     pool2.update(big, 0)
-    assert len(pool2.boards) == 20, len(pool2.boards)
-    assert pool2.boards['X0'].score == 100 and 'X24' not in pool2.boards
-    print(f'R5 hard_cap: 25 入 -> {len(pool2.boards)} (裁掉分最低 X24..X20)')
+    assert len(pool2.boards) == 30, len(pool2.boards)
+    assert pool2.boards["X0"].score == 100 and "X34" not in pool2.boards
+    # 状态优先级淘汰: 同 NEW 状态按 score 升序裁最低分 (X30..X34 应被裁, X5 高分保留)
+    assert "X30" not in pool2.boards, 'NEW 中分最低 X30..X34 应被裁'
+    assert "X5" in pool2.boards, '高分 NEW 保留'
+    print(f'R5 hard_cap: 35 入 -> {len(pool2.boards)} (裁 X30..X34 低分, 留分最高 30)')
 
     # R6: 错杀 ('drop') 板即使最低分也留 (per-light quota 保证, 修原 score-cap bug)
     pool3 = BoardPool(grace=3, hard_cap=5)

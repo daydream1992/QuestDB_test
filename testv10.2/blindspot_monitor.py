@@ -1,0 +1,144 @@
+"""testv10.2 盲区补盲监控 (blindspot) — subscribe_hq 对 TopN 高频感知
+
+脚本路径: K:/QuestDB_test/testv10.2/blindspot_monitor.py
+时段: intraday/tail (9:45-15:00) — 60s 轮询盲区内, 订阅池内 TopN 个股高频感知
+架构 (方案A 同款, 回调不碰 COM): subscribe_hq 回调 → signal_q.put(code) 唯一动作;
+      主循环 process_pending → get_more_info 判 FCAmo 状态变更 (涨停→炸板/回封) 串行消费。
+覆盖: 60s 轮询间隔内约 36s 盲区, Top20 感知间隔从 60s 缩到 ~6s (回调频率)。
+接口规范: subscribe_hq≤100 (Top20 远在内) / unsubscribe_hq 每轮换列表 / 回调 datas 含 Code。
+红线: 回调线程零 COM; 每轮钻取结束后换订 Top20 (unsubscribe 旧 + subscribe 新); 失败不崩 funnel。
+"""
+
+import bootstrap
+bootstrap.ensure_paths()
+
+import json  # noqa: E402
+from queue import Queue, Empty  # noqa: E402
+from datetime import datetime  # noqa: E402
+
+from loguru import logger  # noqa: E402
+
+from lib.tq_client import safe_call  # noqa: E402
+from tqcenter import tq  # noqa: E402
+import settings as cfg  # noqa: E402
+
+
+def _classify(prev: float, cur: float) -> str | None:
+    """FCAmo 状态变更判定: 封(>0)→开(≤0)=炸板; 开(≤0)→封(>0)=回封; 否则 None。"""
+    if prev > 0 and cur <= 0:
+        return '炸板'
+    if prev <= 0 and cur > 0:
+        return '回封'
+    return None
+
+
+class BlindspotMonitor:
+    """盘中盲区补盲: subscribe TopN → 回调入队 → 串行判 FCAmo 状态变更。
+
+    状态变更 (涨停→炸板 / 炸板→回封) 是 60s 轮询最易漏的盘口信号。
+    主循环每轮结束后 refresh() 换订最新 TopN; 两轮之间 process_pending() 消化回调。
+    """
+
+    def __init__(self, ms=None, dry_run: bool | None = None):
+        self.ms = ms
+        self.dry_run = cfg.SENTIMENT_DRY_RUN if dry_run is None else dry_run
+        self.signal_q: Queue = Queue()
+        self.subscribed: set[str] = set()
+        self.prev_fcamo: dict[str, float] = {}   # 跨轮 code → 上轮 FCAmo (状态变更判定)
+        self.events: list[dict] = []             # 本轮累计状态变更事件 (供推送)
+        self.started = False
+
+    # ── 回调 (方案A: 只 queue.put, 不碰 tq) ──
+    def _on_data(self, data_str: str) -> None:
+        try:
+            code = json.loads(data_str).get('Code')
+        except Exception:  # noqa: BLE001
+            return
+        if code:
+            self.signal_q.put(code)
+
+    # ── 订阅管理 (每轮换订 TopN; ≤max_sub) ──
+    def refresh(self, top_codes: list[str]) -> None:
+        """换订 TopN: 先退旧 (本轮不在 Top 的), 再补新 (新进 Top 的)。≤100 上限。"""
+        want = [c for c in top_codes if c not in self.subscribed][:cfg.OPEN_MAX_SUB]
+        drop = [c for c in self.subscribed if c not in top_codes]
+        if drop:
+            safe_call(tq.unsubscribe_hq, stock_list=drop)
+            for c in drop:
+                self.subscribed.discard(c)
+        if want:
+            r = safe_call(tq.subscribe_hq, stock_list=want, callback=self._on_data)
+            if r and r.get('ErrorId') == '0':
+                self.subscribed.update(want)
+                self.started = True
+            else:
+                logger.error('blindspot subscribe_hq 失败: {}', r)
+        if not drop and not want and self.subscribed:
+            logger.debug('blindspot: TopN 未变化, 保持订阅 {}', len(self.subscribed))
+
+    def stop(self) -> None:
+        if self.subscribed:
+            safe_call(tq.unsubscribe_hq, stock_list=list(self.subscribed))
+            logger.info('盲区补盲: 取消订阅 {} 只', len(self.subscribed))
+        self.subscribed.clear()
+        self.started = False
+
+    # ── 主循环调用: 串行消化 queue (回调只在盲区内触发, 不占主循环时间) ──
+    def process_pending(self, max_n: int = 30) -> int:
+        """消化回调队列 → 单只 get_more_info 判 FCAmo 状态变更。返回处理数。"""
+        n = 0
+        while n < max_n:
+            try:
+                code = self.signal_q.get_nowait()
+            except Empty:
+                break
+            try:
+                self._check(code)
+            except Exception:  # noqa: BLE001  单股异常不影响其他
+                logger.debug('盲区处理 {} 异常', code)
+            n += 1
+        return n
+
+    def _check(self, code: str) -> None:
+        if code not in self.subscribed:
+            return
+        mi = safe_call(tq.get_more_info, stock_code=code, field_list=[]) or {}
+        fcamo = float(mi.get('FCAmo') or 0)
+        prev = self.prev_fcamo.get(code)
+        self.prev_fcamo[code] = fcamo
+        if prev is None:
+            return
+        # 状态变更: 涨停(封)→炸板(开) / 炸板(开)→回封(封)
+        kind = _classify(prev, fcamo)
+        if not kind:
+            return
+        name = self.ms.stock_name(code) if self.ms else code
+        self.events.append({'code': code, 'name': name, 'type': kind,
+                            'prev': prev, 'cur': fcamo})
+        logger.warning('💥 盲区补盲: {} ({}) {} (封单 {:.0f}→{:.0f})',
+                       name, code, '炸板' if kind == '炸板' else '回封', prev, fcamo)
+
+    def drain_events(self) -> list[dict]:
+        """取走本轮累积的状态变更事件 (供 alert_engine/推送消费), 并清空。"""
+        ev = self.events
+        self.events = []
+        return ev
+
+
+if __name__ == '__main__':
+    # 自检: _classify 状态变更判定 (纯逻辑, 不依赖 COM)
+    assert _classify(5000.0, 0.0) == '炸板'
+    assert _classify(5000.0, -1.0) == '炸板'
+    assert _classify(0.0, 3000.0) == '回封'
+    assert _classify(0.0, 0.0) is None
+    assert _classify(5000.0, 6000.0) is None
+    print('_classify 全边界通过: 炸板(封→开) / 回封(开→封) / 无变更(保持)')
+    # drain_events 清空语义
+    mon = BlindspotMonitor(dry_run=True)
+    mon.events.append({'code': '688020.SH', 'name': '方邦股份', 'type': '炸板',
+                       'prev': 6609.0, 'cur': 0.0})
+    ev = mon.drain_events()
+    assert len(ev) == 1 and ev[0]['type'] == '炸板'
+    assert mon.drain_events() == [], 'drain 后应清空'
+    print('drain_events 累积+清空通过')
+    print('BLINDSPOT SELF-TEST PASSED')

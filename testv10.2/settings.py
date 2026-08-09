@@ -30,6 +30,9 @@ CODES_CACHE_TTL = 600          # 全场代码表缓存秒数 (fetch_all_codes)
 MOREINFO_TIMEOUT = 8           # 单只 more_info+snapshot 超时 (秒, 防 COM 卡死)
 STOCK_DRILL_BUDGET_SEC = 35    # 钻取聚合预算 (秒, 超时 break + 部分降级)
 DRILL_TOP_PER_BOARD = 8        # 每 HOT/NEW 板钻取 TopN 成分股 (lean 化, ~20板×8≈160股)
+DRILL_TOP_PER_HOT_BOARD = 15   # 涨停≥DRILL_HOT_ZT_THRESH 的热点板块动态扩 TopN (涨停潮覆盖)
+DRILL_HOT_ZT_THRESH = 10       # 板块涨停家数 ≥ N 视为热点, TopN 8→15
+DRILL_RETRY_BUDGET_SEC = 1.5   # 钻取超时重试预算 (秒; 只重试未完成股, 防关键股静默丢弃)
 
 # === 推送 (publisher: alert_engine / open_monitor / rotation 等各模块共用) ===
 PUSH_TEXT_MAX_PER_MIN = 2   # 事件通道 ≤2 条/分钟 (人类注意力上限, CLAUDE.md §四)
@@ -116,6 +119,10 @@ AUCTION_INTERVAL_SEC = 120          # 竞价榜频率 (9:15-9:25 跑 ~5 次)
 
 # === 尾盘监控 (tail; 14:00-15:00 尾盘炸板风险) ===
 TAIL_INTERVAL_SEC = 60              # 尾盘炸板检测频率 (1min/行)
+
+# === 盲区补盲 (blindspot; 盘中/tail, 60s 轮询盲区内 subscribe 感知 TopN 状态变更) ===
+BLINDSPOT_TOPN = 20             # 盲区订阅 Top N (远低于 subscribe≤100 上限)
+BLINDSPOT_SORT = ('ZAF', 0.30, 'FCAmo', 0.25)   # TopN 排序权重 (涨幅+封单, 补盲优先盘口活跃)
 
 # === 个股排名 (stock_ranking; 池内综合排名, 打板选股底座) ===
 RANKING_INTERVAL_SEC = 120          # 个股榜频率 (2min/行)

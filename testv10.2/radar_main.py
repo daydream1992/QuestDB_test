@@ -34,6 +34,7 @@ from open_monitor import OpenMonitor  # noqa: E402
 from auction_monitor import AuctionMonitor  # noqa: E402
 from tail_monitor import TailMonitor  # noqa: E402
 from stock_ranking import StockRanking  # noqa: E402
+from blindspot_monitor import BlindspotMonitor  # noqa: E402
 from alert_engine import AlertEngine  # noqa: E402
 import data_provider  # noqa: E402  统一采集层 (bundle)
 
@@ -45,14 +46,19 @@ logger.add(os.path.join(cfg.LOG_DIR, 'testv10.2_radar_{time:YYYYMMDD}.log'),
            rotation='50 MB', retention='30 days', encoding='utf-8')
 
 
-def select_drill_candidates(hot_codes: list[str], ms, pct_map: dict[str, float]) -> list[str]:
-    """每 HOT/NEW 板取成分股, 按 pct 降序取 TopN, 全局去重保序。"""
+def select_drill_candidates(hot_codes: list[str], ms, pct_map: dict[str, float],
+                            zt_map: dict[str, float] | None = None) -> list[str]:
+    """每 HOT/NEW 板取成分股, 按 pct 降序取 TopN (热点板涨停≥10 动态扩 Top15),
+    全局去重保序。"""
     candidates: list[str] = []
+    zt_map = zt_map or {}
     for bc in hot_codes:
         members = ms.stocks_of(bc)
         ranked = sorted(((c, pct_map.get(c, 0.0)) for c in members if c in pct_map),
                         key=lambda x: x[1], reverse=True)
-        for c, _ in ranked[:cfg.DRILL_TOP_PER_BOARD]:
+        top_n = (cfg.DRILL_TOP_PER_HOT_BOARD if zt_map.get(bc, 0) >= cfg.DRILL_HOT_ZT_THRESH
+                 else cfg.DRILL_TOP_PER_BOARD)
+        for c, _ in ranked[:top_n]:
             if c not in candidates:
                 candidates.append(c)
     return candidates
@@ -60,7 +66,8 @@ def select_drill_candidates(hot_codes: list[str], ms, pct_map: dict[str, float])
 
 def run_one_round(round_idx: int, ms, radar: MesoRadar, pool: BoardPool,
                   sentiment, rotations: list, auction_monitor, tail_monitor,
-                  stock_ranking, alert_engine, is_close: bool, now: datetime) -> dict:
+                  stock_ranking, alert_engine, blindspot, is_close: bool,
+                  now: datetime) -> dict:
     """跑一轮 funnel + 计算层并联 (per-module try 故障隔离), 返回摘要 dict。"""
     t0 = time.time()
     rows = radar.scan()
@@ -73,8 +80,9 @@ def run_one_round(round_idx: int, ms, radar: MesoRadar, pool: BoardPool,
     if hot:
         df = tk.scan_universe()
         pct_map = dict(zip(df['code'], df['pct']))
-        candidates = select_drill_candidates(hot, ms, pct_map)
-        drilled = tk.drill_stocks(candidates) if candidates else {}
+        zt_map = {r['code']: r.get('ZTGPNum', 0) for r in rows}   # 热点板涨停数 (动态扩Top)
+        candidates = select_drill_candidates(hot, ms, pct_map, zt_map)
+        drilled = tk.drill_stocks(candidates, df=df) if candidates else {}
 
     # === 分时段统一采集 + 计算层并联 (per-module try 故障隔离) ===
     stage = cfg.get_stage(now)
@@ -116,6 +124,18 @@ def run_one_round(round_idx: int, ms, radar: MesoRadar, pool: BoardPool,
             stock_ranking.maybe_push(drilled, now)
         except Exception:  # noqa: BLE001
             logger.exception('stock_ranking 异常, 跳过 (故障隔离)')
+    # 盲区补盲 Top20 提取 (盘中/tail; 按个股榜分降序, 供 blindspot 订阅感知 60s 盲区)
+    if stage in ('intraday', 'tail') and blindspot:
+        try:
+            _k1, _w1, _k2, _w2 = cfg.BLINDSPOT_SORT
+            top20 = [c for c, _ in sorted(drilled.items(),
+                                          key=lambda kv: kv[1].get(_k1, 0) * _w1
+                                          + kv[1].get(_k2, 0) * _w2,
+                                          reverse=True)[:cfg.BLINDSPOT_TOPN]]
+            blindspot.refresh(top20)
+            blindspot.process_pending()   # 盲区回调消化 (串行, 回调不碰 COM)
+        except Exception:  # noqa: BLE001
+            logger.exception('盲区补盲异常, 跳过 (故障隔离)')
     # 统一预警引擎 (读各模块 last_result; 盘中/tail/close)
     if stage in ('intraday', 'tail', 'close') and alert_engine:
         try:
@@ -160,6 +180,7 @@ def run(rounds: int | None = None, force: bool = False, push: bool = False) -> N
     tail_mon = TailMonitor(ms, dry_run=not push)
     stock_ranking = StockRanking(ms, dry_run=not push)
     alert_engine = AlertEngine(ms, pub, dry_run=not push)
+    blindspot = BlindspotMonitor(ms, dry_run=not push)
     init()
     round_idx = 0
     last_poll: datetime | None = None   # 开盘段 run_one_round 降频计时
@@ -189,6 +210,12 @@ def run(rounds: int | None = None, force: bool = False, push: bool = False) -> N
                 open_mon.start(cands)
             elif stage != 'open' and open_mon.started:
                 open_mon.stop()
+            # 盲区补盲订阅 (盘中/tail 启动, 其他时段停止); refresh 在 run_one_round 内
+            if stage in ('intraday', 'tail') and not blindspot.started:
+                blindspot.started = True
+                logger.info('盲区补盲: 进入盘中, 待首轮钻取后订阅 Top{}', cfg.BLINDSPOT_TOPN)
+            elif stage not in ('intraday', 'tail') and blindspot.started:
+                blindspot.stop()
 
             try:
                 if stage == 'open':
@@ -197,7 +224,8 @@ def run(rounds: int | None = None, force: bool = False, push: bool = False) -> N
                     if last_poll is None or (now - last_poll).total_seconds() >= cfg.OPEN_POLL_INTERVAL:
                         res = run_one_round(round_idx, ms, radar, pool,
                                             sentiment, rotations, auction_mon, tail_mon,
-                                            stock_ranking, alert_engine, False, now)
+                                            stock_ranking, alert_engine, blindspot,
+                                            False, now)
                         _print_summary(res, ms)
                         round_idx += 1
                         last_poll = datetime.now()
@@ -210,7 +238,8 @@ def run(rounds: int | None = None, force: bool = False, push: bool = False) -> N
                 is_close = (stage == 'close')
                 res = run_one_round(round_idx, ms, radar, pool,
                                     sentiment, rotations, auction_mon, tail_mon,
-                                    stock_ranking, alert_engine, is_close, now)
+                                    stock_ranking, alert_engine, blindspot,
+                                    is_close, now)
                 _print_summary(res, ms)
                 if is_close:
                     close_done = True
@@ -228,6 +257,8 @@ def run(rounds: int | None = None, force: bool = False, push: bool = False) -> N
     finally:
         if open_mon.started:
             open_mon.stop()
+        if blindspot.started:
+            blindspot.stop()
         close()
         logger.info('===== radar_main 退出 (共 {} 轮) =====', round_idx)
 
