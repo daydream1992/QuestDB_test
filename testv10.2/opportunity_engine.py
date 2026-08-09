@@ -129,6 +129,11 @@ class OpportunityEngine:
                 'zaf': d.get('ZAF', 0), 'fcamo': d.get('FCAmo', 0),
                 'fcb': d.get('FCb', 0), 'first_limit': first_limit,
                 'boards': boards,
+                'ever_zt': int(d.get('EverZTCount', 0)),   # 连板高度 (龙头价值核心)
+                'fHSL': d.get('fHSL', 0),                  # 换手 (一字/换手板)
+                'pos_ratio': d.get('pos_ratio', 0),        # 位置 (高位风险)
+                'zjl_hb': d.get('Zjl_HB', 0),              # 主力净流入
+                'break_n': blindspot.break_count.get(c, 0) if blindspot else 0,  # 炸板次数(烂板)
             })
         if stocks and self.pub.on_limit_up(stocks, now):
             self._pushed_limit.update(c for c, _ in top)   # 成功才去重

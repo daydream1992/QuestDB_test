@@ -103,14 +103,22 @@ class Publisher:
 
     # 🔴 大盘跳水联动预警 (L1大盘→L2板块→L3个股; 事件, ≤2/min)
     def on_dive_alert(self, payload: dict, now: datetime) -> bool:
-        if not self.bucket.allow(now, lane=1):
-            return False
         lines = [f'🔴 大盘跳水预警 | {now.strftime("%H:%M")}', '',
                  '触发: ' + ' · '.join(payload['reasons'])]
         cur = payload['cur']; past = payload['past']
-        lines.append(f'综合分 {past["score"]:.0f}→{cur["score"]:.0f} · '
+        # 情绪绝对档位: 70→38 裸分人不知冰点/中性, 加 label 定调
+        cur_label = cur.get('label', '')
+        lbl = f' [{cur_label}]' if cur_label else ''
+        max_lb = cur.get('max_lb', 0)
+        mlb = f'  最高连板{int(max_lb)}板' if max_lb else ''
+        lines.append(f'综合分 {past["score"]:.0f}→{cur["score"]:.0f}{lbl} · '
                      f'封板率 {past["fbl"]:.0f}%→{cur["fbl"]:.0f}% · '
-                     f'炸板 {past["blasted"]}→{cur["blasted"]}')
+                     f'炸板 {past["blasted"]}→{cur["blasted"]}{mlb}')
+        # 防守话术 (交易者明确该做什么)
+        if cur_label == '冰点':
+            lines.append(f'⚠️ {cur_label}情绪: 管住手, 空仓观望')
+        elif cur_label == '中性' and cur['score'] < 45:
+            lines.append('⚠️ 中性偏弱: 轻仓试错, 不追高')
         if payload.get('boards'):
             lines.append(f'▼ 领跌板块 (L2)')
             for name, zaf, state in payload['boards']:
@@ -124,16 +132,12 @@ class Publisher:
     # ⑥ 🚀 开盘拉升 (传导链①龙头异动; 事件, ≤2/min bucket; send_warn 另走客户端)
     def on_open_surge(self, code: str, name: str, price: float, rise: float,
                       now: datetime) -> bool:
-        if not self.bucket.allow(now, lane=1):
-            return False
         lines = [f'🚀 开盘拉升 | {now.strftime("%H:%M")}', '',
                  f'{name}({code}) {price:.2f}  相对开盘 {rise:+.1f}%']
         return self._dispatch(f'🚀 开盘拉升 {name}', lines, now, lane=1)
 
     # ⑦ 💥 个股炸板预警 (tail 段; 事件, ≤2/min)
     def on_blast_alert(self, tail: dict, now: datetime) -> bool:
-        if not self.bucket.allow(now, lane=1):
-            return False
         lines = [f'💥 尾盘炸板预警 | {now.strftime("%H:%M")}', '',
                  f'封板候选 {tail.get("sealed_n", 0)} 只, 炸板 {tail.get("blast_n", 0)} 只',
                  tail.get('blast_s', '-')]
@@ -141,30 +145,46 @@ class Publisher:
 
     # 💥 个股炸板实时 (blindspot 盲区 6s 粒度; FCAmo 封→开瞬间; 盘中/tail)
     def on_seal_break(self, code: str, name: str, prev: float,
-                      break_n: int = 0, now: datetime | None = None) -> bool:
-        if not self.bucket.allow(now, lane=1):
-            return False
-        lines = [f'💥 炸板 | {now.strftime("%H:%M")}', '',
-                 f'{name}({code})  封单 {prev:.0f}万→0'
-                 + (f'  [今日炸板{break_n}次]' if break_n else '')]
+                      break_n: int = 0, ever_zt: int = 0, boards: list | None = None,
+                      now: datetime | None = None) -> bool:
+        lines = [f'💥 炸板 | {now.strftime("%H:%M")}', '']
+        lb = f'  {int(ever_zt)}连板' if ever_zt >= 2 else ''
+        hb = '  [高标]' if ever_zt >= 3 else ''
+        lines.append(f'{name}{lb}{hb}  封单 {prev:.0f}万→0'
+                     + (f'  [今日炸板{break_n}次]' if break_n else ''))
+        if boards:
+            lines.append(f'  [{" ".join(boards)}]')
         return self._dispatch(f'💥 炸板 {name}', lines, now, lane=1)
 
     # 🔁 炸板回封实时 (blindspot 盲区 6s 粒度; FCAmo 开→封瞬间)
     def on_seal_back(self, code: str, name: str, cur: float,
-                     back_n: int = 0, now: datetime | None = None) -> bool:
-        if not self.bucket.allow(now, lane=1):
-            return False
-        lines = [f'🔁 回封 | {now.strftime("%H:%M")}', '',
-                 f'{name}({code})  回封 {cur:.0f}万'
-                 + (f'  [今日回封{back_n}次]' if back_n else '')]
+                     back_n: int = 0, ever_zt: int = 0, boards: list | None = None,
+                     now: datetime | None = None) -> bool:
+        lines = [f'🔁 回封 | {now.strftime("%H:%M")}', '']
+        lb = f'  {int(ever_zt)}连板' if ever_zt >= 2 else ''
+        lines.append(f'{name}{lb}  回封 {cur:.0f}万'
+                     + (f'  [今日回封{back_n}次]' if back_n else ''))
+        if boards:
+            lines.append(f'  [{" ".join(boards)}]')
         return self._dispatch(f'🔁 回封 {name}', lines, now, lane=1)
+
+    # ⚠️ 封单衰竭前兆 (blindspot 6s 粒度; FCAmo 连续2轮降≥40% 仍封, 炸板前兆)
+    def on_seal_fade(self, code: str, name: str, prev: float, cur: float,
+                     ever_zt: int = 0, boards: list | None = None,
+                     now: datetime | None = None) -> bool:
+        lines = [f'⚠️ 封单衰竭 | {now.strftime("%H:%M")}', '']
+        lb = f'  {int(ever_zt)}连板' if ever_zt >= 2 else ''
+        hb = '  [高标]' if ever_zt >= 3 else ''
+        lines.append(f'{name}{lb}{hb}  封单 {prev:.0f}万→{cur:.0f}万 (缩{f"{(1-cur/prev)*100:.0f}"}%)')
+        if boards:
+            lines.append(f'  [{" ".join(boards)}]')
+        lines.append(f'  ⚠️ 连续2轮缩量, 有炸板风险, 注意减仓')
+        return self._dispatch(f'⚠️ 封单衰竭 {name}', lines, now, lane=1)
 
     # ============ 机会类事件 (盘中决策最缺; 与负向共用 ≤2/min bucket) ============
 
     # 🟢 板块新主线入池 (状态机 NEW; 60s内发现新方向, 系统最大价值)
     def on_board_new(self, boards: list, now: datetime) -> bool:
-        if not self.bucket.allow(now):
-            return False
         lines = [f'🟢 新主线 | {now.strftime("%H:%M")}']
         for b in boards:
             lines.append(f'{b["name"]}  涨幅{b["zaf"]:+.1f}%  涨停{b["zt"]}')
@@ -172,10 +192,12 @@ class Publisher:
                 lines.append(f'  [探照灯: {" ".join(b["lights"])}]')
         return self._dispatch(f'🟢 新主线 {len(boards)} 板块', lines, now, lane=0)
 
+    # 🔔 竞价定调 (9:25 竞价结束一次; 一字候选+放量板块, 当日定调)
+    def on_auction_preview(self, lines: list, now: datetime) -> bool:
+        return self._dispatch('🔔 竞价定调', lines, now, lane=0)
+
     # 🔥 板块趋势确认 (连续 N 轮 HOT, 非单轮脉冲)
     def on_hot_streak(self, board: dict, now: datetime) -> bool:
-        if not self.bucket.allow(now):
-            return False
         lines = [f'🔥 趋势确认 | {now.strftime("%H:%M")}', '',
                  f'{board["name"]}  连续{board["rounds"]}轮HOT  动能分{board["score"]:.0f}',
                  f'涨停 {board["zt_prev"]}→{board["zt_cur"]}']
@@ -183,14 +205,30 @@ class Publisher:
 
     # 🚀 龙头封板 (drilled 涨停股; 封单/封成比/首次封板时间)
     def on_limit_up(self, stocks: list, now: datetime) -> bool:
-        if not self.bucket.allow(now):
-            return False
         lines = [f'🚀 龙头封板 | {now.strftime("%H:%M")}']
         for s in stocks:
-            lines.append(f'{s["name"]}  {s["zaf"]:+.1f}%  封单{s["fcamo"]:.0f}万'
-                         f'  封成比{s["fcb"]:.2f}')
+            name = s['name']
+            # 连板标记: ≥2 板显眼
+            lb = s.get('ever_zt', 0)
+            lb_s = f'  {int(lb)}连板' if lb >= 2 else ''
+            # 烂板标注: 封成比<0.05 或 炸板≥2 = 烂板 (不是硬板别追)
+            is_weak = s.get('fcb', 0) < 0.05 or s.get('break_n', 0) >= 2
+            weak_s = '  [烂板]' if is_weak else ''
+            # 换手: <3% 疑似一字(买不进), >8% 换手板(可排板)
+            hsl = s.get('fHSL', 0)
+            hsl_s = '  [一字]' if 0 < hsl < 3 else ('  [换手]' if hsl > 8 else '')
+            # 位置: 高位板(接近52周高)风险高
+            pos = s.get('pos_ratio', 0)
+            pos_s = '  [高位]' if pos > 0.9 else ''
+            # 主力: 封板后主力流入/流出
+            zjl = s.get('zjl_hb', 0)
+            zjl_s = f'  主力{int(zjl/1e4)}亿' if abs(zjl) > 0 else ''
+            lines.append(f'{name}{lb_s}  {s["zaf"]:+.1f}%  封单{s["fcamo"]:.0f}万'
+                         f' 封成比{s["fcb"]:.2f}{weak_s}{hsl_s}{pos_s}')
+            if zjl_s:
+                lines.append(f'  {zjl_s.strip()}')
             if s.get('first_limit'):
-                lines.append(f'  ⏱ 首次封板 {s["first_limit"]}')
+                lines.append(f'  ⏱ 首封 {s["first_limit"]}')
             if s.get('boards'):
                 lines.append(f'  [{" ".join(s["boards"][:3])}]')
         return self._dispatch(f'🚀 龙头封板 {len(stocks)} 只', lines, now, lane=0)

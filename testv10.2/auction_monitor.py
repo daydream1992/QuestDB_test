@@ -12,7 +12,7 @@ import bootstrap
 bootstrap.ensure_paths()
 
 import importlib  # noqa: E402
-from datetime import datetime  # noqa: E402
+from datetime import datetime, time as dtime  # noqa: E402
 
 from loguru import logger  # noqa: E402
 
@@ -41,10 +41,12 @@ def _bitable_fields() -> list:
 class AuctionMonitor:
     """竞价: 放量板块榜 + 一字候选 → 飞书表; last_candidates 供 open_monitor。"""
 
-    def __init__(self, dry_run: bool | None = None):
+    def __init__(self, dry_run: bool | None = None, pub=None):
         self.dry_run = cfg.SENTIMENT_DRY_RUN if dry_run is None else dry_run
+        self.pub = pub
         self.last_candidates: list[str] = []   # 一字候选 code (给 open_monitor 订阅)
         self.last_push_ts: datetime | None = None
+        self._preview_pushed = False           # 竞价定调卡只推一次
         self._bw = None
 
     @property
@@ -63,6 +65,18 @@ class AuctionMonitor:
         raw = bundle['auction_raw']
         self.last_candidates = [c['code'] for c in raw['candidates']]
         self._write(raw, now)
+        # 竞价定调卡: 9:24 后竞价快结束推一次 (一字候选+放量板块+涨停板块数)
+        if self.pub and now.time() >= dtime(9, 24) and not self._preview_pushed:
+            self._preview_pushed = True
+            tb = raw['top_boards']
+            cands = raw['candidates']
+            lines = [f'🔔 竞价定调 | {now.strftime("%H:%M")}', '',
+                     f'竞价涨停板块 {raw["zt_board_n"]} 只, 一字候选 {len(cands)} 只',
+                     '放量Top: ' + ' / '.join(
+                         f"{b['code']}(×{b['ratio']},{b['open_amo']/1e8:.1f}亿)"
+                         for b in tb[:3]) or '-',
+                     '一字候选: ' + ' / '.join(c['code'] for c in cands[:5]) or '-']
+            self.pub.on_auction_preview(lines, now)
         return True
 
     def _write(self, raw: dict, now: datetime) -> None:

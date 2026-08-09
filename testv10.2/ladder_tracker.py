@@ -20,9 +20,9 @@ from loguru import logger  # noqa: E402
 
 import settings as cfg  # noqa: E402
 
-# 事件类型单选 (状态变更)
+# 事件类型单选 (状态变更 + 衰竭前兆)
 _EVENT_OPTS = [{'name': '封板', 'color': 0}, {'name': '炸板', 'color': 1},
-               {'name': '回封', 'color': 0}]
+               {'name': '回封', 'color': 0}, {'name': '衰竭', 'color': 2}]
 
 LADDER_FIELDS = [
     {'field_name': '时间', 'type': 5, 'key': '_ts'},
@@ -65,10 +65,16 @@ class LadderTracker:
 
     # 事件驱动: 记录单个状态变更 (封板/炸板/回封)
     def record_event(self, ev: dict, blindspot, now: datetime) -> None:
-        """ev: {code, name, type(炸板/回封), prev, cur}; blindspot 提供计数/首次封板。"""
+        """ev: {code, name, type(炸板/回封/衰竭), prev, cur}; blindspot 提供计数/首次封板。"""
         code = ev['code']
-        event_type = '炸板' if ev['type'] == '炸板' else '回封'
-        # 封单: 炸板记 prev (炸前封单, 如 6609→0), 回封记 cur (回封额)
+        # 事件类型: 炸板/回封/衰竭 (衰竭=封单萎缩前兆, 非状态变更)
+        if ev['type'] == '炸板':
+            event_type = '炸板'
+        elif ev['type'] == '衰竭':
+            event_type = '衰竭'
+        else:
+            event_type = '回封'
+        # 封单: 炸板记 prev (炸前封单, 如 6609→0), 回封/衰竭记 cur
         fcamo = ev.get('prev', 0) if ev['type'] == '炸板' else ev.get('cur', 0)
         # 板块映射: 概念/行业分开
         concepts, industries = [], []

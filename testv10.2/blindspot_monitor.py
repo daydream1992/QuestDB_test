@@ -46,6 +46,7 @@ class BlindspotMonitor:
         self.signal_q: Queue = Queue()
         self.subscribed: set[str] = set()
         self.prev_fcamo: dict[str, float] = {}   # 跨轮 code → 上轮 FCAmo (状态变更判定)
+        self.fcamo_hist: dict[str, list] = {}    # code → 最近 FCAmo 序列 (封单衰竭检测)
         self.first_limit_time: dict[str, str] = {}  # code → 首次封板时间 HH:MM:SS (回调6s精度, 自建)
         self.zt_count: dict[str, int] = {}       # code → 封板次数 (每次 开→封 累计, 含首次+回封)
         self.break_count: dict[str, int] = {}    # code → 炸板次数 (每次 封→开 累计)
@@ -118,6 +119,15 @@ class BlindspotMonitor:
         fcamo = float(mi.get('FCAmo') or 0)
         prev = self.prev_fcamo.get(code)
         self.prev_fcamo[code] = fcamo
+        # 封单衰竭检测 (炸板前兆): 连续 2 轮 FCAmo 降≥40% 且仍>0
+        if fcamo > 0 and prev is not None and prev > 0:
+            hist = self.fcamo_hist.setdefault(code, [])
+            hist.append(fcamo)
+            if len(hist) >= 3 and hist[-1] <= hist[-2] * 0.6 and hist[-2] <= hist[-3] * 0.6:
+                self.events.append({'code': code, 'name': self.ms.stock_name(code) if self.ms else code,
+                                    'type': '衰竭', 'prev': prev, 'cur': fcamo})
+                hist.clear()   # 已报一次, 防重复
+                logger.warning('⚠️ 封单衰竭 {} ({}) {:.0f}→{:.0f}', code, code, prev, fcamo)
         if prev is None:
             # 基线: 订阅建立时已封的股, 记 1 次封板 (开板前就封, 算基线)
             # 注意: 不记 first_limit_time — 基线时刻是订阅建立(9:45), 非真实首封,

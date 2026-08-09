@@ -17,7 +17,7 @@ import argparse
 import os  # noqa: E402
 import sys  # noqa: E402
 import time  # noqa: E402
-from datetime import datetime  # noqa: E402
+from datetime import datetime, time as dtime  # noqa: E402
 
 from loguru import logger  # noqa: E402
 
@@ -61,6 +61,25 @@ def _touch_heartbeat() -> None:
         with open(HEARTBEAT_TS, 'w', encoding='utf-8') as f:
             f.write(datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
     except OSError:  # noqa: BLE001  心跳失败不影响雷达
+        pass
+
+
+# 实时状态 (--panel 主循环刷新用): 心跳时间/轮次/耗时/池大小
+_status: dict = {'last_round': 0, 'last_dt': 0.0, 'pool': 0, 'hb': ''}
+_PANEL = False   # --panel 模式: 主循环每轮刷新状态行
+
+
+def _status_line(round_idx: int, dt: float, pool_n: int) -> None:
+    """覆盖显示单行实时状态 (cmd \r 刷新, 轻量; 仅 --panel 主循环后)。"""
+    _status['last_round'] = round_idx
+    _status['last_dt'] = dt
+    _status['pool'] = pool_n
+    _status['hb'] = datetime.now().strftime('%H:%M:%S')
+    s = (f"\r  [轮 {_status['last_round']} | 耗时 {_status['last_dt']:.0f}s | "
+         f"池 {_status['pool']} | 心跳 {_status['hb']}]")
+    try:
+        print(s + ' ' * max(0, 40 - len(s)), end='')
+    except OSError:  # noqa: BLE001  终端关闭忽略
         pass
 
 
@@ -229,17 +248,24 @@ def run_one_round(round_idx: int, ms, radar: MesoRadar, pool: BoardPool,
                     # 涨停梯队落表 (概念/行业映射 + 封板/炸板/回封计数)
                     if ladder:
                         ladder.record_event(ev, blindspot, now)
-                    # 实时卡 (≤2/min bucket 天然限频; 带今日计数)
+                    # 实时卡 (≤2/min bucket 天然限频; 带今日计数 + 连板 + 板块)
+                    _d = drilled.get(ev['code'], {})
+                    _ever = int(_d.get('EverZTCount', 0))
+                    _boards = [ms.board_name(b) for b in sorted(ms.boards_of(ev['code']))[:2]] if ms else []
                     if ev['type'] == '炸板':
                         opportunity.pub.on_seal_break(
                             ev['code'], ev['name'], ev['prev'],
                             break_n=blindspot.break_count.get(ev['code'], 0),
-                            now=now)
+                            ever_zt=_ever, boards=_boards, now=now)
                     elif ev['type'] == '回封':
                         opportunity.pub.on_seal_back(
                             ev['code'], ev['name'], ev['cur'],
                             back_n=blindspot.back_count.get(ev['code'], 0),
-                            now=now)
+                            ever_zt=_ever, boards=_boards, now=now)
+                    elif ev['type'] == '衰竭':
+                        opportunity.pub.on_seal_fade(
+                            ev['code'], ev['name'], ev['prev'], ev['cur'],
+                            ever_zt=_ever, boards=_boards, now=now)
                 except Exception:  # noqa: BLE001  单事件失败不崩
                     logger.debug('盲区事件处理失败: {}', ev)
         except Exception:  # noqa: BLE001
@@ -276,7 +302,7 @@ def run_one_round(round_idx: int, ms, radar: MesoRadar, pool: BoardPool,
     if _dt > 50:
         logger.warning('⚠️ 轮 {} 耗时 {:.0f}s, 接近 60s 预算, 可能轮次重叠!', round_idx, _dt)
     return {'round': round_idx, 'new_entries': new_entries, 'hot': hot,
-            'pool_stats': pool.stats(), 'leaders': leaders}
+            'pool_stats': pool.stats(), 'leaders': leaders, '_dt': _dt}
 
 
 def _print_summary(res: dict, ms) -> None:
@@ -292,7 +318,10 @@ def _print_summary(res: dict, ms) -> None:
                   f'FCAmo={d["FCAmo"]:>8.0f} fLianB={d["fLianB"]:>5.2f} pos={d["pos_ratio"]:.2f}')
 
 
-def run(rounds: int | None = None, force: bool = False, push: bool = False) -> None:
+def run(rounds: int | None = None, force: bool = False, push: bool = False,
+        panel: bool = False) -> None:
+    global _PANEL
+    _PANEL = panel
     ms = ms_mod.MappingStore(cfg.MAPPING_PARQUET)
     radar = MesoRadar(ms, cfg.MONITOR_LEVELS)
     pool = BoardPool()
@@ -301,14 +330,14 @@ def run(rounds: int | None = None, force: bool = False, push: bool = False) -> N
     rotations = [RotationMonitor(lvls, label, table_base, dry_run=not push)
                  for label, table_base, lvls in cfg.ROTATION_LEVELS.values()]
     open_mon = OpenMonitor(ms, pub, dry_run=not push)
-    auction_mon = AuctionMonitor(dry_run=not push)
+    auction_mon = AuctionMonitor(dry_run=not push, pub=pub)
     tail_mon = TailMonitor(ms, dry_run=not push)
     stock_ranking = StockRanking(ms, dry_run=not push)
-    alert_engine = AlertEngine(ms, pub, dry_run=not push)
+    duck = DuckdbSnapshot(dry_run=not push)   # DuckDB 本地快照 (防飞书挂 + 盘后分析)
+    alert_engine = AlertEngine(ms, pub, dry_run=not push, duck=duck)
     blindspot = BlindspotMonitor(ms, dry_run=not push)
     ladder = LadderTracker(ms, dry_run=not push)
     opportunity = OpportunityEngine(ms, pub, dry_run=not push)
-    duck = DuckdbSnapshot(dry_run=not push)   # DuckDB 本地快照 (防飞书挂 + 盘后分析)
     # init 保护: 通达信 COM 初始化失败给友好提示, 不裸 traceback
     try:
         init()
@@ -360,6 +389,9 @@ def run(rounds: int | None = None, force: bool = False, push: bool = False) -> N
                                             stock_ranking, alert_engine, blindspot,
                                             opportunity, ladder, duck, False, now)
                         _print_summary(res, ms)
+                        if _PANEL:
+                            _status_line(round_idx, res.get('_dt', 0),
+                                         res.get('pool_stats', {}).get('total', 0))
                         round_idx += 1
                         last_poll = datetime.now()
                     time.sleep(0.1)
@@ -374,6 +406,9 @@ def run(rounds: int | None = None, force: bool = False, push: bool = False) -> N
                                     stock_ranking, alert_engine, blindspot,
                                     opportunity, ladder, duck, is_close, now)
                 _print_summary(res, ms)
+                if _PANEL:
+                    _status_line(round_idx, res.get('_dt', 0),
+                                 res.get('pool_stats', {}).get('total', 0))
                 if is_close:
                     close_done = True
             except Exception:
@@ -400,14 +435,74 @@ def _sleep_until_next_minute() -> None:
     time.sleep(max(1, secs))
 
 
+def _panel_wait(push: bool, target_h: int = 9, target_m: int = 15) -> None:
+    """--panel 启动面板: 显示依赖检查 + 倒计时到 9:15 竞价, 归零返回。
+
+    轻量 cmd 终端刷新 (print + \\r, 零依赖)。提前启动时替代门控傻等,
+    倒计时结束后自动进入主循环 (9:15 精准进竞价)。依赖检查复用于检查项。"""
+    from dotenv import load_dotenv
+    import os as _os
+    _dot = _os.path.join(_os.path.dirname(_os.path.dirname(_os.path.abspath(__file__))),
+                         'config', '.env')
+    load_dotenv(_dot)
+    webhook = _os.getenv('LARK_WEBHOOK_URL', '')
+    tdx_ok = _os.path.exists(cfg.MAPPING_PARQUET)
+    duck_ok = __import__('duckdb_snapshot', fromlist=['x']) is not None
+    print('\n' + '═' * 52)
+    print('  v10.2 雷达启动面板 (cmd)')
+    print('═' * 52)
+    try:
+        while True:
+            now = datetime.now()
+            t = now.time()
+            # 已过 9:15 → 直接返回进主循环
+            if t >= dtime(target_h, target_m):
+                print(f'\n  ✅ 已到 {target_h:02d}:{target_m:02d}, 进入主循环...')
+                break
+            # 依赖检查 (实时)
+            tdx_proc = __import__('subprocess', fromlist=['run'])
+            r = tdx_proc.run(['tasklist', '/FI', 'IMAGENAME eq tdxw.exe', '/NH'],
+                             capture_output=True, text=True)
+            tdx_up = 'tdxw.exe' in r.stdout
+            deps = [
+                ('通达信客户端', tdx_up, '需打开通达信'),
+                ('板块映射 parquet', tdx_ok, '跑 refresh_mapping.py'),
+                ('飞书 webhook', bool(webhook), '配 config/.env'),
+                ('DuckDB 快照', duck_ok, '依赖 duckdb'),
+            ]
+            # 倒计时
+            target = datetime.combine(now.date(), dtime(target_h, target_m))
+            left = (target - now).total_seconds()
+            mm, ss = int(left // 60), int(left % 60)
+            bar_n = int(20 * (1 - left / 600)) if left < 600 else 0
+            bar = '█' * min(bar_n, 20) + '░' * max(0, 20 - min(bar_n, 20))
+            mode = '真推飞书' if push else 'dry-run(禁推)'
+            lines = [
+                f'\r  ⏳ 距竞价 {target_h:02d}:{target_m:02d}  {mm:02d}分{ss:02d}秒  [{bar}]  {mode}',
+                '',
+            ]
+            for name, ok, hint in deps:
+                mark = '✅' if ok else '❌'
+                lines.append(f'    {mark} {name:<14} {"" if ok else hint}')
+            lines.append(f'\r  当前: {now.strftime("%H:%M:%S")}   (提前启动, 9:15 自动进竞价)')
+            print('\033[2J\033[H' + '\n'.join(lines))
+            time.sleep(1)
+    except KeyboardInterrupt:
+        print('\n  面板退出 (Ctrl+C), 不启动雷达')
+        sys.exit(0)
+
+
 def main():
     parser = argparse.ArgumentParser(description='testv10.2 宽带雷达主循环 (单进程)')
     parser.add_argument('--force', action='store_true', help='跳过交易时段门控 (盘前/验证)')
     parser.add_argument('--rounds', type=int, default=None, help='跑 N 轮退出')
     parser.add_argument('--push', action='store_true', help='真推飞书 (默认 dry-run 禁推, 守红线)')
+    parser.add_argument('--panel', action='store_true', help='启动面板 (倒计时到9:15 + 依赖检查)')
     args = parser.parse_args()
+    if args.panel:
+        _panel_wait(args.push)
     _preflight(args.push)
-    run(rounds=args.rounds, force=args.force, push=args.push)
+    run(rounds=args.rounds, force=args.force, push=args.push, panel=args.panel)
 
 
 if __name__ == '__main__':

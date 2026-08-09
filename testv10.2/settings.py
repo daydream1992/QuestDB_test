@@ -85,6 +85,7 @@ def get_stage(now) -> str:
 
 # === 大盘跳水预警 (L1→L2板块→L3个股 联动警报; 阈值初值, 盘中校准) ===
 DIVE_HISTORY_ROUNDS = 6             # history 窗口 (≈5min, 1min/轮)
+DIVE_COOLDOWN_SEC = 900             # 跳水冷却 (15min 内只推一次, 防下滑持续连发)
 DIVE_FBL_DROP = 25.0                # 封板率 N 个百分点内跌幅 → 触发
 DIVE_BLAST_DOUBLE_MIN = 5           # 炸板数翻倍且绝对增量 ≥ N → 触发
 DIVE_LOSS_RATIO = 1.5               # 亏钱比突破 N (且较前放大) → 触发

@@ -20,11 +20,14 @@ import settings as cfg  # noqa: E402
 class AlertEngine:
     """统一预警: 多源 result → 异动检测 → L2/L3 定位 → on_dive_alert/on_blast_alert。"""
 
-    def __init__(self, ms=None, pub=None, dry_run: bool | None = None):
+    def __init__(self, ms=None, pub=None, dry_run: bool | None = None, duck=None):
         self.ms = ms
         self.pub = pub
         self.dry_run = cfg.SENTIMENT_DRY_RUN if dry_run is None else dry_run
+        self.duck = duck
         self._hist: deque = deque(maxlen=cfg.DIVE_HISTORY_ROUNDS + 1)   # 大盘指标 history
+        self._last_dive_ts: datetime | None = None   # 跳水冷却 (防下滑持续连发)
+        self._blast_pushed = False                   # 尾盘炸板汇总只推一次 (降频)
 
     def check(self, results: dict, pool, drilled: dict, now: datetime, stage: str) -> None:
         """results = {模块名: last_result}; 多源检测 + 定位 + 发。失败不崩。
@@ -44,14 +47,28 @@ class AlertEngine:
             return
         self._hist.append({'fbl': sent['fbl'], 'blasted': sent['blasted'],
                            'loss_ratio': sent['loss_ratio'], 'score': sent['score'],
-                           'zt_cnt': sent['zt_cnt']})
+                           'zt_cnt': sent['zt_cnt'], 'label': sent.get('label', ''),
+                           'max_lb': sent.get('max_lb', 0)})
         dive = self._detect_dive()
         if not dive:
             return
+        # 冷却: 15min 内只推一次 (下滑持续时窗口滑动会连发)
+        if self._last_dive_ts is not None and \
+                (now - self._last_dive_ts).total_seconds() < cfg.DIVE_COOLDOWN_SEC:
+            logger.debug('跳水冷却中, 跳过 (上次 {})', self._last_dive_ts.strftime('%H:%M'))
+            return
         reasons, past, cur = dive
         boards, stocks = self._locate(pool, drilled)
+        # DuckDB 落表 (盘后复盘"几点跳水/什么触发")
+        if self.duck:
+            try:
+                self.duck.record_event('跳水', '-', '-',
+                                       ' · '.join(reasons), now)
+            except Exception:  # noqa: BLE001
+                pass
         if self.pub.on_dive_alert({'reasons': reasons, 'cur': cur, 'past': past,
                                    'boards': boards, 'stocks': stocks}, now):
+            self._last_dive_ts = now
             logger.warning('🔴 预警(大盘跳水): {}', ' · '.join(reasons))
 
     def _detect_dive(self):
@@ -95,4 +112,8 @@ class AlertEngine:
     def _check_blast(self, tail, now):
         if not tail or tail.get('blast_n', 0) <= 0:
             return
+        # 降频: 尾盘炸板汇总只推一次 (15:00 前), 避免与盲区炸板实时重复刷屏
+        if self._blast_pushed:
+            return
+        self._blast_pushed = True
         self.pub.on_blast_alert(tail, now)
