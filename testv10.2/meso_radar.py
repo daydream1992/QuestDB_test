@@ -18,6 +18,7 @@ from loguru import logger  # noqa: E402
 
 from lib.tq_client import safe_call  # noqa: E402
 from tqcenter import tq  # noqa: E402
+import settings as cfg  # noqa: E402
 
 # === 6 探照灯 Top N (并集入池) ===
 TOP_GAIN = 15    # 纯涨幅 (抓主升浪头部)
@@ -64,11 +65,18 @@ class MesoRadar:
         t0 = time.time()
         rows: list[dict] = []
         n_empty = 0
+        n_skip = 0
         for b in boards:
+            # 聚合预算: COM 慢时 break, 剩余板本轮降级 (下轮自动恢复), 保 60s 轮次
+            if time.time() - t0 > cfg.MESO_SCAN_BUDGET:
+                n_skip += 1
+                continue
             code = b['code']
             try:
-                mi = safe_call(tq.get_more_info, stock_code=code, field_list=[]) or {}
-                sn = safe_call(tq.get_market_snapshot, stock_code=code, field_list=[]) or {}
+                mi = safe_call(tq.get_more_info, stock_code=code, field_list=[],
+                               timeout=cfg.MOREINFO_TIMEOUT) or {}
+                sn = safe_call(tq.get_market_snapshot, stock_code=code, field_list=[],
+                               timeout=cfg.MOREINFO_TIMEOUT) or {}
             except Exception:  # noqa: BLE001  红线#3: 单板失败不崩整轮
                 logger.debug('meso scan {} 失败, 跳过', code)
                 continue
@@ -91,8 +99,8 @@ class MesoRadar:
         self.prev_zaf = {r['code']: r['ZAF'] for r in rows}
         self._tag_searchlights(rows)
         n_hit = sum(1 for r in rows if r['searchlights'])
-        logger.info('meso 扫描: {} 板 / 命中探照灯 {} 板 / 空数据 {} 跳过, {:.1f}s',
-                    len(rows), n_hit, n_empty, time.time() - t0)
+        logger.info('meso 扫描: {} 板 / 命中探照灯 {} 板 / 空数据 {} 跳过 / 预算降级 {} 板, {:.1f}s',
+                    len(rows), n_hit, n_empty, n_skip, time.time() - t0)
         return rows
 
     @staticmethod

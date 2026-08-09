@@ -213,6 +213,7 @@ class SentimentMonitor:
             logger.exception('sentiment force_push 失败')
             return False
         self._write(result, now)
+        self.last_result = result   # close 段 alert_engine 读到最新值
         # close 段是当日最后时段, 显式 flush 尾盘聚合行 (段末无切换触发)
         self.flush_slot(now)
         return True

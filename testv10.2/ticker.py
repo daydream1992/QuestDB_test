@@ -124,9 +124,9 @@ def drill_stocks(codes: list[str], budget_sec: float | None = None,
         # 涨停候选 (pct≥9.5) 双调用保 Max; 非涨停候选单调用 (省 get_market_snapshot)
         need_snap = (pct >= cfg.NEAR_LIMIT_CAND_PCT) or (base.get(code) is None)
         try:
-            mi = safe_call(tq.get_more_info, stock_code=code, field_list=[]) or {}
+            mi = safe_call(tq.get_more_info, stock_code=code, field_list=[], timeout=cfg.MOREINFO_TIMEOUT) or {}
             if need_snap:
-                sn = safe_call(tq.get_market_snapshot, stock_code=code, field_list=[]) or {}
+                sn = safe_call(tq.get_market_snapshot, stock_code=code, field_list=[], timeout=cfg.MOREINFO_TIMEOUT) or {}
             else:
                 sn = {}   # 省 snapshot; Now/LastClose 从 df 批量取
                 n_single += 1
@@ -175,7 +175,7 @@ def drill_stocks(codes: list[str], budget_sec: float | None = None,
                 degraded.extend(pending[pending.index(code):])
                 break
             try:
-                mi = safe_call(tq.get_more_info, stock_code=code, field_list=[]) or {}
+                mi = safe_call(tq.get_more_info, stock_code=code, field_list=[], timeout=cfg.MOREINFO_TIMEOUT) or {}
             except Exception:  # noqa: BLE001
                 degraded.append(code)
                 continue

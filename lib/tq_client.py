@@ -119,20 +119,23 @@ def retry(func):
     return wrapper
 
 
-def safe_call(func, *args, **kwargs):
-    """通用调用包装: 线程安全 + 自动重试 3 次 + 指数退避
+def safe_call(func, *args, timeout=None, **kwargs):
+    """通用调用包装: 线程安全 + 自动重试 3 次 + 指数退避 + 可选单调用超时
 
     用法: safe_call(tq.get_sector_list, list_type=0)
+          safe_call(tq.get_more_info, stock_code=code, field_list=[], timeout=8)
 
     Args:
         func: tqcenter 的方法 (如 tq.get_sector_list)
+        timeout: 单次调用超时 (秒, 默认 None=不超时)。COM 卡死时用线程 + join
+                 超时兜底 (僵尸线程残留, 但主循环不被拖垮), 复活 MOREINFO_TIMEOUT。
         *args, **kwargs: 传给 func 的参数
 
     Returns:
-        func 的返回值
+        func 的返回值; 超时返回 None
 
     Raises:
-        最后一次重试仍失败时抛出异常
+        最后一次重试仍失败时抛出异常 (非超时场景)
     """
     last_exc = None
     for attempt in range(3):
@@ -141,6 +144,26 @@ def safe_call(func, *args, **kwargs):
         try:
             _ensure_init()
             try:
+                if timeout is not None:
+                    # 线程 + join 超时: 防单次 COM 卡死无限阻塞 (v10.1 _with_timeout 模式)
+                    result = [None]
+                    exc = [None]
+                    def _do():
+                        try:
+                            result[0] = func(*args, **kwargs)
+                        except Exception as e:  # noqa: BLE001
+                            exc[0] = e
+                    t = threading.Thread(target=_do, daemon=True)
+                    t.start()
+                    t.join(timeout=timeout)
+                    if t.is_alive():
+                        logger.warning('{} 超时 {:.0f}s (COM 可能卡死, 僵尸线程残留)',
+                                      getattr(func, '__name__', 'tq'), timeout)
+                        return None
+                    if exc[0] is not None:
+                        last_exc = exc[0]
+                        raise exc[0]
+                    return result[0]
                 return func(*args, **kwargs)
             except Exception as e:
                 last_exc = e

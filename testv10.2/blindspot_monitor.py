@@ -43,7 +43,7 @@ class BlindspotMonitor:
     def __init__(self, ms=None, dry_run: bool | None = None):
         self.ms = ms
         self.dry_run = cfg.SENTIMENT_DRY_RUN if dry_run is None else dry_run
-        self.signal_q: Queue = Queue()
+        self.signal_q: Queue = Queue(maxsize=256)   # 回调队列上限 (满则丢, 防主动行情积压内存)
         self.subscribed: set[str] = set()
         self.prev_fcamo: dict[str, float] = {}   # 跨轮 code → 上轮 FCAmo (状态变更判定)
         self.fcamo_hist: dict[str, list] = {}    # code → 最近 FCAmo 序列 (封单衰竭检测)
@@ -61,7 +61,11 @@ class BlindspotMonitor:
         except Exception:  # noqa: BLE001
             return
         if code:
-            self.signal_q.put(code)
+            # 队列上限 (maxsize=256): 满则丢 (20 个去重 code 丢重复无信息损失)
+            try:
+                self.signal_q.put_nowait(code)
+            except Exception:  # noqa: BLE001  Queue.Full
+                pass
 
     # ── 订阅管理 (每轮换订 TopN; ≤max_sub) ──
     def refresh(self, top_codes: list[str]) -> None:
@@ -72,9 +76,10 @@ class BlindspotMonitor:
             safe_call(tq.unsubscribe_hq, stock_list=drop)
             for c in drop:
                 self.subscribed.discard(c)
-                # 掉池清 prev_fcamo (防回来时旧封板状态误判炸板);
+                # 掉池清 prev_fcamo (防回来时旧封板状态误判炸板) + fcamo_hist (防内存累积);
                 # 计数 (zt/break/back/first_limit) 保留 = "今日累计至今" 语义
                 self.prev_fcamo.pop(c, None)
+                self.fcamo_hist.pop(c, None)
         if want:
             r = safe_call(tq.subscribe_hq, stock_list=want, callback=self._on_data)
             if r and r.get('ErrorId') == '0':

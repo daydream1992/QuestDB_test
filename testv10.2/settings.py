@@ -25,6 +25,7 @@ MONITOR_LEVELS = {'概念', '三级'}
 # === 取数保护 (ticker) ===
 CODES_CACHE_TTL = 600          # 全场代码表缓存秒数 (fetch_all_codes)
 MOREINFO_TIMEOUT = 8           # 单只 more_info+snapshot 超时 (秒, 防 COM 卡死)
+MESO_SCAN_BUDGET = 15.0        # meso 板块扫描聚合预算 (秒, COM 慢时降级保 60s 轮次)
 STOCK_DRILL_BUDGET_SEC = 35    # 钻取聚合预算 (秒, 超时 break + 部分降级)
 DRILL_TOP_PER_BOARD = 8        # 每 HOT/NEW 板钻取 TopN 成分股 (lean 化, ~20板×8≈160股)
 DRILL_TOP_PER_HOT_BOARD = 15   # 涨停≥DRILL_HOT_ZT_THRESH 的热点板块动态扩 TopN (涨停潮覆盖)

@@ -171,12 +171,12 @@ def run_one_round(round_idx: int, ms, radar: MesoRadar, pool: BoardPool,
         pct_map = dict(zip(df['code'], df['pct']))
         zt_map = {r['code']: r.get('ZTGPNum', 0) for r in rows}   # 热点板涨停数 (动态扩Top)
         candidates = select_drill_candidates(hot, ms, pct_map, zt_map)
-        drilled = tk.drill_stocks(candidates, df=df) if candidates else {}
         # 全市场 pct 前 N 补钻 (池外最强票可见): 单日最牛股可能不在池板块内
+        # 合并进一次 drill_stocks (共用 35s 预算, 防双钻 70s 拖垮轮次)
         global_top = df.sort_values('pct', ascending=False)['code'].tolist()[:cfg.DRILL_GLOBAL_TOP_N]
-        extra = [c for c in global_top if c not in drilled and c in pct_map]
-        if extra:
-            drilled.update(tk.drill_stocks(extra, df=df))
+        all_codes = list(dict.fromkeys(candidates + [c for c in global_top
+                                                     if c not in candidates and c in pct_map]))
+        drilled = tk.drill_stocks(all_codes, df=df) if all_codes else {}
 
     # === 分时段统一采集 + 计算层并联 (per-module try 故障隔离) ===
     stage = cfg.get_stage(now)

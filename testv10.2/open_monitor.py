@@ -35,7 +35,7 @@ class OpenMonitor:
         self.dry_run = cfg.SENTIMENT_DRY_RUN if dry_run is None else dry_run
         self.threshold = cfg.OPEN_SURGE_THRESHOLD
         self.max_sub = cfg.OPEN_MAX_SUB
-        self.signal_q: Queue = Queue()
+        self.signal_q: Queue = Queue(maxsize=256)   # 回调队列上限 (满则丢, 防积压)
         self.subscribed: set[str] = set()   # 当前订阅 code
         self.fired: set[str] = set()        # 已触发 (去重, 不重复发)
         self.started = False
@@ -47,7 +47,10 @@ class OpenMonitor:
         except Exception:  # noqa: BLE001
             return
         if code:
-            self.signal_q.put(code)
+            try:
+                self.signal_q.put_nowait(code)   # maxsize 满则丢, 防积压
+            except Exception:  # noqa: BLE001  Queue.Full
+                pass
 
     # ── 订阅管理 ──
     def start(self, candidates: list[str]) -> bool:

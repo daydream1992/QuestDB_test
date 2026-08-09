@@ -111,6 +111,9 @@ def _drill_limit_candidates(df) -> tuple[list, bool]:
     cand_df = df[df['pct'] >= cfg.NEAR_LIMIT_CAND_PCT].sort_values('pct', ascending=False)
     fresh_codes = cand_df['code'].tolist()[:200]
     _SEEN_CANDIDATES.update(fresh_codes)
+    # 裁剪: 只保留最近 ~600 (日累积无限涨防内存; 炸板跌出仍留 2-3 轮)
+    if len(_SEEN_CANDIDATES) > 600:
+        _SEEN_CANDIDATES = set(list(_SEEN_CANDIDATES)[-600:])
     # 钻取 = 当轮新进 + 今日留存 (含炸板跌出者), 受预算 break
     cand_codes = [c for c in list(_SEEN_CANDIDATES)[:300]]
     out: list[dict] = []
