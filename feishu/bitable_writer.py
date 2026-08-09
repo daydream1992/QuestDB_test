@@ -406,12 +406,14 @@ def _create_field(app_token: str, table_id: str, field_def: dict):
     elif ftype == 7:
         body['property'] = {'symbol': '✅'}
 
-    # 公式: 公式表达式
+    # 公式: 公式表达式 (飞书 API 用 formula_expression, 非 formula)
     elif ftype == 20:
         if fname == '评分档位':
-            body['property'] = {'formula': 'IF([评分]>=80,"优",IF([评分]>=60,"良","中"))'}
+            body['property'] = {'formula_expression': 'IF([评分]>=80,"优",IF([评分]>=60,"良","中"))'}
+        elif 'formula_expression' in field_def:
+            body['property'] = {'formula_expression': field_def['formula_expression']}
         elif 'formula' in field_def:
-            body['property'] = {'formula': field_def['formula']}
+            body['property'] = {'formula_expression': field_def['formula']}
 
     _api('POST', f'/bitable/v1/apps/{app_token}/tables/{table_id}/fields', body=body)
 

@@ -49,6 +49,13 @@ SENTIMENT_BITABLE_APP_TOKEN = 'ToVFbNgEqaTjmZs1feZcEVVYnab'  # 已建表固化 (
 SENTIMENT_DRY_RUN = True            # 守红线: 默认 dry-run 只 log, --push 才真写飞书
 SENTIMENT_SANITY_ZT_MAX = 6000      # Outside(涨停家数) sanity 上限 (全A≈5500)
 SENTIMENT_CAND_DRILL_BUDGET = 2.0   # 连板/封板候选钻取预算 (秒, 超时 break 部分降级)
+# 情绪时段聚合 (独立表 v10.2情绪时段, 每段末写 1 行; 保留 240 行 1min 表供飞书分析)
+SENTIMENT_SLOTS = [                 # (label, 起始, 结束) — 早/午/后/尾
+    ('早盘',  dtime(9, 30), dtime(10, 30)),
+    ('午盘',  dtime(10, 30), dtime(11, 30)),
+    ('午后',  dtime(13, 0),  dtime(14, 0)),
+    ('尾盘',  dtime(14, 0),  dtime(15, 0)),
+]
 NEAR_LIMIT_CAND_PCT = 9.5           # 连板/封板候选预筛阈值 (df.pct ≥ N)
 # 维度7 指数风向: code → (名称, 权重), 权重和=1.0 (参考资料: 沪深300·40/创业·30/科创·20/深成·10)
 BROAD_INDICES = {
@@ -123,6 +130,12 @@ TAIL_INTERVAL_SEC = 60              # 尾盘炸板检测频率 (1min/行)
 # === 盲区补盲 (blindspot; 盘中/tail, 60s 轮询盲区内 subscribe 感知 TopN 状态变更) ===
 BLINDSPOT_TOPN = 20             # 盲区订阅 Top N (远低于 subscribe≤100 上限)
 BLINDSPOT_SORT = ('ZAF', 0.30, 'FCAmo', 0.25)   # TopN 排序权重 (涨幅+封单, 补盲优先盘口活跃)
+
+# === 机会事件 (opportunity_engine; 3 正: 新主线/趋势确认/龙头封板) ===
+OPP_STREAK_ROUNDS = 3           # 板块连续 HOT 达 N 轮 → 趋势确认 (非单轮脉冲)
+OPP_LIMIT_ZAF = 9.0             # 个股 ZAF≥N 视为涨停封板候选 (配合 FCAmo>0)
+OPP_NEW_MAX = 2                 # 每轮新主线最多推 N 个 (防刷屏)
+OPP_LIMIT_MAX = 2               # 每轮龙头封板最多推 N 只
 
 # === 个股排名 (stock_ranking; 池内综合排名, 打板选股底座) ===
 RANKING_INTERVAL_SEC = 120          # 个股榜频率 (2min/行)

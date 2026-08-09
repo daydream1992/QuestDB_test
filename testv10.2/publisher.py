@@ -113,6 +113,62 @@ class Publisher:
                  tail.get('blast_s', '-')]
         return _send(f'💥 尾盘炸板 | {now.strftime("%H:%M")}', lines, self.dry_run)
 
+    # 💥 个股炸板实时 (blindspot 盲区 6s 粒度; FCAmo 封→开瞬间; 盘中/tail)
+    def on_seal_break(self, code: str, name: str, prev: float,
+                      break_n: int = 0, now: datetime | None = None) -> bool:
+        if not self.bucket.allow(now):
+            return False
+        lines = [f'💥 炸板 | {now.strftime("%H:%M")}', '',
+                 f'{name}({code})  封单 {prev:.0f}万→0'
+                 + (f'  [今日炸板{break_n}次]' if break_n else '')]
+        return _send(f'💥 炸板 {name}', lines, self.dry_run)
+
+    # 🔁 炸板回封实时 (blindspot 盲区 6s 粒度; FCAmo 开→封瞬间)
+    def on_seal_back(self, code: str, name: str, cur: float,
+                     back_n: int = 0, now: datetime | None = None) -> bool:
+        if not self.bucket.allow(now):
+            return False
+        lines = [f'🔁 回封 | {now.strftime("%H:%M")}', '',
+                 f'{name}({code})  回封 {cur:.0f}万'
+                 + (f'  [今日回封{back_n}次]' if back_n else '')]
+        return _send(f'🔁 回封 {name}', lines, self.dry_run)
+
+    # ============ 机会类事件 (盘中决策最缺; 与负向共用 ≤2/min bucket) ============
+
+    # 🟢 板块新主线入池 (状态机 NEW; 60s内发现新方向, 系统最大价值)
+    def on_board_new(self, boards: list, now: datetime) -> bool:
+        if not self.bucket.allow(now):
+            return False
+        lines = [f'🟢 新主线 | {now.strftime("%H:%M")}']
+        for b in boards:
+            lines.append(f'{b["name"]}  涨幅{b["zaf"]:+.1f}%  涨停{b["zt"]}')
+            if b.get('lights'):
+                lines.append(f'  [探照灯: {" ".join(b["lights"])}]')
+        return _send(f'🟢 新主线 {len(boards)} 板块', lines, self.dry_run)
+
+    # 🔥 板块趋势确认 (连续 N 轮 HOT, 非单轮脉冲)
+    def on_hot_streak(self, board: dict, now: datetime) -> bool:
+        if not self.bucket.allow(now):
+            return False
+        lines = [f'🔥 趋势确认 | {now.strftime("%H:%M")}', '',
+                 f'{board["name"]}  连续{board["rounds"]}轮HOT  动能分{board["score"]:.0f}',
+                 f'涨停 {board["zt_prev"]}→{board["zt_cur"]}']
+        return _send(f'🔥 趋势确认 {board["name"]}', lines, self.dry_run)
+
+    # 🚀 龙头封板 (drilled 涨停股; 封单/封成比/首次封板时间)
+    def on_limit_up(self, stocks: list, now: datetime) -> bool:
+        if not self.bucket.allow(now):
+            return False
+        lines = [f'🚀 龙头封板 | {now.strftime("%H:%M")}']
+        for s in stocks:
+            lines.append(f'{s["name"]}  {s["zaf"]:+.1f}%  封单{s["fcamo"]:.0f}万'
+                         f'  封成比{s["fcb"]:.2f}')
+            if s.get('first_limit'):
+                lines.append(f'  ⏱ 首次封板 {s["first_limit"]}')
+            if s.get('boards'):
+                lines.append(f'  [{" ".join(s["boards"][:3])}]')
+        return _send(f'🚀 龙头封板 {len(stocks)} 只', lines, self.dry_run)
+
 
 if __name__ == '__main__':
     now = datetime.now()

@@ -35,6 +35,8 @@ from auction_monitor import AuctionMonitor  # noqa: E402
 from tail_monitor import TailMonitor  # noqa: E402
 from stock_ranking import StockRanking  # noqa: E402
 from blindspot_monitor import BlindspotMonitor  # noqa: E402
+from ladder_tracker import LadderTracker  # noqa: E402
+from opportunity_engine import OpportunityEngine  # noqa: E402
 from alert_engine import AlertEngine  # noqa: E402
 import data_provider  # noqa: E402  统一采集层 (bundle)
 
@@ -83,8 +85,8 @@ def select_drill_candidates(hot_codes: list[str], ms, pct_map: dict[str, float],
 
 def run_one_round(round_idx: int, ms, radar: MesoRadar, pool: BoardPool,
                   sentiment, rotations: list, auction_monitor, tail_monitor,
-                  stock_ranking, alert_engine, blindspot, is_close: bool,
-                  now: datetime) -> dict:
+                  stock_ranking, alert_engine, blindspot, opportunity, ladder,
+                  is_close: bool, now: datetime) -> dict:
     """跑一轮 funnel + 计算层并联 (per-module try 故障隔离), 返回摘要 dict。"""
     t0 = time.time()
     rows = radar.scan()
@@ -153,8 +155,33 @@ def run_one_round(round_idx: int, ms, radar: MesoRadar, pool: BoardPool,
                                           reverse=True)[:cfg.BLINDSPOT_TOPN]]
             blindspot.refresh(top20)
             blindspot.process_pending()   # 盲区回调消化 (串行, 回调不碰 COM)
+            # 盲区事件消费: 炸板/回封 → 实时卡 + 涨停梯队落表 (带计数+板块映射)
+            for ev in blindspot.drain_events():
+                try:
+                    # 涨停梯队落表 (概念/行业映射 + 封板/炸板/回封计数)
+                    if ladder:
+                        ladder.record_event(ev, blindspot, now)
+                    # 实时卡 (≤2/min bucket 天然限频; 带今日计数)
+                    if ev['type'] == '炸板':
+                        opportunity.pub.on_seal_break(
+                            ev['code'], ev['name'], ev['prev'],
+                            break_n=blindspot.break_count.get(ev['code'], 0),
+                            now=now)
+                    elif ev['type'] == '回封':
+                        opportunity.pub.on_seal_back(
+                            ev['code'], ev['name'], ev['cur'],
+                            back_n=blindspot.back_count.get(ev['code'], 0),
+                            now=now)
+                except Exception:  # noqa: BLE001  单事件失败不崩
+                    logger.debug('盲区事件处理失败: {}', ev)
         except Exception:  # noqa: BLE001
             logger.exception('盲区补盲异常, 跳过 (故障隔离)')
+    # 机会事件引擎 (3 正: 新主线/趋势确认/龙头封板; 盘中/tail; 纯内存读 pool/drilled)
+    if stage in ('intraday', 'tail') and opportunity:
+        try:
+            opportunity.check(new_entries, pool, drilled, blindspot, rows, now)
+        except Exception:  # noqa: BLE001
+            logger.exception('机会引擎异常, 跳过 (故障隔离)')
     # 统一预警引擎 (读各模块 last_result; 盘中/tail/close)
     if stage in ('intraday', 'tail', 'close') and alert_engine:
         try:
@@ -206,6 +233,8 @@ def run(rounds: int | None = None, force: bool = False, push: bool = False) -> N
     stock_ranking = StockRanking(ms, dry_run=not push)
     alert_engine = AlertEngine(ms, pub, dry_run=not push)
     blindspot = BlindspotMonitor(ms, dry_run=not push)
+    ladder = LadderTracker(ms, dry_run=not push)
+    opportunity = OpportunityEngine(ms, pub, dry_run=not push)
     init()
     round_idx = 0
     last_poll: datetime | None = None   # 开盘段 run_one_round 降频计时
@@ -250,7 +279,7 @@ def run(rounds: int | None = None, force: bool = False, push: bool = False) -> N
                         res = run_one_round(round_idx, ms, radar, pool,
                                             sentiment, rotations, auction_mon, tail_mon,
                                             stock_ranking, alert_engine, blindspot,
-                                            False, now)
+                                            opportunity, ladder, False, now)
                         _print_summary(res, ms)
                         round_idx += 1
                         last_poll = datetime.now()
@@ -264,7 +293,7 @@ def run(rounds: int | None = None, force: bool = False, push: bool = False) -> N
                 res = run_one_round(round_idx, ms, radar, pool,
                                     sentiment, rotations, auction_mon, tail_mon,
                                     stock_ranking, alert_engine, blindspot,
-                                    is_close, now)
+                                    opportunity, ladder, is_close, now)
                 _print_summary(res, ms)
                 if is_close:
                     close_done = True

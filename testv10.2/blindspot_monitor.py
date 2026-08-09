@@ -45,6 +45,10 @@ class BlindspotMonitor:
         self.signal_q: Queue = Queue()
         self.subscribed: set[str] = set()
         self.prev_fcamo: dict[str, float] = {}   # 跨轮 code → 上轮 FCAmo (状态变更判定)
+        self.first_limit_time: dict[str, str] = {}  # code → 首次封板时间 HH:MM:SS (回调6s精度, 自建)
+        self.zt_count: dict[str, int] = {}       # code → 封板次数 (每次 开→封 累计, 含首次+回封)
+        self.break_count: dict[str, int] = {}    # code → 炸板次数 (每次 封→开 累计)
+        self.back_count: dict[str, int] = {}     # code → 回封次数 (炸板后再次封住累计)
         self.events: list[dict] = []             # 本轮累计状态变更事件 (供推送)
         self.started = False
 
@@ -66,6 +70,9 @@ class BlindspotMonitor:
             safe_call(tq.unsubscribe_hq, stock_list=drop)
             for c in drop:
                 self.subscribed.discard(c)
+                # 掉池清 prev_fcamo (防回来时旧封板状态误判炸板);
+                # 计数 (zt/break/back/first_limit) 保留 = "今日累计至今" 语义
+                self.prev_fcamo.pop(c, None)
         if want:
             r = safe_call(tq.subscribe_hq, stock_list=want, callback=self._on_data)
             if r and r.get('ErrorId') == '0':
@@ -107,6 +114,14 @@ class BlindspotMonitor:
         prev = self.prev_fcamo.get(code)
         self.prev_fcamo[code] = fcamo
         if prev is None:
+            # 基线: 订阅建立时已封的股, 记 1 次封板 (开板前就封, 算基线)
+            if fcamo > 0:
+                self.zt_count[code] = self.zt_count.get(code, 0) + 1
+                if code not in self.first_limit_time:
+                    self.first_limit_time[code] = datetime.now().strftime('%H:%M:%S')
+                    logger.info('⏱ 基线封板 {} ({}) {}',
+                                self.ms.stock_name(code) if self.ms else code,
+                                code, self.first_limit_time[code])
             return
         # 状态变更: 涨停(封)→炸板(开) / 炸板(开)→回封(封)
         kind = _classify(prev, fcamo)
@@ -115,6 +130,17 @@ class BlindspotMonitor:
         name = self.ms.stock_name(code) if self.ms else code
         self.events.append({'code': code, 'name': name, 'type': kind,
                             'prev': prev, 'cur': fcamo})
+        # 计数: 封板(开→封) / 炸板(封→开) / 回封(炸板后再次封)
+        if kind == '回封':
+            self.zt_count[code] = self.zt_count.get(code, 0) + 1
+            self.back_count[code] = self.back_count.get(code, 0) + 1
+            # 首次封板时间戳 (自建): 开→封 那一刻记录 (回调~6s精度, 对应"前排原则")
+            if code not in self.first_limit_time:
+                self.first_limit_time[code] = datetime.now().strftime('%H:%M:%S')
+                logger.info('⏱ 首次封板 {} ({}) {}', name, code,
+                            self.first_limit_time[code])
+        elif kind == '炸板':
+            self.break_count[code] = self.break_count.get(code, 0) + 1
         logger.warning('💥 盲区补盲: {} ({}) {} (封单 {:.0f}→{:.0f})',
                        name, code, '炸板' if kind == '炸板' else '回封', prev, fcamo)
 

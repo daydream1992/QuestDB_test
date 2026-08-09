@@ -121,6 +121,18 @@ def _bitable_fields() -> list:
     return out
 
 
+# 时段聚合表字段 (v10.2情绪时段; 每段 1 行)
+def _slot_fields() -> list:
+    return [
+        {'field_name': '时间', 'type': 5, 'key': '_ts'},
+        {'field_name': '时段', 'type': 1, 'key': '时段'},
+        {'field_name': '情绪分开', 'type': 2}, {'field_name': '情绪分收', 'type': 2},
+        {'field_name': '情绪分高', 'type': 2}, {'field_name': '情绪分低', 'type': 2},
+        {'field_name': '涨停峰值', 'type': 2}, {'field_name': '趋势', 'type': 1},
+        {'field_name': '封板率', 'type': 2}, {'field_name': '炸板', 'type': 2},
+    ]
+
+
 class SentimentMonitor:
     """大盘情绪监控: 每 N 秒取数→算分→写飞书一行。底座零侵入 (仅接收 funnel 的 df/rows)。"""
 
@@ -134,6 +146,9 @@ class SentimentMonitor:
         self._amount_cache: dict | None = None
         self._bw = None   # 懒加载 feishu.bitable_writer
         self.last_result: dict | None = None   # 最近一轮 result (供 alert_engine 读)
+        # 时段聚合: 当前时段名 + 累积 result (段末写 1 行聚合表)
+        self._slot_name: str | None = None
+        self._slot_results: list[dict] = []
 
     @property
     def bw(self):
@@ -328,12 +343,61 @@ class SentimentMonitor:
     # ============ 输出 ============
     def _write(self, result: dict, now: datetime) -> None:
         self._print(result, now)
-        if self.dry_run:
+        if not self.dry_run:
+            try:
+                self._write_bitable(result, now)   # 240 行 1min 表 (保留, 供飞书分析)
+            except Exception:  # noqa: BLE001  写表失败不崩
+                logger.exception('飞书写表失败')
+        self._accum_slot(result, now)              # 时段聚合 (段末写 1 行聚合表)
+
+    def _accum_slot(self, result: dict, now: datetime) -> None:
+        """时段聚合: 累积当前时段 result, 段边界时写聚合行到独立表。
+
+        时段定义 settings.SENTIMENT_SLOTS (早/午/后/尾)。保留 240 行 1min 表,
+        另加 4 行/天时段聚合供快速决策。"""
+        slot = None
+        t = now.time()
+        for name, lo, hi in cfg.SENTIMENT_SLOTS:
+            if lo <= t < hi:
+                slot = name
+                break
+        if slot != self._slot_name:
+            # 时段切换: 若前一时段有累积, 写聚合行
+            if self._slot_name and self._slot_results:
+                self._write_slot_row(self._slot_name, self._slot_results, now)
+            self._slot_name = slot
+            self._slot_results = []
+        if slot:
+            self._slot_results.append(result)
+
+    def _write_slot_row(self, label: str, results: list[dict], now: datetime) -> None:
+        """写时段聚合行: 该段情绪分开/高/低/收 + 涨停峰值 + 趋势。"""
+        if not results:
+            return
+        scores = [r['score'] for r in results]
+        zt_peak = max(r['zt_cnt'] for r in results)
+        first, last = results[0], results[-1]
+        trend = '↑' if last['score'] > first['score'] + 1 else (
+            '↓' if last['score'] < first['score'] - 1 else '→')
+        logger.info('📊 情绪时段 | {} | 分 {}→{} 最高{} 最低{} | 涨停峰值{} | 趋势{}',
+                    label, first['score'], last['score'], max(scores), min(scores),
+                    zt_peak, trend)
+        if self.dry_run or not cfg.SENTIMENT_BITABLE_APP_TOKEN:
             return
         try:
-            self._write_bitable(result, now)
-        except Exception:  # noqa: BLE001  写表失败不崩
-            logger.exception('飞书写表失败')
+            table_id = self.bw.auto_named_table(
+                cfg.SENTIMENT_BITABLE_APP_TOKEN, f'v10.2情绪时段 {now.strftime("%Y-%m-%d")}',
+                _slot_fields())
+            if not table_id:
+                return
+            record = {'时间': int(now.timestamp() * 1000), '时段': label,
+                      '情绪分开': round(first['score'], 1), '情绪分收': round(last['score'], 1),
+                      '情绪分高': round(max(scores), 1), '情绪分低': round(min(scores), 1),
+                      '涨停峰值': zt_peak, '趋势': trend,
+                      '封板率': round(last['fbl'], 1), '炸板': last['blasted']}
+            self.bw.append_records(cfg.SENTIMENT_BITABLE_APP_TOKEN, table_id, [record])
+        except Exception:  # noqa: BLE001
+            logger.exception('时段聚合写表失败')
 
     def _print(self, result: dict, now: datetime) -> None:
         """控制台/日志打印 (像看盘: 原始数据 + 结论)。"""
