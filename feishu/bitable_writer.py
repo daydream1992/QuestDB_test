@@ -816,6 +816,69 @@ def auto_panorama_table(app_token: str, table_type: str) -> str:
     return table_id
 
 
+def auto_named_table(app_token: str, table_name: str, fields: list) -> str:
+    """按名查/建数据表 + 任意字段 (v10.2 通用版)。
+
+    与 auto_panorama_table 的区别: 表名 + 字段由参数传入 (不依赖固定 PANORAMA_FIELDS),
+    方便业务方自定义 schema。镜像其 check-then-act 原子模式 + 缓存。
+
+    Args:
+        fields: list[dict], 每项 {'field_name', 'type', ...可选 'options'/'property'}
+                (首字段建议为 '时间' type=5, 会复用主键字段改名)
+    Returns:
+        table_id; 失败 ''。表名含日期则跨日缓存自然失效。
+    """
+    cache_key = (app_token, table_name)
+    with _TABLE_CACHE_LOCK:
+        cached_id = _TABLE_CACHE.get(cache_key)
+        if cached_id:
+            return cached_id
+        neg_ts = _TABLE_CACHE_NEG.get(cache_key)
+        if neg_ts and (time.time() - neg_ts) < _TABLE_CACHE_TTL:
+            return ''
+        # 查已有表
+        data = _api('GET', f'/bitable/v1/apps/{app_token}/tables')
+        if data:
+            for t in data.get('data', {}).get('items', []):
+                if t.get('name') == table_name:
+                    table_id = t.get('table_id', '')
+                    if table_id:
+                        _TABLE_CACHE[cache_key] = table_id
+                        return table_id
+        # 创建
+        table_id = _create_table(app_token, table_name)
+        if not table_id:
+            _TABLE_CACHE_NEG[cache_key] = time.time()
+            return ''
+        _TABLE_CACHE[cache_key] = table_id
+
+    # 加字段 (锁外): 首字段复用主键改名, 其余新建 (避免主键空字段)
+    _add_named_fields(app_token, table_id, fields)
+    return table_id
+
+
+def _add_named_fields(app_token: str, table_id: str, fields: list) -> None:
+    """新表补字段: 主键(第一个自带字段)改名为 fields[0], 其余 _create_field。
+    已存在的表假定字段齐 (append_records 会按 _list_fields 校验)。"""
+    if not fields:
+        return
+    fd_data = _api('GET', f'/bitable/v1/apps/{app_token}/tables/{table_id}/fields')
+    existing = fd_data.get('data', {}).get('items', []) if fd_data else []
+    first = fields[0]
+    if existing:
+        primary_id = existing[0].get('field_id', '')
+        body = {'field_name': first['field_name'], 'type': first.get('type', 1)}
+        if first.get('type') == 5:
+            body['property'] = {'date_formatter': 'yyyy/MM/dd HH:mm'}
+        if primary_id:
+            _api('PUT', f'/bitable/v1/apps/{app_token}/tables/{table_id}/fields/{primary_id}', body=body)
+        rest = fields[1:]
+    else:
+        rest = fields
+    for fd in rest:
+        _create_field(app_token, table_id, fd)
+
+
 def write_panorama_row(app_token: str, result: dict, ts: str | None = None) -> bool:
     """写入全景情绪一行 (每 5min)
 
