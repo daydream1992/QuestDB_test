@@ -10,6 +10,8 @@ secrets/
 # --- Runtime logs & output ---
 logs/
 *.log
+*.xlsx                       # 数据导出产物 (人工检查用, 不入库)
+~$*                          # Office 临时锁文件
 
 # --- Python ---
 __pycache__/

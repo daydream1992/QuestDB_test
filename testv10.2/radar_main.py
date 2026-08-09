@@ -44,6 +44,23 @@ ROUND_INTERVAL = 60  # 秒 (雷达 1 分钟/轮)
 os.makedirs(cfg.LOG_DIR, exist_ok=True)
 logger.add(os.path.join(cfg.LOG_DIR, 'testv10.2_radar_{time:YYYYMMDD}.log'),
            rotation='50 MB', retention='30 days', encoding='utf-8')
+# 池内 行业:概念 比例 CSV (连续观察, 判定混排是否打架; 见 memory: 行业分层观察)
+POOL_RATIO_CSV = os.path.join(cfg.LOG_DIR, 'pool_ratio.csv')
+
+
+def _append_pool_ratio(now: datetime, pool_lv: dict, total: int) -> None:
+    """每轮写一行池内层级比例 (行业:概念), 供多日观察。轻量, 失败不崩。"""
+    try:
+        ind = pool_lv.get('三级', 0)
+        con = pool_lv.get('概念', 0)
+        ratio = (ind / total) if total else 0.0
+        with open(POOL_RATIO_CSV, 'a', encoding='utf-8') as f:
+            if f.tell() == 0:
+                f.write('时间,池大小,行业(三级),概念,行业占比\n')
+            f.write(f'{now.strftime("%Y-%m-%d %H:%M:%S")},{total},{ind},{con},'
+                    f'{ratio:.2f}\n')
+    except Exception:  # noqa: BLE001  记录失败不影响雷达
+        pass
 
 
 def select_drill_candidates(hot_codes: list[str], ms, pct_map: dict[str, float],
@@ -71,6 +88,8 @@ def run_one_round(round_idx: int, ms, radar: MesoRadar, pool: BoardPool,
     """跑一轮 funnel + 计算层并联 (per-module try 故障隔离), 返回摘要 dict。"""
     t0 = time.time()
     rows = radar.scan()
+    # 动态池容量 (按探照灯命中数: 平淡日25 / 正常30 / 活跃35; 只放大不缩小保稳定)
+    pool.adjust_cap(sum(1 for r in rows if r.get('searchlights')))
     entered = pool.update(pool_boards(rows), round_idx)
     new_entries = [c for c in entered if c in pool.boards]   # 只保留未被 hard_cap 裁掉的
     hot = pool.hot_codes()
@@ -146,10 +165,16 @@ def run_one_round(round_idx: int, ms, radar: MesoRadar, pool: BoardPool,
             logger.exception('alert_engine 异常, 跳过 (故障隔离)')
 
     leaders = sorted(drilled.items(), key=lambda kv: kv[1]['ZAF'], reverse=True)[:10]
-    logger.info('轮 {}: 池 {} (NEW {}/HOT {}) | 新入池 {} | 钻取 {} 股 | 耗时 {:.1f}s',
+    # 池内 行业(三级):概念 比例 (观察层级信号; 若行业稳定50-70% 则混排无打架)
+    lv_map = {r['code']: r['level'] for r in rows}
+    from collections import Counter
+    pool_lv = Counter(lv_map.get(c, '?') for c in pool.boards)
+    pool_ratio = f"池内 {pool_lv.get('三级',0)}行业/{pool_lv.get('概念',0)}概念"
+    logger.info('轮 {}: 池 {} (NEW {}/HOT {}) | {} | 新入池 {} | 钻取 {} 股 | 耗时 {:.1f}s',
                 round_idx, len(pool.boards), len(new_entries),
                 sum(1 for s in pool.boards.values() if s.state == 'HOT'),
-                new_entries[:5], len(drilled), time.time() - t0)
+                pool_ratio, new_entries[:5], len(drilled), time.time() - t0)
+    _append_pool_ratio(now, pool_lv, len(pool.boards))
     return {'round': round_idx, 'new_entries': new_entries, 'hot': hot,
             'pool_stats': pool.stats(), 'leaders': leaders}
 

@@ -154,6 +154,17 @@ class BoardPool:
             logger.warning('hard_cap 未满裁: guaranteed+WARN 超额, 当前 {} (warn {})',
                            len(self.boards), n_warn)
 
+    def adjust_cap(self, n_hit: int) -> int:
+        """动态容量: 按探照灯命中数调整 hard_cap (平淡日收紧, 活跃日放宽)。
+
+        命中≤30 → 25 (平淡日少钻取); ≤50 → 30 (正常日); 否则 35 (活跃日)。
+        返回调整后的容量。只放大不缩小 (池内已确认的板不被中途踢出, 保状态机稳定)。
+        """
+        new_cap = 25 if n_hit <= 30 else (30 if n_hit <= 50 else 35)
+        if new_cap > self.hard_cap:
+            self.hard_cap = new_cap
+        return self.hard_cap
+
     def hot_codes(self) -> list[str]:
         """HOT + NEW 板块 (成分股钻取目标, 按分降序)。"""
         return [c for c in sorted(self.boards, key=lambda k: self.boards[k].score, reverse=True)

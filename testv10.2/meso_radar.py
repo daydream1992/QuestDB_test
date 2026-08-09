@@ -97,19 +97,28 @@ class MesoRadar:
 
     @staticmethod
     def _tag_searchlights(rows: list[dict]) -> None:
-        """6 探照灯各取 TopN, 命中者写入 searchlights set (求并集)。"""
-        def top(key: str, n: int, reverse: bool = True, filt=None) -> list[dict]:
+        """6 探照灯各取 TopN, 命中者写入 searchlights set (求并集)。
+
+        动态阈值 (floor): 先按 dim 降序, 取 dim ≥ floor 的 (绝对阈值滤平淡日噪音);
+        无 floor 的灯 (gain/lianb) 仍固定 TopN。缓冲带 TopN+3: 排名 N+1~N+3 与第 N
+        差距极小时保留, 防边缘误裁。纯内存排序, 0 COM 开销。"""
+        def top(key: str, n: int, reverse: bool = True, filt=None,
+                floor: float | None = None) -> list[dict]:
             cands = [r for r in rows if (filt is None or filt(r))]
+            if floor is not None:
+                cands = [r for r in cands if r[key] >= floor]
             cands.sort(key=lambda r: r[key], reverse=reverse)
-            return cands[:n]
+            return cands[:n + 3]   # TopN+3 缓冲带 (防排名边缘误裁)
 
         lights = {
-            'gain':  top('ZAF', TOP_GAIN),
-            'zt':    top('ZTGPNum', TOP_ZT),
-            'vel':   top('velocity', TOP_VEL, filt=lambda r: r['velocity'] > 0),
-            'lianb': top('fLianB', TOP_LIANB),
-            'amp':   top('amplitude', TOP_AMP),
-            'drop':  top('ZAF', TOP_DROP, reverse=False, filt=lambda r: r['ZAF'] < 0),
+            'gain':  top('ZAF', TOP_GAIN, floor=2.0),       # 板块涨幅≥2%
+            'zt':    top('ZTGPNum', TOP_ZT, floor=3.0),     # 板块内≥3只涨停
+            'vel':   top('velocity', TOP_VEL, filt=lambda r: r['velocity'] > 0,
+                         floor=0.5),                        # 涨速≥0.5%
+            'lianb': top('fLianB', TOP_LIANB, floor=1.5),   # 量比≥1.5
+            'amp':   top('amplitude', TOP_AMP, floor=3.0),  # 振幅≥3%
+            'drop':  top('ZAF', TOP_DROP, reverse=False, filt=lambda r: r['ZAF'] < 0,
+                         floor=-2.0),                       # 跌幅≥-2%
         }
         for lname, winners in lights.items():
             for r in winners:
