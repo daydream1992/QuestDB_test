@@ -98,7 +98,16 @@ class BlindspotMonitor:
             except Exception:  # noqa: BLE001
                 pass
             r = safe_call(tq.subscribe_hq, stock_list=want, callback=self._on_data)
-            if r and r.get('ErrorId') == '0':
+            # r 是 JSON 字符串 (如 {"ErrorId":"0","Msg":...}) 或 dict; 兼容两者判成功
+            ok = False
+            if isinstance(r, dict):
+                ok = r.get('ErrorId') == '0'
+            elif isinstance(r, str):
+                try:
+                    ok = json.loads(r).get('ErrorId') == '0'
+                except Exception:  # noqa: BLE001
+                    ok = False
+            if ok:
                 self.subscribed.update(want)
                 self.started = True
                 self._fail_n = 0

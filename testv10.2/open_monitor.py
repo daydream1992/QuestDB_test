@@ -76,7 +76,16 @@ class OpenMonitor:
         except Exception:  # noqa: BLE001
             pass
         r = safe_call(tq.subscribe_hq, stock_list=codes, callback=self._on_data)
-        if not r or r.get('ErrorId') != '0':
+        # r 是 JSON 字符串 (如 {"ErrorId":"0",...}) 或 dict; 兼容两者判成功
+        ok = False
+        if isinstance(r, dict):
+            ok = r.get('ErrorId') == '0'
+        elif isinstance(r, str):
+            try:
+                ok = json.loads(r).get('ErrorId') == '0'
+            except Exception:  # noqa: BLE001
+                ok = False
+        if not ok:
             self._fail_n += 1
             if self._fail_n >= 3:
                 self._backoff_until = time.time() + cfg.SUBSCRIBE_BACKOFF_SEC
