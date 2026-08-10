@@ -133,6 +133,8 @@ class OpportunityEngine:
     def _check_hot_streak(self, pool, now) -> int:
         if not self.pub:
             return 0
+        # 趋势确认停推 (2026-08-10): 状态达成非瞬时事件, 推送骚扰, 只保留检测维护跨轮状态
+        return 0
         # 池内连续 HOT 达阈值且未推过, 只推最强者
         cands = [s for s in pool.boards.values()
                  if s.state == 'HOT' and s.rounds_in >= cfg.OPP_STREAK_ROUNDS
