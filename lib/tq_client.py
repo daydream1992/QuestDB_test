@@ -49,7 +49,10 @@ def init(path=None):
     """初始化 tqcenter 连接
 
     Args:
-        path: tqcenter 所在目录, 默认从 .env 的 TQCENTER_PATH 读取
+        path: 通达信连接文件名 (文档要求标准 .py 文件名, 如 'radar_main.py'),
+              默认从 .env 的 TQCENTER_PATH 取目录 + 脚本名。
+    修复 (2026-08-10): 原传目录路径导致 subscribe_hq 报"超过一百只" (订阅通道未关联通达信),
+      改传文件名后 subscribe/more_info/pricevol 全通。
     """
     global _initialized
     with _lock:
@@ -57,7 +60,8 @@ def init(path=None):
             logger.debug('tqcenter 已初始化, 跳过重复 init')
             return
         if path is None:
-            path = TQCENTER_PATH
+            # 从 TQCENTER_PATH 目录取当前脚本名作为连接文件名 (文档: initialize(标准.py文件名))
+            path = os.path.basename(sys.argv[0]) if sys.argv and sys.argv[0] else 'radar_main.py'
         tq.initialize(path)
         _initialized = True
 
