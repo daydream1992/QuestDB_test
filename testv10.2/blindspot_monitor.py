@@ -89,6 +89,14 @@ class BlindspotMonitor:
                 self.prev_fcamo.pop(c, None)
                 self.fcamo_hist.pop(c, None)
         if want:
+            # 先清空订阅 (防通达信侧满 100 残留, 根治"超过一百只"错误)
+            try:
+                old = tq.get_subscribe_hq_stock_list() or []
+                if old:
+                    safe_call(tq.unsubscribe_hq, stock_list=list(old))
+                    logger.info('blindspot: 清理旧订阅 {} 只', len(old))
+            except Exception:  # noqa: BLE001
+                pass
             r = safe_call(tq.subscribe_hq, stock_list=want, callback=self._on_data)
             if r and r.get('ErrorId') == '0':
                 self.subscribed.update(want)

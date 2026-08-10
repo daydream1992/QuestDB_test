@@ -67,6 +67,14 @@ class OpenMonitor:
         if not codes:
             logger.warning('开盘监控: 无候选, 不订阅')
             return False
+        # 先清空订阅 (防通达信侧满 100 残留, 根治"超过一百只"错误)
+        try:
+            old = tq.get_subscribe_hq_stock_list() or []
+            if old:
+                safe_call(tq.unsubscribe_hq, stock_list=list(old))
+                logger.info('开盘监控: 清理旧订阅 {} 只', len(old))
+        except Exception:  # noqa: BLE001
+            pass
         r = safe_call(tq.subscribe_hq, stock_list=codes, callback=self._on_data)
         if not r or r.get('ErrorId') != '0':
             self._fail_n += 1
