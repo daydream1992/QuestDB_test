@@ -206,6 +206,30 @@ class Publisher:
 
     # ============ 机会类事件 (盘中决策最缺; 与负向共用 ≤2/min bucket) ============
 
+    # 🎯 猎杀买入信号 (buy_signal; 板块涨幅→领涨梯队→龙头/中军/跟风买点; lane0)
+    def on_buy_signal(self, sig: dict, now: datetime) -> bool:
+        lines = [f'🎯 买入信号 | {now.strftime("%H:%M")}', '']
+        lines.append(f'{sig["board"]}  涨{sig["board_zaf"]:+.1f}%  涨停{sig["zt"]}')
+        # 龙头 (首位候选): 排板/排队 + 封单趋势 + 主力
+        lines.append(f'▸ 龙头 {sig["leader_name"]}  {sig["leader_lb"]}连板'
+                     f'  封单{sig["leader_fc"]:.0f}万'
+                     f'{(" " + sig["leader_trend"]) if sig.get("leader_trend") else ""}')
+        if sig.get('leader_zjl'):
+            lines.append(f'   {sig["leader_zjl"]}')
+        if sig.get('leader_fl'):
+            lines.append(f'   ⏱ 首封 {sig["leader_fl"]}')
+        lines.append(f'  → {sig["leader_action"]}')
+        # 中军 (低吸): 次强封板 / 放量未封
+        if sig.get('mid_name'):
+            lines.append(f'▸ 中军 {sig["mid_name"]}  → {sig["mid_action"]}')
+        # 跟风 (谨慎): 未封涨幅≥5%
+        if sig.get('follows'):
+            lines.append(f'▸ 跟风 {" ".join(sig["follows"])}  → 谨慎')
+        # 可打 (具体扣扳机标的)
+        if sig.get('keda'):
+            lines.append(f'  🎯 可打 {" ".join(sig["keda"])}')
+        return self._dispatch(f'🎯 买入 {sig["board"]}', lines, now, lane=cfg.HUNT_LANE)
+
     # 🟢 板块新主线入池 (状态机 NEW; 猎场卡: 板块+龙头+可打)
     def on_board_new(self, boards: list, now: datetime) -> bool:
         lines = [f'🟢 新主线 | {now.strftime("%H:%M")}']

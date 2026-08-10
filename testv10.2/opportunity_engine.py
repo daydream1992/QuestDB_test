@@ -69,64 +69,15 @@ class OpportunityEngine:
             logger.exception('limit_up 检测异常, 跳过')
         return n_sent
 
-    # ── 新主线 (每轮≤2, 去重, 收紧: 只推强板防骚扰) ── 猎场卡: 板块+龙头+可打
+    # ── 新主线 (停推 2026-08-10: 播报模式主因, 猎杀模式由 buy_signal 替代) ──
     def _check_board_new(self, new_entries, pool, rows, drilled, blindspot, now) -> int:
-        if not new_entries or not self.pub:
+        """新主线卡停推 (播报模式 → 猎杀模式): 板块确认+梯队+买点 由 buy_signal 统一推。
+        这里保留去重状态更新 (防猎杀信号未接前旧逻辑反复触发), 不再推卡。"""
+        if not new_entries:
             return 0
         rmap = {r['code']: r for r in rows}
-        # 收紧: 只推 动能分≥50 且 涨停≥2 的强板 (防 28 次/天骚扰, 呼应 agent P0-3)
-        strong = [c for c in new_entries
-                  if rmap.get(c, {}).get('score', 0) >= cfg.OPP_NEW_SCORE
-                  and int(rmap.get(c, {}).get('ZTGPNum', 0)) >= cfg.OPP_NEW_ZT
-                  and c not in self._pushed_new]
-        fresh = strong[:cfg.OPP_NEW_MAX]
-        if not fresh:
-            return 0
-        # 板块→成分股 (drilled 内该板块的个股)
-        def _board_stocks(bc):
-            if not self.ms:
-                return {}
-            return {c: d for c, d in drilled.items()
-                    if bc in self.ms.boards_of(c) and c in drilled}
-        boards = []
-        for c in fresh:
-            r = rmap.get(c)
-            if not r:
-                continue
-            bst = _board_stocks(c)
-            # 龙头: 板块内 FCAmo>0 且连板最高 / 封单最大
-            leader = None
-            for sc, sd in bst.items():
-                if sd.get('FCAmo', 0) > 0:
-                    if leader is None or (sd.get('EverZTCount', 0) >
-                                          leader['sd'].get('EverZTCount', 0)):
-                        leader = {'code': sc, 'sd': sd}
-            leader_s = ''
-            if leader:
-                nm = self.ms.stock_name(leader['code']) if self.ms else leader['code']
-                lb = int(leader['sd'].get('EverZTCount', 0))
-                lb_s = f'{lb}连板' if lb >= 2 else '首板'
-                fl = blindspot.first_limit_time.get(leader['code'], '') if blindspot else ''
-                fl_s = f' ⏱{fl}' if fl else ''
-                leader_s = f'龙头:{nm}({lb_s}/封单{leader["sd"].get("FCAmo",0):.0f}万){fl_s}'
-            # 可打: 板块内未封但涨幅≥7% 的 1-2 只 (启动/补涨, 呼应"不推已涨停")
-            keda = []
-            for sc, sd in sorted(bst.items(), key=lambda kv: -kv[1].get('ZAF', 0)):
-                if sd.get('FCAmo', 0) <= 0 and sd.get('ZAF', 0) >= 7 and len(keda) < 2:
-                    nm = self.ms.stock_name(sc) if self.ms else sc
-                    keda.append(f'{nm}({sd.get("ZAF",0):.1f}%/{sd.get("fHSL",0):.0f}%换)')
-            boards.append({
-                'name': r.get('name', c), 'zaf': r.get('ZAF', 0),
-                'zt': int(r.get('ZTGPNum', 0)),
-                'leader': leader_s,
-                'keda': '可打:' + ' '.join(keda) if keda else '',
-            })
-        if boards:
-            # 无论推送成败都去重 (限频丢弃也标记, 防反复刷)
-            self._pushed_new.update(c for c in fresh if c in rmap)
-            if self.pub.on_board_new(boards, now):
-                logger.info('🟢 机会: 新主线 {}', [b['name'] for b in boards])
-                return 1
+        # 仅更新去重状态, 不推卡 (呼应 2026-08-10 用户: 推送新主线意义/骚扰)
+        self._pushed_new.update(c for c in new_entries if c in rmap)
         return 0
 
     # ── 趋势确认 (rounds_in≥3 且未推过) ──

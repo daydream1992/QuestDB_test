@@ -141,6 +141,22 @@ OPP_NEW_ZT = 2                  # 新主线收紧: 板块涨停家数≥N 才推
 FADE_BLAST_MUTEX_SEC = 1800     # 衰竭后 30min 内同股炸板不推卡 (防双卡连发)
 SUBSCRIBE_BACKOFF_SEC = 300     # subscribe 失败熔断退避 (连续3次失败后 5min 不试, 防风暴)
 
+# === 猎杀模式买入信号 (buy_signal; 板块涨幅→领涨梯队→龙头/中军/跟风买点) ===
+# 门控: 板块确认 + 梯队完整 + 强度未衰 + 环境可做 全满足才推, 缺一安静 (猎杀非播报)
+HUNT_SECTOR_ZT = 3               # 板块涨停≥N 家 → 板块被确认 (攻击强度足够)
+HUNT_SECTOR_ZAF = 4.0            # 板块涨幅≥N% → 板块在涨 (涨幅维度)
+HUNT_LB = 2                      # 龙头连板≥N → 龙头确认 (≥2 板才是真龙头, 首板不算)
+HUNT_FOLLOW_N = 2                # 板块内跟风≥N 只 → 梯队完整 (不是独角戏)
+HUNT_BOARD_RED_RATIO = 0.5       # 板内红盘率≥N → 普涨 (板块真涨, 非个别股硬拉)
+HUNT_MIN_SCORE = 50              # 板块动能分≥N (复用 calc_sector_score)
+HUNT_FADE_MIN = 15.0             # 龙头封单降幅≥N% 视为衰减 → 不推 (封单在减别追)
+HUNT_COOLDOWN_SEC = 300          # 同板块信号冷却 (5min, 防同一板块反复刷)
+HUNT_ZJIN = 3000                 # 龙头主力净流入≥N 万 → 资金认可 (中军买点加分)
+HUNT_KEDA_ZAF = 7.0              # 中军/跟风未封但涨幅≥N% → 可打标的
+HUNT_KEDA_FHSL = 5.0             # 中军/跟风换手≥N% → 有承接 (一字买不进)
+HUNT_KEDA_MAX = 2                # 每信号最多列 N 个可打 (防长卡刷屏)
+HUNT_LANE = 0                    # 信号走机会桶 lane0 (与新主线共用 1/min, 新主线卡已停用)
+
 # === 个股排名 (stock_ranking; 池内综合排名, 打板选股底座) ===
 RANKING_INTERVAL_SEC = 120          # 个股榜频率 (2min/行)
 LEADERBOARD_INTERVAL_SEC = 180     # 板块梯队表频率 (3min/行)

@@ -94,6 +94,36 @@ def l1_config():
     except Exception as e:  # noqa: BLE001
         check('SENTIMENT_FIELDS 校验', False, str(e)[:50])
 
+    # 3. 猎杀买入信号 (buy_signal): import + 合成信号快检 (盘前发现接线断裂)
+    try:
+        from types import SimpleNamespace as NS
+        from buy_signal import BuySignalEngine
+        import publisher as pub_mod
+        pub = pub_mod.Publisher(dry_run=True)
+        eng = BuySignalEngine(pub=pub, dry_run=True)
+        class _FakeMs:
+            def stock_name(self, c): return {'A': '龙头A', 'B': '中军B', 'C': '跟风C', 'D': '跟风D'}.get(c, c)
+            def boards_of(self, c): return {'880001.SH'}
+            def board_name(self, b): return '创新药'
+        eng.ms = _FakeMs()
+        drilled = {'A': {'EverZTCount': 2, 'FCAmo': 8000, 'ZAF': 10, 'fHSL': 8, 'Zjl_HB': 1.5e4},
+                   'B': {'EverZTCount': 1, 'FCAmo': 5000, 'ZAF': 10, 'fHSL': 9},
+                   'C': {'EverZTCount': 1, 'FCAmo': 0, 'ZAF': 8.5, 'fHSL': 6},
+                   'D': {'EverZTCount': 1, 'FCAmo': 0, 'ZAF': 6.2, 'fHSL': 4}}
+        bs = NS(first_limit_time={'A': '09:31:00'}, fcamo_hist={'A': [8000, 9000]},
+                break_count={}, back_count={}, zt_count={})
+        pool = NS(snapshot=lambda: [NS(code='880001.SH', name='创新药', state='HOT',
+                                       score=72.0, zt_num=5, zaf=5.5)])
+        sig = eng._build_signal(pool.snapshot()[0], drilled, bs, datetime.now())
+        check('buy_signal 合成信号 (龙头2连板+封单增)', bool(sig and sig['leader_action'] == '排板'),
+              '' if (sig and sig['leader_action'] == '排板') else '应排板')
+        # 门控: 无2连板龙头 → None (首板不算真龙头)
+        d2 = {c: dict(d) for c, d in drilled.items()}
+        d2['A']['EverZTCount'] = 1
+        check('buy_signal 无2连板龙头门控', eng._build_signal(pool.snapshot()[0], d2, bs, datetime.now()) is None)
+    except Exception as e:  # noqa: BLE001
+        check('buy_signal 自检', False, str(e)[:50])
+
 
 # ── L2 COM 探针 (盘前真实调用, 需通达信) ──
 def l2_com():

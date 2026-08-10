@@ -40,6 +40,7 @@ from stock_ranking import StockRanking  # noqa: E402
 from blindspot_monitor import BlindspotMonitor  # noqa: E402
 from ladder_tracker import LadderTracker  # noqa: E402
 from opportunity_engine import OpportunityEngine  # noqa: E402
+from buy_signal import BuySignalEngine  # noqa: E402
 from duckdb_snapshot import DuckdbSnapshot  # noqa: E402
 from alert_engine import AlertEngine  # noqa: E402
 import data_provider  # noqa: E402  统一采集层 (bundle)
@@ -156,7 +157,7 @@ def select_drill_candidates(hot_codes: list[str], ms, pct_map: dict[str, float],
 def run_one_round(round_idx: int, ms, radar: MesoRadar, pool: BoardPool,
                   sentiment, rotations: list, rotation_switch, board_leaderboard,
                   auction_monitor, tail_monitor, stock_ranking, alert_engine,
-                  blindspot, opportunity, ladder, duck,
+                  blindspot, opportunity, ladder, duck, buy_signal,
                   is_close: bool, now: datetime) -> dict:
     """跑一轮 funnel + 计算层并联 (per-module try 故障隔离), 返回摘要 dict。"""
     t0 = time.time()
@@ -303,6 +304,12 @@ def run_one_round(round_idx: int, ms, radar: MesoRadar, pool: BoardPool,
             opportunity.check(new_entries, pool, drilled, blindspot, rows, now)
         except Exception:  # noqa: BLE001
             logger.exception('机会引擎异常, 跳过 (故障隔离)')
+    # 猎杀买入信号 (盘中/tail; 板块确认→梯队→买点; 播报→猎杀核心)
+    if stage in ('intraday', 'tail') and buy_signal:
+        try:
+            buy_signal.check(pool, drilled, blindspot, rows, sentiment, now)
+        except Exception:  # noqa: BLE001
+            logger.exception('buy_signal 异常, 跳过 (故障隔离)')
     # 统一预警引擎 (读各模块 last_result; 盘中/tail/close)
     if stage in ('intraday', 'tail', 'close') and alert_engine:
         try:
@@ -367,6 +374,7 @@ def run(rounds: int | None = None, force: bool = False, push: bool = False,
     blindspot = BlindspotMonitor(ms, dry_run=not push)
     ladder = LadderTracker(ms, dry_run=not push)
     opportunity = OpportunityEngine(ms, pub, dry_run=not push)
+    buy_signal = BuySignalEngine(ms, pub, dry_run=not push)
     # init 保护: 通达信 COM 初始化失败给友好提示, 不裸 traceback
     try:
         init()
@@ -418,7 +426,8 @@ def run(rounds: int | None = None, force: bool = False, push: bool = False,
                                             sentiment, rotations, rotation_switch,
                                             board_leaderboard, auction_mon, tail_mon,
                                             stock_ranking, alert_engine, blindspot,
-                                            opportunity, ladder, duck, False, now)
+                                            opportunity, ladder, duck, buy_signal,
+                                            False, now)
                         _print_summary(res, ms)
                         if _PANEL:
                             _status_line(round_idx, res.get('_dt', 0),
@@ -436,7 +445,8 @@ def run(rounds: int | None = None, force: bool = False, push: bool = False,
                                     sentiment, rotations, rotation_switch,
                                     board_leaderboard, auction_mon, tail_mon,
                                     stock_ranking, alert_engine, blindspot,
-                                    opportunity, ladder, duck, is_close, now)
+                                    opportunity, ladder, duck, buy_signal,
+                                    is_close, now)
                 _print_summary(res, ms)
                 if _PANEL:
                     _status_line(round_idx, res.get('_dt', 0),
