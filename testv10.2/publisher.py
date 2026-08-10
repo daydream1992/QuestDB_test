@@ -266,7 +266,10 @@ class Publisher:
             # 主力: 封板后主力流入/流出
             zjl = s.get('zjl_hb', 0)
             zjl_s = f'  主力{int(zjl/1e4)}亿' if abs(zjl) > 0 else ''
-            lines.append(f'{name}{lb_s}  {s["zaf"]:+.1f}%  封单{s["fcamo"]:.0f}万'
+            # 封单变化率 (封单在增=可打/在减=别追)
+            fc_t = s.get('fc_trend', '')
+            fc_s = f'  [{fc_t}]' if fc_t else ''
+            lines.append(f'{name}{lb_s}  {s["zaf"]:+.1f}%  封单{s["fcamo"]:.0f}万{fc_s}'
                          f' 封成比{s["fcb"]:.2f}{weak_s}{hsl_s}{pos_s}')
             if zjl_s:
                 lines.append(f'  {zjl_s.strip()}')

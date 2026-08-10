@@ -20,6 +20,24 @@ from loguru import logger  # noqa: E402
 import settings as cfg  # noqa: E402
 
 
+def _fcamo_trend(blindspot, code: str) -> str:
+    """封单变化率: 从 blindspot.fcamo_hist 最近两值算趋势 (增/减/平)。"""
+    if not blindspot or not hasattr(blindspot, 'fcamo_hist'):
+        return ''
+    hist = blindspot.fcamo_hist.get(code, [])
+    if len(hist) < 2 or hist[-1] <= 0:
+        return ''
+    prev, cur = hist[-2], hist[-1]
+    if prev <= 0:
+        return ''
+    pct = (cur - prev) / prev * 100
+    if pct >= 10:
+        return f'封单+{pct:.0f}%'
+    if pct <= -10:
+        return f'封单{pct:.0f}%'
+    return '封单平'
+
+
 class OpportunityEngine:
     """机会事件引擎: 读各源 → 去重 → publisher 3 正卡。"""
 
@@ -171,6 +189,8 @@ class OpportunityEngine:
                 'pos_ratio': d.get('pos_ratio', 0),        # 位置 (高位风险)
                 'zjl_hb': d.get('Zjl_HB', 0),              # 主力净流入
                 'break_n': blindspot.break_count.get(c, 0) if blindspot else 0,  # 炸板次数(烂板)
+                # 封单变化率 (fcamo_hist 最近两值, 封单在增=可打/在减=别追)
+                'fc_trend': _fcamo_trend(blindspot, c),
             })
         if stocks:
             # 无论推送成败都去重: 限频丢弃也标记已推, 防同一批涨停股反复刷 (盘中混乱主因)
