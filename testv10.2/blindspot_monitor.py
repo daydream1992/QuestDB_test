@@ -53,6 +53,8 @@ class BlindspotMonitor:
         self.back_count: dict[str, int] = {}     # code → 回封次数 (炸板后再次封住累计)
         self.push_count: dict[str, int] = {}     # code → 炸板/回封推卡次数 (限2次, 防刷屏)
         self.fade_ts: dict[str, float] = {}      # code → 最近衰竭时间戳 (炸板互斥: 衰竭30min内不推炸板卡)
+        self._fail_n = 0                          # 订阅连续失败计数 (熔断用)
+        self._backoff_until = 0.0                 # 熔断截止时间
         self.events: list[dict] = []             # 本轮累计状态变更事件 (供推送)
         self.started = False
 
@@ -71,7 +73,11 @@ class BlindspotMonitor:
 
     # ── 订阅管理 (每轮换订 TopN; ≤max_sub) ──
     def refresh(self, top_codes: list[str]) -> None:
-        """换订 TopN: 先退旧 (本轮不在 Top 的), 再补新 (新进 Top 的)。≤100 上限。"""
+        """换订 TopN: 先退旧 (本轮不在 Top 的), 再补新 (新进 Top 的)。≤100 上限。
+        熔断: 连续 3 次失败 → 退避 300s 不试 (防盘中 DLL 通道故障时每轮重试风暴)。"""
+        # 熔断: 退避期内直接返回, 不碰 DLL
+        if time.time() < self._backoff_until:
+            return
         want = [c for c in top_codes if c not in self.subscribed][:cfg.OPEN_MAX_SUB]
         drop = [c for c in self.subscribed if c not in top_codes]
         if drop:
@@ -87,8 +93,15 @@ class BlindspotMonitor:
             if r and r.get('ErrorId') == '0':
                 self.subscribed.update(want)
                 self.started = True
+                self._fail_n = 0
             else:
-                logger.error('blindspot subscribe_hq 失败: {}', r)
+                self._fail_n += 1
+                if self._fail_n >= 3:
+                    self._backoff_until = time.time() + cfg.SUBSCRIBE_BACKOFF_SEC
+                    logger.error('blindspot subscribe 连续{}次失败, 熔断 {}s (降级轮询)',
+                                 self._fail_n, cfg.SUBSCRIBE_BACKOFF_SEC)
+                else:
+                    logger.error('blindspot subscribe_hq 失败 ({}次): {}', self._fail_n, r)
         if not drop and not want and self.subscribed:
             logger.debug('blindspot: TopN 未变化, 保持订阅 {}', len(self.subscribed))
 
@@ -122,7 +135,7 @@ class BlindspotMonitor:
     def _check(self, code: str) -> None:
         if code not in self.subscribed:
             return
-        mi = safe_call(tq.get_more_info, stock_code=code, field_list=[]) or {}
+        mi = safe_call(tq.get_more_info, stock_code=code, field_list=[], timeout=cfg.MOREINFO_TIMEOUT) or {}
         fcamo = float(mi.get('FCAmo') or 0)
         prev = self.prev_fcamo.get(code)
         self.prev_fcamo[code] = fcamo

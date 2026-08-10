@@ -16,6 +16,7 @@ import bootstrap
 bootstrap.ensure_paths()
 
 import json  # noqa: E402
+import time  # noqa: E402
 from queue import Queue, Empty  # noqa: E402
 from datetime import datetime  # noqa: E402
 
@@ -39,6 +40,9 @@ class OpenMonitor:
         self.subscribed: set[str] = set()   # 当前订阅 code
         self.fired: set[str] = set()        # 已触发 (去重, 不重复发)
         self.started = False
+        # 订阅熔断: 连续失败 N 次后熔断 300s, 期间不再尝试 (消除盘中 3646 次风暴)
+        self._fail_n = 0
+        self._backoff_until = 0.0
 
     # ── 回调 (方案A: 只 queue.put, 不碰 tq) ──
     def _on_data(self, data_str: str) -> None:
@@ -54,15 +58,26 @@ class OpenMonitor:
 
     # ── 订阅管理 ──
     def start(self, candidates: list[str]) -> bool:
-        """订阅候选 (≤max_sub, 超截断)。candidates 由外部选股注入。"""
+        """订阅候选 (≤max_sub, 超截断)。candidates 由外部选股注入。
+        熔断: 连续失败 3 次 → 退避 300s 不试 (防盘中 DLL 通道故障时 0.1s 风暴)。"""
+        # 熔断: 退避期内直接返回, 不碰 DLL
+        if time.time() < self._backoff_until:
+            return False
         codes = [c for c in candidates if c not in self.subscribed][:self.max_sub]
         if not codes:
             logger.warning('开盘监控: 无候选, 不订阅')
             return False
         r = safe_call(tq.subscribe_hq, stock_list=codes, callback=self._on_data)
         if not r or r.get('ErrorId') != '0':
-            logger.error('subscribe_hq 失败: {}', r)
+            self._fail_n += 1
+            if self._fail_n >= 3:
+                self._backoff_until = time.time() + cfg.SUBSCRIBE_BACKOFF_SEC
+                logger.error('subscribe_hq 连续{}次失败, 熔断 {}s 不再重试 (降级轮询)',
+                             self._fail_n, cfg.SUBSCRIBE_BACKOFF_SEC)
+            else:
+                logger.error('subscribe_hq 失败 ({}次): {}', self._fail_n, r)
             return False
+        self._fail_n = 0
         self.subscribed.update(codes)
         self.started = True
         logger.info('开盘监控: 订阅 {} 只 (累计 {}), 阈值相对开盘>{}%',
@@ -98,7 +113,8 @@ class OpenMonitor:
         if code in self.fired:
             return
         snap = safe_call(tq.get_market_snapshot, stock_code=code,
-                         field_list=['Now', 'Open', 'LastClose']) or {}
+                         field_list=['Now', 'Open', 'LastClose'],
+                         timeout=cfg.MOREINFO_TIMEOUT) or {}
         now_p = float(snap.get('Now') or 0)
         open_p = float(snap.get('Open') or 0)
         rise = ((now_p - open_p) / open_p * 100) if open_p > 0 else 0

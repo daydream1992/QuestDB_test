@@ -23,6 +23,9 @@ import settings as cfg  # noqa: E402
 from lib.tq_client import safe_call  # noqa: E402
 from tqcenter import tq  # noqa: E402
 
+# 健康计数 (盘中降级/失败累计, 供 health_monitor/告警读取)
+_health: dict = {'sentiment_degrade': 0, 'auction_degrade': 0}
+
 
 def _f(v, default: float = 0.0) -> float:
     try:
@@ -91,8 +94,9 @@ def fetch_bundle(stage: str, df_hint=None) -> dict:
         try:
             bundle['sentiment_raw'] = fetcher.fetch_sentiment_raw(df)
         except Exception:  # noqa: BLE001  故障隔离: 情绪采集失败降级, 不拖垮整轮
-            logger.exception('sentiment 采集失败, 降级为空 (本轮情绪/候选缺失)')
+            logger.warning('sentiment 采集失败, 降级为空 (健康计数+1)')
             bundle['sentiment_raw'] = None
+            _health['sentiment_degrade'] += 1
     # 竞价: 板块竞价榜 + 一字候选 (给 open_monitor)
     if stage == 'auction':
         try:

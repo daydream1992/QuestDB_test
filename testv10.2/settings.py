@@ -139,6 +139,7 @@ OPP_LIMIT_MAX = 2               # 每轮龙头封板最多推 N 只
 OPP_NEW_SCORE = 50              # 新主线收紧: 板块动能分≥N 才推 (防 28次/天骚扰)
 OPP_NEW_ZT = 2                  # 新主线收紧: 板块涨停家数≥N 才推 (弱板不推)
 FADE_BLAST_MUTEX_SEC = 1800     # 衰竭后 30min 内同股炸板不推卡 (防双卡连发)
+SUBSCRIBE_BACKOFF_SEC = 300     # subscribe 失败熔断退避 (连续3次失败后 5min 不试, 防风暴)
 
 # === 个股排名 (stock_ranking; 池内综合排名, 打板选股底座) ===
 RANKING_INTERVAL_SEC = 120          # 个股榜频率 (2min/行)
