@@ -1042,7 +1042,15 @@ def run(con=None, max_rounds=None, force=False):
                         logger.warning('止损止盈检查失败 {}: {}', pos.get('code'), e)
 
                 # 风控 + 飞书推送 (写 qd_decisions)
-                _process_decisions(_writer, decisions, risk, ctx)
+                # 2026-07-24 紧急修复: 60s块耗时长, _writer idle 被服务端断后
+                # executemany_batch 重试耗尽(max_retry=0)必抛 → 带翻整个进程.
+                # 写前重新 ensure(ping+重连) + try 隔离, 让下一轮自愈而非崩溃.
+                # 根因(连接为何idle断/Windows keepalive是否生效)盘后再查.
+                try:
+                    _writer = _ensure_writer()
+                    _process_decisions(_writer, decisions, risk, ctx)
+                except Exception as e:
+                    logger.error('写 qd_decisions 失败 (已隔离, 下轮 _ensure_writer 自愈): {}', e)
 
             # 心跳: 主循环每轮刷新时间戳
             _write_heartbeat('intraday_loop')
