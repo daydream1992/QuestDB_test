@@ -1,4 +1,4 @@
-# v10.2 盘前检查 (一键盘前准备) — 检查通达信/parquet/飞书/依赖
+﻿# v10.2 盘前检查 (一键盘前准备) — 检查通达信/parquet/飞书/依赖
 # 用法: powershell -ExecutionPolicy Bypass -File prepare_v10.2.ps1
 # PS5.1 兼容 (UTF-8 with BOM 保存)
 

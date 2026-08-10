@@ -34,7 +34,7 @@ DRILL_RETRY_BUDGET_SEC = 1.5   # 钻取超时重试预算 (秒; 只重试未完�
 DRILL_GLOBAL_TOP_N = 20        # 全市场 pct 前 N 补钻 (池外最强票可见, 找最牛股盲区)
 
 # === 推送 (publisher: alert_engine / open_monitor / rotation 等各模块共用) ===
-PUSH_TEXT_MAX_PER_MIN = 2   # 事件通道 ≤2 条/分钟 (人类注意力上限, CLAUDE.md §四)
+PUSH_TEXT_MAX_PER_MIN = 3   # 事件通道 ≤3 条/分钟 (3桶: 新主线/预警/龙头封板 各1; 龙头封板独立配额防饿死)
 WEBHOOK_TIMEOUT = 5         # 飞书 webhook HTTP 超时 (秒)
 
 
@@ -102,6 +102,7 @@ ROTATION_LEVELS = {                # (label, table_base, level_filter)
     'concept': ('概念', 'v10.2概念轮动', {'概念'}),
     'sector':  ('行业', 'v10.2行业轮动', {'三级'}),
 }
+SWITCH_COOLDOWN_SEC = 300        # 高低切卡冷却 (同方向 5min 不重复推)
 
 # === 开盘监控 (open_monitor; 传导链①龙头异动; 9:30-9:45) ===
 OPEN_SURGE_THRESHOLD = 5.0          # 相对开盘价涨幅 > N% 触发 (get_market_snapshot Open/Now)
@@ -137,6 +138,7 @@ OPP_LIMIT_MAX = 2               # 每轮龙头封板最多推 N 只
 
 # === 个股排名 (stock_ranking; 池内综合排名, 打板选股底座) ===
 RANKING_INTERVAL_SEC = 120          # 个股榜频率 (2min/行)
+LEADERBOARD_INTERVAL_SEC = 180     # 板块梯队表频率 (3min/行)
 
 # === 雷达/tick 字段 (Step 3+ 填, 待 Phase 0 G2-G5 验证) ===
 # INDEX_TABLE / *_SNAP_FIELDS / FLEET_QUOTA ...

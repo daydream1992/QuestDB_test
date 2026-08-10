@@ -28,14 +28,14 @@ _CIRCLED = '①②③④⑤⑥⑦⑧⑨⑩'
 
 
 class TokenBucket:
-    """令牌桶: 支持分桶 (机会类/预警类各 ≤1/min, 共 2/min 人类注意力红线)。
-    机会类 (新主线/趋势确认/龙头封板) 与预警类 (跳水/炸板/回封) 分开,
-    避免负向事件挤光配额饿死正向机会卡。"""
+    """令牌桶: 支持分桶 (新主线/预警/龙头封板 各 ≤1/min)。
+    机会类拆两桶: 新主线/趋势确认 (lane0) + 龙头封板 (lane2, 最高价值独立配额,
+    不被新主线饿死); 预警类 lane1。"""
 
-    def __init__(self, max_per_min: int, lanes: int = 2):
+    def __init__(self, max_per_min: int, lanes: int = 3):
         self.max = max_per_min
         self.lanes = lanes
-        # 每 lane 独立 deque: 均分 max_per_min (如 2/min ÷ 2 lanes = 每桶 1/min)
+        # 每 lane 独立 deque: 均分 max_per_min (如 3/min ÷ 3 lanes = 每桶 1/min)
         self._times: list[deque] = [deque() for _ in range(lanes)]
 
     def allow(self, now: datetime, lane: int = 0) -> bool:
@@ -190,14 +190,20 @@ class Publisher:
 
     # ============ 机会类事件 (盘中决策最缺; 与负向共用 ≤2/min bucket) ============
 
-    # 🟢 板块新主线入池 (状态机 NEW; 60s内发现新方向, 系统最大价值)
+    # 🟢 板块新主线入池 (状态机 NEW; 猎场卡: 板块+龙头+可打)
     def on_board_new(self, boards: list, now: datetime) -> bool:
         lines = [f'🟢 新主线 | {now.strftime("%H:%M")}']
         for b in boards:
-            lines.append(f'{b["name"]}  涨幅{b["zaf"]:+.1f}%  涨停{b["zt"]}')
-            if b.get('lights'):
-                lines.append(f'  [探照灯: {" ".join(b["lights"])}]')
+            lines.append(f'{b["name"]}  涨{b["zaf"]:+.1f}%  涨停{b["zt"]}')
+            if b.get('leader'):
+                lines.append(f'  {b["leader"]}')
+            if b.get('keda'):
+                lines.append(f'  {b["keda"]}')
         return self._dispatch(f'🟢 新主线 {len(boards)} 板块', lines, now, lane=0)
+
+    # 🔀 板块高低切 (资金从A切向B; 机会桶 lane0 ≤1/min, 5min冷却)
+    def on_rotation_switch(self, lines: list, now: datetime) -> bool:
+        return self._dispatch('🔀 板块高低切', lines, now, lane=0)
 
     # 🔔 竞价定调 (9:25 竞价结束一次; 汇总通道不占 2/min 配额)
     def on_auction_preview(self, lines: list, now: datetime) -> bool:
@@ -252,7 +258,7 @@ class Publisher:
                 lines.append(f'  ⏱ 首封 {s["first_limit"]}')
             if s.get('boards'):
                 lines.append(f'  [{" ".join(s["boards"][:3])}]')
-        return self._dispatch(f'🚀 龙头封板 {len(stocks)} 只', lines, now, lane=0)
+        return self._dispatch(f'🚀 龙头封板 {len(stocks)} 只', lines, now, lane=2)
 
 
 if __name__ == '__main__':

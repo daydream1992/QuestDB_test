@@ -1,4 +1,4 @@
-# v10.2 进程守护 — 盘中雷达崩溃自动重启 + 心跳新鲜度监控
+﻿# v10.2 进程守护 — 盘中雷达崩溃自动重启 + 心跳新鲜度监控
 # 用法: powershell -ExecutionPolicy Bypass -File watch_radar.ps1 [--push]
 # PS5.1 兼容 (UTF-8 with BOM 保存)
 # 逻辑: 30s 轮询, ①radar_main 进程不在 → 重启 (生产 --push) ②心跳文件 mtime >90s → 假死告警

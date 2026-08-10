@@ -37,7 +37,8 @@ class OpportunityEngine:
         """检测 3 机会事件, 返回推送成功数。失败不崩。"""
         n_sent = 0
         try:
-            n_sent += self._check_board_new(new_entries, pool, rows, now)
+            n_sent += self._check_board_new(new_entries, pool, rows, drilled,
+                                            blindspot, now)
         except Exception:  # noqa: BLE001
             logger.exception('board_new 检测异常, 跳过')
         try:
@@ -50,8 +51,8 @@ class OpportunityEngine:
             logger.exception('limit_up 检测异常, 跳过')
         return n_sent
 
-    # ── 新主线 (每轮≤2, 去重) ──
-    def _check_board_new(self, new_entries, pool, rows, now) -> int:
+    # ── 新主线 (每轮≤2, 去重) ── 猎场卡: 板块+龙头+可打
+    def _check_board_new(self, new_entries, pool, rows, drilled, blindspot, now) -> int:
         if not new_entries or not self.pub:
             return 0
         # 新入池未推过的板块, 取前 N
@@ -59,20 +60,51 @@ class OpportunityEngine:
         if not fresh:
             return 0
         rmap = {r['code']: r for r in rows}
+        # 板块→成分股 (drilled 内该板块的个股)
+        def _board_stocks(bc):
+            if not self.ms:
+                return {}
+            return {c: d for c, d in drilled.items()
+                    if bc in self.ms.boards_of(c) and c in drilled}
         boards = []
         for c in fresh:
             r = rmap.get(c)
             if not r:
                 continue
+            bst = _board_stocks(c)
+            # 龙头: 板块内 FCAmo>0 且连板最高 / 封单最大
+            leader = None
+            for sc, sd in bst.items():
+                if sd.get('FCAmo', 0) > 0:
+                    if leader is None or (sd.get('EverZTCount', 0) >
+                                          leader['sd'].get('EverZTCount', 0)):
+                        leader = {'code': sc, 'sd': sd}
+            leader_s = ''
+            if leader:
+                nm = self.ms.stock_name(leader['code']) if self.ms else leader['code']
+                lb = int(leader['sd'].get('EverZTCount', 0))
+                lb_s = f'{lb}连板' if lb >= 2 else '首板'
+                fl = blindspot.first_limit_time.get(leader['code'], '') if blindspot else ''
+                fl_s = f' ⏱{fl}' if fl else ''
+                leader_s = f'龙头:{nm}({lb_s}/封单{leader["sd"].get("FCAmo",0):.0f}万){fl_s}'
+            # 可打: 板块内未封但涨幅≥7% 的 1-2 只 (启动/补涨, 呼应"不推已涨停")
+            keda = []
+            for sc, sd in sorted(bst.items(), key=lambda kv: -kv[1].get('ZAF', 0)):
+                if sd.get('FCAmo', 0) <= 0 and sd.get('ZAF', 0) >= 7 and len(keda) < 2:
+                    nm = self.ms.stock_name(sc) if self.ms else sc
+                    keda.append(f'{nm}({sd.get("ZAF",0):.1f}%/{sd.get("fHSL",0):.0f}%换)')
             boards.append({
                 'name': r.get('name', c), 'zaf': r.get('ZAF', 0),
                 'zt': int(r.get('ZTGPNum', 0)),
-                'lights': sorted(r.get('searchlights', set()))[:4],
+                'leader': leader_s,
+                'keda': '可打:' + ' '.join(keda) if keda else '',
             })
-        if boards and self.pub.on_board_new(boards, now):
-            self._pushed_new.update(c for c in fresh if c in rmap)  # 成功才去重
-            logger.info('🟢 机会: 新主线 {}', [b['name'] for b in boards])
-            return 1
+        if boards:
+            # 无论推送成败都去重 (限频丢弃也标记, 防反复刷)
+            self._pushed_new.update(c for c in fresh if c in rmap)
+            if self.pub.on_board_new(boards, now):
+                logger.info('🟢 机会: 新主线 {}', [b['name'] for b in boards])
+                return 1
         return 0
 
     # ── 趋势确认 (rounds_in≥3 且未推过) ──
@@ -86,10 +118,11 @@ class OpportunityEngine:
         if not cands:
             return 0
         best = max(cands, key=lambda s: s.score)
+        # 无论推送成败都去重 (限频丢弃也标记, 防反复刷)
+        self._pushed_streak.add(best.code)
         if self.pub.on_hot_streak({
                 'name': best.name, 'rounds': best.rounds_in, 'score': best.score,
                 'zt_prev': best.zt_num_prev, 'zt_cur': best.zt_num}, now):
-            self._pushed_streak.add(best.code)   # 成功才去重 (bucket满/失败下次重试)
             logger.info('🔥 机会: 趋势确认 {}', best.name)
             return 1
         return 0
@@ -135,11 +168,13 @@ class OpportunityEngine:
                 'zjl_hb': d.get('Zjl_HB', 0),              # 主力净流入
                 'break_n': blindspot.break_count.get(c, 0) if blindspot else 0,  # 炸板次数(烂板)
             })
-        if stocks and self.pub.on_limit_up(stocks, now):
-            self._pushed_limit.update(c for c, _ in top)   # 成功才去重
-            logger.info('🚀 机会: 龙头封板 {}',
-                        [s['name'] for s in stocks])
-            return 1
+        if stocks:
+            # 无论推送成败都去重: 限频丢弃也标记已推, 防同一批涨停股反复刷 (盘中混乱主因)
+            self._pushed_limit.update(c for c, _ in top)
+            if self.pub.on_limit_up(stocks, now):
+                logger.info('🚀 机会: 龙头封板 {}',
+                            [s['name'] for s in stocks])
+                return 1
         return 0
 
 

@@ -31,6 +31,8 @@ import ticker as tk  # noqa: E402
 import publisher as pub_mod  # noqa: E402
 from sentiment_monitor import SentimentMonitor  # noqa: E402
 from rotation import RotationMonitor  # noqa: E402
+from rotation_switch import RotationSwitch  # noqa: E402
+from board_leaderboard import BoardLeaderboard  # noqa: E402
 from open_monitor import OpenMonitor  # noqa: E402
 from auction_monitor import AuctionMonitor  # noqa: E402
 from tail_monitor import TailMonitor  # noqa: E402
@@ -152,9 +154,10 @@ def select_drill_candidates(hot_codes: list[str], ms, pct_map: dict[str, float],
 
 
 def run_one_round(round_idx: int, ms, radar: MesoRadar, pool: BoardPool,
-                  sentiment, rotations: list, auction_monitor, tail_monitor,
-                  stock_ranking, alert_engine, blindspot, opportunity, ladder,
-                  duck, is_close: bool, now: datetime) -> dict:
+                  sentiment, rotations: list, rotation_switch, board_leaderboard,
+                  auction_monitor, tail_monitor, stock_ranking, alert_engine,
+                  blindspot, opportunity, ladder, duck,
+                  is_close: bool, now: datetime) -> dict:
     """跑一轮 funnel + 计算层并联 (per-module try 故障隔离), 返回摘要 dict。"""
     t0 = time.time()
     rows = radar.scan()
@@ -210,6 +213,18 @@ def run_one_round(round_idx: int, ms, radar: MesoRadar, pool: BoardPool,
                     r.maybe_push(rows, now)
             except Exception:  # noqa: BLE001
                 logger.exception('{}轮动异常, 跳过 (故障隔离)', r.label)
+    # 板块高低切 (盘中/tail; 资金从A切向B)
+    if stage in ('intraday', 'tail') and rotation_switch:
+        try:
+            rotation_switch.maybe_push(rows, now)
+        except Exception:  # noqa: BLE001
+            logger.exception('高低切异常, 跳过 (故障隔离)')
+    # 板块内个股梯队 (盘中/tail; 龙头/助攻/跟风 → 表)
+    if stage in ('intraday', 'tail') and board_leaderboard:
+        try:
+            board_leaderboard.maybe_push(pool, drilled, blindspot, rows, now)
+        except Exception:  # noqa: BLE001
+            logger.exception('板块梯队异常, 跳过 (故障隔离)')
     # 竞价 (auction 段; 产出放量板块榜 + 一字候选→open_monitor)
     if stage == 'auction' and auction_monitor:
         try:
@@ -229,7 +244,7 @@ def run_one_round(round_idx: int, ms, radar: MesoRadar, pool: BoardPool,
         except Exception:  # noqa: BLE001
             logger.exception('stock_ranking 异常, 跳过 (故障隔离)')
     # 盲区补盲 Top20 提取 (盘中/tail; 按个股榜分降序, 供 blindspot 订阅感知 60s 盲区)
-    if stage in ('intraday', 'tail') and blindspot:
+    if stage in ('open', 'intraday', 'tail') and blindspot:
         try:
             _k1, _w1, _k2, _w2 = cfg.BLINDSPOT_SORT
             top20 = [c for c, _ in sorted(drilled.items(),
@@ -274,7 +289,7 @@ def run_one_round(round_idx: int, ms, radar: MesoRadar, pool: BoardPool,
         except Exception:  # noqa: BLE001
             logger.exception('盲区补盲异常, 跳过 (故障隔离)')
     # 机会事件引擎 (3 正: 新主线/趋势确认/龙头封板; 盘中/tail; 纯内存读 pool/drilled)
-    if stage in ('intraday', 'tail') and opportunity:
+    if stage in ('open', 'intraday', 'tail') and opportunity:
         try:
             opportunity.check(new_entries, pool, drilled, blindspot, rows, now)
         except Exception:  # noqa: BLE001
@@ -332,6 +347,8 @@ def run(rounds: int | None = None, force: bool = False, push: bool = False,
     sentiment = SentimentMonitor(ms, pub, dry_run=not push)   # --push 真写飞书+真发警报, 否则 dry-run
     rotations = [RotationMonitor(lvls, label, table_base, dry_run=not push)
                  for label, table_base, lvls in cfg.ROTATION_LEVELS.values()]
+    rotation_switch = RotationSwitch(pub, dry_run=not push)   # 板块高低切
+    board_leaderboard = BoardLeaderboard(ms, dry_run=not push)  # 板块内个股梯队
     open_mon = OpenMonitor(ms, pub, dry_run=not push)
     auction_mon = AuctionMonitor(dry_run=not push, pub=pub, ms=ms)
     tail_mon = TailMonitor(ms, dry_run=not push)
@@ -375,11 +392,12 @@ def run(rounds: int | None = None, force: bool = False, push: bool = False,
                 open_mon.start(cands)
             elif stage != 'open' and open_mon.started:
                 open_mon.stop()
-            # 盲区补盲订阅 (盘中/tail 启动, 其他时段停止); refresh 在 run_one_round 内
-            if stage in ('intraday', 'tail') and not blindspot.started:
+            # 盲区补盲订阅 (open/intraday/tail 启动, 其他时段停止); refresh 在 run_one_round 内
+            # 开盘即有涨停股, 6s 监控价值高, 不必等 9:45
+            if stage in ('open', 'intraday', 'tail') and not blindspot.started:
                 blindspot.started = True
-                logger.info('盲区补盲: 进入盘中, 待首轮钻取后订阅 Top{}', cfg.BLINDSPOT_TOPN)
-            elif stage not in ('intraday', 'tail') and blindspot.started:
+                logger.info('盲区补盲: 进入{}, 待首轮钻取后订阅 Top{}', stage, cfg.BLINDSPOT_TOPN)
+            elif stage not in ('open', 'intraday', 'tail') and blindspot.started:
                 blindspot.stop()
 
             try:
@@ -388,7 +406,8 @@ def run(rounds: int | None = None, force: bool = False, push: bool = False,
                     open_mon.process_pending()
                     if last_poll is None or (now - last_poll).total_seconds() >= cfg.OPEN_POLL_INTERVAL:
                         res = run_one_round(round_idx, ms, radar, pool,
-                                            sentiment, rotations, auction_mon, tail_mon,
+                                            sentiment, rotations, rotation_switch,
+                                            board_leaderboard, auction_mon, tail_mon,
                                             stock_ranking, alert_engine, blindspot,
                                             opportunity, ladder, duck, False, now)
                         _print_summary(res, ms)
@@ -405,7 +424,8 @@ def run(rounds: int | None = None, force: bool = False, push: bool = False,
                 # 非开盘段: 正常轮询 (close 段 force 定格)
                 is_close = (stage == 'close')
                 res = run_one_round(round_idx, ms, radar, pool,
-                                    sentiment, rotations, auction_mon, tail_mon,
+                                    sentiment, rotations, rotation_switch,
+                                    board_leaderboard, auction_mon, tail_mon,
                                     stock_ranking, alert_engine, blindspot,
                                     opportunity, ladder, duck, is_close, now)
                 _print_summary(res, ms)
