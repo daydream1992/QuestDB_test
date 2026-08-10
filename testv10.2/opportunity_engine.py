@@ -51,15 +51,19 @@ class OpportunityEngine:
             logger.exception('limit_up 检测异常, 跳过')
         return n_sent
 
-    # ── 新主线 (每轮≤2, 去重) ── 猎场卡: 板块+龙头+可打
+    # ── 新主线 (每轮≤2, 去重, 收紧: 只推强板防骚扰) ── 猎场卡: 板块+龙头+可打
     def _check_board_new(self, new_entries, pool, rows, drilled, blindspot, now) -> int:
         if not new_entries or not self.pub:
             return 0
-        # 新入池未推过的板块, 取前 N
-        fresh = [c for c in new_entries if c not in self._pushed_new][:cfg.OPP_NEW_MAX]
+        rmap = {r['code']: r for r in rows}
+        # 收紧: 只推 动能分≥50 且 涨停≥2 的强板 (防 28 次/天骚扰, 呼应 agent P0-3)
+        strong = [c for c in new_entries
+                  if rmap.get(c, {}).get('score', 0) >= cfg.OPP_NEW_SCORE
+                  and int(rmap.get(c, {}).get('ZTGPNum', 0)) >= cfg.OPP_NEW_ZT
+                  and c not in self._pushed_new]
+        fresh = strong[:cfg.OPP_NEW_MAX]
         if not fresh:
             return 0
-        rmap = {r['code']: r for r in rows}
         # 板块→成分股 (drilled 内该板块的个股)
         def _board_stocks(bc):
             if not self.ms:
@@ -199,7 +203,8 @@ if __name__ == '__main__':
         '688020.SH': {'FCAmo': 6609.36, 'ZAF': 20.00, 'FCb': 0.07},
         '600519.SH': {'FCAmo': 0.0, 'ZAF': 0.05, 'FCb': 0.0},
     }
-    blindspot = NS(first_limit_time={'300986.SZ': '10:32:05'})
+    blindspot = NS(first_limit_time={'300986.SZ': '10:32:05'},
+                   break_count={}, back_count={}, zt_count={})
     rows = [{'code': '881334.SH', 'name': 'PCB', 'ZAF': 8.71, 'ZTGPNum': 11,
              'searchlights': {'gain', 'zt'}}]
     now = datetime.now()

@@ -30,7 +30,7 @@ _CIRCLED = '①②③④⑤⑥⑦⑧⑨⑩'
 class TokenBucket:
     """令牌桶: 支持分桶 (新主线/预警/龙头封板 各 ≤1/min)。
     机会类拆两桶: 新主线/趋势确认 (lane0) + 龙头封板 (lane2, 最高价值独立配额,
-    不被新主线饿死); 预警类 lane1。"""
+    不被新主线饿死); 预警类 lane1 (6类抢1/min → 优先级排队, 高优先插队顶掉低优先)。"""
 
     def __init__(self, max_per_min: int, lanes: int = 3):
         self.max = max_per_min
@@ -38,16 +38,30 @@ class TokenBucket:
         # 每 lane 独立 deque: 均分 max_per_min (如 3/min ÷ 3 lanes = 每桶 1/min)
         self._times: list[deque] = [deque() for _ in range(lanes)]
 
-    def allow(self, now: datetime, lane: int = 0) -> bool:
+    def allow(self, now: datetime, lane: int = 0, priority: int = 0) -> bool:
+        """priority: 数值越小越优先 (0=最高)。满桶时高优先顶掉低优先。
+        priority=0 不参与顶替 (机会/龙头封板), 只预警 lane1 用。"""
         lane = lane % self.lanes
         q = self._times[lane]
         cutoff = now - timedelta(seconds=60)
-        while q and q[0] < cutoff:
+        while q and q[0][0] < cutoff:
             q.popleft()
         per_lane = max(1, self.max // self.lanes)
         if len(q) < per_lane:
-            q.append(now)
+            q.append((now, priority))
             return True
+        # 满桶: 若本消息优先于桶内最低优先的, 顶掉它 (仅预警 lane 内部排队)
+        if priority > 0:
+            # 找桶内 priority 最大 (最低优先) 的
+            max_p = max(x[1] for x in q)
+            if priority < max_p:
+                # 移除一个最低优先的
+                for i, x in enumerate(q):
+                    if x[1] == max_p:
+                        q.pop(i)
+                        break
+                q.append((now, priority))
+                return True
         return False
 
 
@@ -84,9 +98,11 @@ class Publisher:
         self.send_fail = 0      # 推送失败计数 (飞书挂可查)
         self.bucket_dropped = 0 # 限频丢弃计数
 
-    def _dispatch(self, title: str, lines: list, now: datetime, lane: int = 0) -> bool:
-        """统一发送入口: bucket 检查 (带丢弃日志) + 计数。各卡调用。"""
-        if not self.bucket.allow(now, lane=lane):
+    def _dispatch(self, title: str, lines: list, now: datetime, lane: int = 0,
+                  priority: int = 0) -> bool:
+        """统一发送入口: bucket 检查 (带丢弃日志) + 计数。各卡调用。
+        priority: 预警 lane1 内部优先级 (越小越优先), 满桶顶替用。"""
+        if not self.bucket.allow(now, lane=lane, priority=priority):
             self.bucket_dropped += 1
             logger.debug('限频丢弃 (≤{}/min): {}', self.bucket.max, title)
             return False
@@ -127,21 +143,21 @@ class Publisher:
             lines.append(f'▼ 个股梯队异动 (L3)')
             for name, zaf, role in payload['stocks']:
                 lines.append(f'├─ {name} {zaf:+.1f}% {role}')
-        return self._dispatch(f'🔴 大盘跳水预警 | {now.strftime("%H:%M")}', lines, now, lane=1)
+        return self._dispatch(f'🔴 大盘跳水预警 | {now.strftime("%H:%M")}', lines, now, lane=1, priority=1)
 
     # ⑥ 🚀 开盘拉升 (传导链①龙头异动; 事件, ≤2/min bucket; send_warn 另走客户端)
     def on_open_surge(self, code: str, name: str, price: float, rise: float,
                       now: datetime) -> bool:
         lines = [f'🚀 开盘拉升 | {now.strftime("%H:%M")}', '',
                  f'{name}({code}) {price:.2f}  相对开盘 {rise:+.1f}%']
-        return self._dispatch(f'🚀 开盘拉升 {name}', lines, now, lane=1)
+        return self._dispatch(f'🚀 开盘拉升 {name}', lines, now, lane=1, priority=4)
 
     # ⑦ 💥 个股炸板预警 (tail 段; 事件, ≤2/min)
     def on_blast_alert(self, tail: dict, now: datetime) -> bool:
         lines = [f'💥 尾盘炸板预警 | {now.strftime("%H:%M")}', '',
                  f'封板候选 {tail.get("sealed_n", 0)} 只, 炸板 {tail.get("blast_n", 0)} 只',
                  tail.get('blast_s', '-')]
-        return self._dispatch(f'💥 尾盘炸板 | {now.strftime("%H:%M")}', lines, now, lane=1)
+        return self._dispatch(f'💥 尾盘炸板 | {now.strftime("%H:%M")}', lines, now, lane=1, priority=4)
 
     # 💥 个股炸板实时 (blindspot 盲区 6s 粒度; FCAmo 封→开瞬间; 盘中/tail)
     def on_seal_break(self, code: str, name: str, prev: float,
@@ -157,7 +173,7 @@ class Publisher:
                      + (f'  [今日炸板{break_n}次]' if break_n else ''))
         if boards:
             lines.append(f'  [{" ".join(boards)}]')
-        return self._dispatch(f'💥 炸板 {name}', lines, now, lane=1)
+        return self._dispatch(f'💥 炸板 {name}', lines, now, lane=1, priority=3)
 
     # 🔁 炸板回封实时 (blindspot 盲区 6s 粒度; FCAmo 开→封瞬间)
     def on_seal_back(self, code: str, name: str, cur: float,
@@ -171,7 +187,7 @@ class Publisher:
                      + (f'  [今日回封{back_n}次]' if back_n else ''))
         if boards:
             lines.append(f'  [{" ".join(boards)}]')
-        return self._dispatch(f'🔁 回封 {name}', lines, now, lane=1)
+        return self._dispatch(f'🔁 回封 {name}', lines, now, lane=1, priority=3)
 
     # ⚠️ 封单衰竭前兆 (blindspot 6s 粒度; FCAmo 连续2轮降≥40% 仍封, 炸板前兆)
     def on_seal_fade(self, code: str, name: str, prev: float, cur: float,
@@ -186,7 +202,7 @@ class Publisher:
         if boards:
             lines.append(f'  [{" ".join(boards)}]')
         lines.append(f'  ⚠️ 连续2轮缩量, 有炸板风险, 注意减仓')
-        return self._dispatch(f'⚠️ 封单衰竭 {name}', lines, now, lane=1)
+        return self._dispatch(f'⚠️ 封单衰竭 {name}', lines, now, lane=1, priority=3)
 
     # ============ 机会类事件 (盘中决策最缺; 与负向共用 ≤2/min bucket) ============
 

@@ -51,6 +51,8 @@ class BlindspotMonitor:
         self.zt_count: dict[str, int] = {}       # code → 封板次数 (每次 开→封 累计, 含首次+回封)
         self.break_count: dict[str, int] = {}    # code → 炸板次数 (每次 封→开 累计)
         self.back_count: dict[str, int] = {}     # code → 回封次数 (炸板后再次封住累计)
+        self.push_count: dict[str, int] = {}     # code → 炸板/回封推卡次数 (限2次, 防刷屏)
+        self.fade_ts: dict[str, float] = {}      # code → 最近衰竭时间戳 (炸板互斥: 衰竭30min内不推炸板卡)
         self.events: list[dict] = []             # 本轮累计状态变更事件 (供推送)
         self.started = False
 
@@ -133,6 +135,7 @@ class BlindspotMonitor:
             hist = self.fcamo_hist.setdefault(code, [])
             hist.append(fcamo)
             if len(hist) >= 3 and hist[-1] <= hist[-2] * 0.6 and hist[-2] <= hist[-3] * 0.6:
+                self.fade_ts[code] = time.time()   # 记衰竭时间 (炸板互斥用)
                 self.events.append({'code': code, 'name': self.ms.stock_name(code) if self.ms else code,
                                     'type': '衰竭', 'prev': prev, 'cur': fcamo,
                                     'zaf': zaf, 'fHSL': fhsl, 'ever_zt': ever})
@@ -156,9 +159,15 @@ class BlindspotMonitor:
         is_first_limit = (kind == '回封' and code not in self.first_limit_time
                           and self.zt_count.get(code, 0) == 0)
         event_type = '封板' if is_first_limit else kind
+        # 推卡限次: 同股炸板/回封合计 >2 次后, 事件标记 no_card (只落表不推卡, 防反复刷)
+        pn = self.push_count.get(code, 0)
+        no_card = (event_type in ('炸板', '回封') and pn >= 2)
+        if event_type in ('炸板', '回封'):
+            self.push_count[code] = pn + 1
         self.events.append({'code': code, 'name': name, 'type': event_type,
                             'prev': prev, 'cur': fcamo,
-                            'zaf': zaf, 'fHSL': fhsl, 'ever_zt': ever})
+                            'zaf': zaf, 'fHSL': fhsl, 'ever_zt': ever,
+                            'no_card': no_card})
         # 计数: 封板(开→封, 含首次) / 炸板(封→开) / 回封(炸板后再次封)
         if kind == '回封':
             self.zt_count[code] = self.zt_count.get(code, 0) + 1

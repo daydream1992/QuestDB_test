@@ -70,7 +70,8 @@ YESTERDAY_ZT_INDEX = '880863.SH'    # 维度6 昨日涨停指数 (持续性)
 STAGE_RANGES = [
     ('auction',  dtime(9, 15), dtime(9, 25)),    # 竞价: 竞价放量板块+一字龙头
     ('open',     dtime(9, 30), dtime(9, 45)),    # 开盘: 快速拉升(subscribe_hq秒级)
-    ('intraday', dtime(9, 45), dtime(14, 0)),    # 盘中: 板块轮动+连板梯队
+    ('intraday', dtime(9, 45), dtime(11, 30)),   # 盘中上午: 板块轮动+连板梯队
+    ('intraday', dtime(13, 0), dtime(14, 0)),    # 盘中下午 (午休 11:30-13:00 落 off, 不跑不推)
     ('tail',     dtime(14, 0), dtime(15, 0)),    # 尾盘: 尾盘拉升+炸板风险
     ('close',    dtime(15, 0), dtime(15, 30)),   # 收盘: 全天总结+次日预判
 ]
@@ -135,6 +136,9 @@ OPP_STREAK_ROUNDS = 3           # 板块连续 HOT 达 N 轮 → 趋势确认 (�
 OPP_LIMIT_ZAF = 9.0             # 个股 ZAF≥N 视为涨停封板候选 (配合 FCAmo>0)
 OPP_NEW_MAX = 2                 # 每轮新主线最多推 N 个 (防刷屏)
 OPP_LIMIT_MAX = 2               # 每轮龙头封板最多推 N 只
+OPP_NEW_SCORE = 50              # 新主线收紧: 板块动能分≥N 才推 (防 28次/天骚扰)
+OPP_NEW_ZT = 2                  # 新主线收紧: 板块涨停家数≥N 才推 (弱板不推)
+FADE_BLAST_MUTEX_SEC = 1800     # 衰竭后 30min 内同股炸板不推卡 (防双卡连发)
 
 # === 个股排名 (stock_ranking; 池内综合排名, 打板选股底座) ===
 RANKING_INTERVAL_SEC = 120          # 个股榜频率 (2min/行)

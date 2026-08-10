@@ -264,6 +264,15 @@ def run_one_round(round_idx: int, ms, radar: MesoRadar, pool: BoardPool,
                     if ladder:
                         ladder.record_event(ev, blindspot, now)
                     # 实时卡 (≤2/min bucket 天然限频; 带今日计数 + 连板 + 板块)
+                    # no_card: 同股炸板/回封已限次, 只落表不推卡 (防反复刷)
+                    if ev.get('no_card'):
+                        continue
+                    # 衰竭互斥: 衰竭 30min 内炸板不推卡 (防"衰竭→炸板"双卡连发, 只落表)
+                    if ev['type'] == '炸板' and blindspot and \
+                            blindspot.fade_ts.get(ev['code'], 0) and \
+                            time.time() - blindspot.fade_ts.get(ev['code'], 0) < cfg.FADE_BLAST_MUTEX_SEC:
+                        logger.debug('衰竭互斥: {} 衰竭后炸板, 不推卡', ev['code'])
+                        continue
                     _d = drilled.get(ev['code'], {})
                     _ever = int(_d.get('EverZTCount', 0))
                     _boards = [ms.board_name(b) for b in sorted(ms.boards_of(ev['code']))[:2]] if ms else []
